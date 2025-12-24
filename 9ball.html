@@ -11,7 +11,7 @@
         body { font-family: 'Segoe UI', sans-serif; background: var(--slate); margin: 0; padding: 10px; color: #fff; }
         
         #custom-modal { display: none; position: fixed; z-index: 10001; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); }
-        .modal-content { background: #fff; color: #000; margin: 20% auto; padding: 25px; border-radius: 15px; width: 85%; text-align: center; border: 5px solid var(--purple); }
+        .modal-content { background: #fff; color: #000; margin: 15% auto; padding: 25px; border-radius: 15px; width: 85%; text-align: center; border: 5px solid var(--purple); }
         .modal-btn { padding: 12px 15px; margin: 5px; border: none; border-radius: 8px; font-weight: 900; cursor: pointer; color: white; min-width: 80px; }
 
         .branding { text-align: center; margin-bottom: 20px; }
@@ -110,17 +110,31 @@
         document.getElementById('disp-a').innerText = document.getElementById('team-a').value || "AWAY";
     }
 
-    function updatePlayerName(matchIdx, side, name) {
-        matches[matchIdx][side].n = name;
-        localStorage.setItem('billiard_vFinal_MVP_vFix', JSON.stringify(matches));
-    }
+    function calculateSplit(idx) {
+        const m = matches[idx];
+        const h = m.h; const a = m.a;
+        const hWin = h.b >= races[h.sl];
+        const aWin = a.b >= races[a.sl];
 
-    function getPts(side, idx) {
-        const m = matches[idx]; const p = m[side]; const o = side === 'h' ? m.a : m.h;
-        if (p.b >= races[p.sl]) return 20; if (o.b < races[o.sl]) return 0;
-        const t = scoreChart[p.sl]; const pts = [20, 19, 18, 17, 16, 15, 14, 13, 12];
-        for (let i = 0; i < t.length; i++) { if (p.b <= t[i]) return 20 - pts[i]; }
-        return 0;
+        if (!hWin && !aWin) return { h: 0, a: 0 };
+
+        const winner = hWin ? h : a;
+        const loser = hWin ? a : h;
+        const thresholds = scoreChart[loser.sl];
+        const loserPointsOptions = [0, 1, 2, 3, 4, 5, 6, 7, 8]; // Points awarded to loser based on thresholds
+        
+        let loserScore = 0;
+        // Check thresholds from highest to lowest to find loser's points
+        for (let i = thresholds.length - 1; i >= 0; i--) {
+            if (loser.b > thresholds[i]) {
+                loserScore = loserPointsOptions[i + 1] || 8;
+                break;
+            }
+            if (i === 0 && loser.b <= thresholds[0]) loserScore = 0;
+        }
+
+        const winnerScore = 20 - loserScore;
+        return hWin ? { h: winnerScore, a: loserScore } : { h: loserScore, a: winnerScore };
     }
 
     function refresh() {
@@ -129,14 +143,14 @@
         container.innerHTML = ''; let tH = 0, tA = 0;
 
         matches.forEach((m, i) => {
-            const hPt = getPts('h', i); const aPt = getPts('a', i);
-            tH += hPt; tA += aPt;
+            const scores = calculateSplit(i);
+            tH += scores.h; tA += scores.a;
             const card = document.createElement('div');
             card.className = `match-card ${m.done ? 'card-done' : ''}`;
             
             if (m.done) {
                 card.innerHTML = `<div style="background:#222;color:#fff;padding:12px;font-weight:900;display:flex;justify-content:space-between;align-items:center;">
-                    <span>M${i+1} | ${hPt}-${aPt}</span>
+                    <span>M${i+1} | ${scores.h}-${scores.a}</span>
                     <div>
                         <button onclick="resetM(${i})" style="font-size:0.7rem; background:red; color:white; border:none; padding:4px 8px; border-radius:4px; margin-right:5px;">RESET</button>
                         <button onclick="editM(${i})" style="font-size:0.7rem;">EDIT</button>
@@ -216,7 +230,7 @@
         const opp = side === 'h' ? 'a' : 'h'; m.dead = m.dead.filter(x => x !== n); m.cur[opp] = m.cur[opp].filter(x => x !== n);
         if (m.cur[side].includes(n)) m.cur[side] = m.cur[side].filter(x => x !== n); else m.cur[side].push(n);
         if (n === 9 && m.cur[side].includes(9)) {
-            showM("END RACK", "Ball 9 Made Early", [
+            showM("END RACK", "Ball 9 Made", [
                 { text: "SNAP", color: "#2ecc71", f: () => eRack(idx) },
                 { text: "B&R", color: "#3498db", f: () => eRack(idx) },
                 { text: "REGULAR", color: "#f1c40f", f: () => eRack(idx) },
@@ -233,9 +247,11 @@
         m.a.b = Math.min(races[m.a.sl], m.a.b + m.cur.a.reduce((a, n) => a + (n === 9 ? 2 : 1), 0));
         m.deadTotal += m.dead.length;
         m.cur = { h: [], a: [] }; m.dead = []; m.h.toCur = 0; m.a.toCur = 0; 
+        
         if(m.h.b >= races[m.h.sl] || m.a.b >= races[m.a.sl]) {
+            const s = calculateSplit(idx);
             const winner = m.h.b >= races[m.h.sl] ? (m.h.n || "Home") : (m.a.n || "Away");
-            showM("MATCH OVER!", winner + " reached goal.", [
+            showM("MATCH OVER!", `${winner} won. Split: ${s.h}-${s.a}`, [
                 { text: "FINISH", color: "var(--purple)", f: () => { m.done = true; refresh(); } },
                 { text: "CANCEL", f: () => refresh() }
             ]);
@@ -259,8 +275,9 @@
         txt += `${document.getElementById('team-h').value} vs ${document.getElementById('team-a').value}\n`;
         txt += `==========================================\n`;
         matches.forEach((m, i) => {
+            const s = calculateSplit(i);
             txt += `M${i+1}: ${m.h.n||'H'} (SL${m.h.sl}) vs ${m.a.n||'A'} (SL${m.a.sl})\n`;
-            txt += `POINTS: ${getPts('h',i)} - ${getPts('a',i)}\n`;
+            txt += `POINTS: ${s.h} - ${s.a}\n`;
             txt += `INNINGS: ${m.inn} | DEAD BALLS: ${m.deadTotal}\n`;
             txt += `TOs: [H] ${m.h.toTotal} | [A] ${m.a.toTotal}\n`;
             txt += `------------------------------------------\n`;
@@ -270,8 +287,7 @@
     }
 
     function copyClipboard() {
-        const text = buildSummaryText();
-        navigator.clipboard.writeText(text).then(() => alert("Summary copied to clipboard!"));
+        navigator.clipboard.writeText(buildSummaryText()).then(() => alert("Summary copied!"));
     }
 
     function exportTXT() {
