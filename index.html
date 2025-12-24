@@ -1,66 +1,121 @@
-3<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Billiard Backup Scorer</title>
+    <title>Billiard Pro Backup</title>
     <link rel="manifest" href="manifest.json">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        body { font-family: sans-serif; background: #1a252f; color: white; padding: 20px; text-align: center; }
-        .card { background: #2c3e50; padding: 20px; border-radius: 12px; margin: 15px auto; max-width: 400px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        input { width: 60px; padding: 8px; font-size: 1.2rem; border-radius: 5px; border: none; text-align: center; }
-        button { width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .save-btn { background: #27ae60; color: white; }
-        .copy-btn { background: #2980b9; color: white; }
+        :root { --bg: #f4f7f6; --text: #2c3e50; --accent: #27ae60; --table-border: #bdc3c7; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text); padding: 10px; margin: 0; }
+        .scoresheet { background: white; border: 2px solid var(--text); padding: 10px; max-width: 600px; margin: auto; }
+        h2 { text-transform: uppercase; border-bottom: 2px solid var(--text); padding-bottom: 5px; margin-top: 0; }
+        
+        .grid-row { display: flex; border-bottom: 1px solid var(--table-border); padding: 10px 0; align-items: center; }
+        .label { flex: 2; font-weight: bold; font-size: 0.9rem; }
+        .controls { flex: 1; display: flex; justify-content: space-around; align-items: center; }
+        
+        .btn-step { background: #eee; border: 1px solid #ccc; width: 35px; height: 35px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; }
+        .val { font-size: 1.3rem; font-weight: bold; width: 30px; text-align: center; }
+        
+        .totals-box { background: #ecf0f1; padding: 15px; margin-top: 20px; border-radius: 8px; }
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        button.primary { padding: 15px; background: var(--accent); color: white; border: none; border-radius: 5px; font-weight: bold; }
+        button.secondary { padding: 15px; background: #2980b9; color: white; border: none; border-radius: 5px; font-weight: bold; }
     </style>
 </head>
 <body>
-    <h2>Billiard Backup Scorer</h2>
-    <div class="card">
-        <label>Innings: <br><input type="number" id="innings" value="0"></label><br><br>
-        <label>Defensive Shots: <br><input type="number" id="defensive" value="0"></label><br><br>
-        <label>Dead Balls: <br><input type="number" id="deadballs" value="0"></label>
+
+<div id="capture-area" class="scoresheet">
+    <h2>Billiard Match Backup</h2>
+    
+    <div class="grid-row">
+        <div class="label">Total Innings</div>
+        <div class="controls">
+            <button class="btn-step" onclick="step('innings', -1)">-</button>
+            <span id="innings" class="val">0</span>
+            <button class="btn-step" onclick="step('innings', 1)">+</button>
+        </div>
     </div>
-    <div style="max-width: 400px; margin: auto;">
-        <button class="save-btn" onclick="saveData()">Save Progress</button>
-        <button class="copy-btn" onclick="copyStats()">Copy Summary</button>
+
+    <div class="grid-row">
+        <div class="label">Defensive Shots</div>
+        <div class="controls">
+            <button class="btn-step" onclick="step('defensive', -1)">-</button>
+            <span id="defensive" class="val">0</span>
+            <button class="btn-step" onclick="step('defensive', 1)">+</button>
+        </div>
     </div>
 
-    <script>
-        // Data Handling
-        function saveData() {
-            const stats = {
-                innings: document.getElementById('innings').value,
-                defensive: document.getElementById('defensive').value,
-                deadballs: document.getElementById('deadballs').value
-            };
-            localStorage.setItem('matchData', JSON.stringify(stats));
-            alert("Match progress saved to your phone!");
-        }
+    <div class="grid-row">
+        <div class="label">Dead Balls (9-Ball)</div>
+        <div class="controls">
+            <button class="btn-step" onclick="step('dead', -1)">-</button>
+            <span id="dead" class="val">0</span>
+            <button class="btn-step" onclick="step('dead', 1)">+</button>
+        </div>
+    </div>
 
-        window.onload = () => {
-            const saved = JSON.parse(localStorage.getItem('matchData'));
-            if (saved) {
-                document.getElementById('innings').value = saved.innings;
-                document.getElementById('defensive').value = saved.defensive;
-                document.getElementById('deadballs').value = saved.deadballs;
-            }
-            
-            // Register Service Worker for Offline Use
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('sw.js')
-                .then(() => console.log("Offline mode active."));
-            }
-        };
+    <div class="totals-box">
+        <strong>Session Running Totals:</strong>
+        <p id="match-summary">Matches Tracked: 0 | Avg Innings: 0</p>
+    </div>
+</div>
 
-        function copyStats() {
-            const inn = document.getElementById('innings').value;
-            const def = document.getElementById('defensive').value;
-            const dead = document.getElementById('deadballs').value;
-            const text = BACKUP SCORES: Innings: ${inn}, Def: ${def}, Dead: ${dead};
-            navigator.clipboard.writeText(text);
-            alert("Scores copied! Paste them into the official app.");
-        }
-    </script>
+<div class="action-grid">
+    <button class="primary" onclick="exportJPG()">Export as JPG</button>
+    <button class="secondary" onclick="exportText()">Copy Text Summary</button>
+    <button style="background:#e74c3c; color:white;" onclick="saveMatch()">Finish & Save Match</button>
+</div>
+
+<script>
+    let currentMatch = { innings: 0, defensive: 0, dead: 0 };
+    let sessionHistory = JSON.parse(localStorage.getItem('sessionHistory')) || [];
+
+    function step(field, delta) {
+        currentMatch[field] = Math.max(0, currentMatch[field] + delta);
+        document.getElementById(field).innerText = currentMatch[field];
+    }
+
+    function saveMatch() {
+        sessionHistory.push({...currentMatch});
+        localStorage.setItem('sessionHistory', JSON.stringify(sessionHistory));
+        updateTotals();
+        // Reset current match
+        currentMatch = { innings: 0, defensive: 0, dead: 0 };
+        ['innings','defensive','dead'].forEach(id => document.getElementById(id).innerText = 0);
+        alert("Match added to session history!");
+    }
+
+    function updateTotals() {
+        const totalInnings = sessionHistory.reduce((sum, m) => sum + m.innings, 0);
+        const count = sessionHistory.length;
+        const avg = count > 0 ? (totalInnings / count).toFixed(1) : 0;
+        document.getElementById('match-summary').innerText = Matches Tracked: ${count} | Avg Innings: ${avg};
+    }
+
+    function exportText() {
+        let summary = "POOL SESSION BACKUP\n------------------\n";
+        sessionHistory.forEach((m, i) => {
+            summary += Match ${i+1}: Innings: ${m.innings}, Def: ${m.defensive}, Dead: ${m.dead}\n;
+        });
+        navigator.clipboard.writeText(summary);
+        alert("Full session text copied to clipboard!");
+    }
+
+    function exportJPG() {
+        const area = document.getElementById('capture-area');
+        html2canvas(area).then(canvas => {
+            const link = document.createElement('a');
+            link.download = 'scoresheet_backup.jpg';
+            link.href = canvas.toDataURL("image/jpeg", 0.9);
+            link.click();
+        });
+    }
+
+    window.onload = updateTotals;
+</script>
+
 </body>
 </html>
