@@ -118,4 +118,127 @@
         let tH = 0, tA = 0;
 
         matches.forEach((m, i) => {
-            const hPt = getPts('h', i); const aPt =
+            const hPt = getPts('h', i); const aPt = getPts('a', i);
+            tH += hPt; tA += aPt;
+            const card = document.createElement('div');
+            card.className = `match-card ${m.done ? 'card-done' : ''}`;
+            
+            if (m.done) {
+                card.innerHTML = `<div style="background:#222;color:#fff;padding:12px;font-weight:900;display:flex;justify-content:space-between;">
+                    <span>MATCH ${i+1} FINAL | ${hPt}-${aPt}</span>
+                    <button onclick="editM(${i})" style="font-size:0.7rem;">EDIT</button>
+                </div>
+                <div style="padding:15px;display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                    <div><div class="stat-line"><b>${m.h.n||'H-Player'}</b> <span>SL ${m.h.sl}</span></div><div class="stat-line">Balls: <span>${m.h.b}/${races[m.h.sl]}</span></div><div class="stat-line">Innings: <span>${m.inn}</span></div><div class="stat-line">Defensive: <span>${m.h.d}</span></div><b>PTS: ${hPt}</b></div>
+                    <div><div class="stat-line"><b>${m.a.n||'A-Player'}</b> <span>SL ${m.a.sl}</span></div><div class="stat-line">Balls: <span>${m.a.b}/${races[m.a.sl]}</span></div><div class="stat-line">Innings: <span>${m.inn}</span></div><div class="stat-line">Defensive: <span>${m.a.d}</span></div><b>PTS: ${aPt}</b></div>
+                </div>`;
+            } else {
+                card.innerHTML = `<div class="head-active"><span>MATCH ${i+1} ACTIVE</span>
+                    <div><button onclick="resetM(${i})" style="background:red;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:0.7rem;margin-right:5px;font-weight:900;">RESET</button>
+                    <button onclick="finM(${i})" style="background:black;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:0.7rem;font-weight:900;">FINISH</button></div></div>
+                    <div style="padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+                        <div style="text-align:center;">
+                            <input value="${m.h.n}" onchange="matches[${i}].h.n=this.value;refresh()" placeholder="Player">
+                            <select onchange="matches[${i}].h.sl=this.value;refresh()">${Object.keys(races).map(s=>`<option value="${s}" ${m.h.sl==s?'selected':''}>SL ${s}</option>`)}</select>
+                            <div style="margin:5px 0;">${renderTO(i,'h')}</div>
+                            <div class="ball-container">${renderB(i,'h')}</div>
+                            <div style="font-size:0.8rem;background:#f0f0f0;padding:5px;border-radius:5px;">DEF: ${m.h.d} <button onclick="adj(${i},'h','d',1)">+</button> | INN: ${m.inn} <button onclick="adj(${i},null,'inn',1)">+</button></div>
+                            <div style="font-weight:900;margin-top:5px;font-size:1.1rem;">TOTAL: ${m.h.b}</div>
+                        </div>
+                        <div style="text-align:center;">
+                            <input value="${m.a.n}" onchange="matches[${i}].a.n=this.value;refresh()" placeholder="Player">
+                            <select onchange="matches[${i}].a.sl=this.value;refresh()">${Object.keys(races).map(s=>`<option value="${s}" ${m.a.sl==s?'selected':''}>SL ${s}</option>`)}</select>
+                            <div style="margin:5px 0;">${renderTO(i,'a')}</div>
+                            <div class="ball-container">${renderB(i,'a')}</div>
+                            <div style="font-size:0.8rem;background:#f0f0f0;padding:5px;border-radius:5px;">DEF: ${m.a.d} <button onclick="adj(${i},'a','d',1)">+</button> | INN: ${m.inn} <button onclick="adj(${i},null,'inn',-1)">-</button></div>
+                            <div style="font-weight:900;margin-top:5px;font-size:1.1rem;">TOTAL: ${m.a.b}</div>
+                        </div>
+                    </div>`;
+            }
+            c.appendChild(card);
+        });
+        document.getElementById('h-total').innerText = tH;
+        document.getElementById('a-total').innerText = tA;
+    }
+
+    function getPts(side, idx) {
+        const m = matches[idx]; const p = m[side]; const o = (side === 'h' ? m.a : m.h);
+        if (p.b >= races[p.sl]) return 20;
+        if (o.b < races[o.sl]) return 0;
+        const t = chart[p.sl];
+        for (let entry of t) { if (p.b <= entry.m) return 20 - entry.p; }
+        return 0;
+    }
+
+    function renderTO(idx, side) {
+        const m = matches[idx][side]; const limit = m.sl <= 3 ? 2 : 1; let h = '';
+        for(let j=1; j<=limit; j++) { h += `<button class="to-btn ${m.toCur>=j?'to-used':''}" onclick="useTO(${idx},'${side}',${j})">TO</button> `; }
+        return h;
+    }
+
+    function useTO(idx, side, n) {
+        const m = matches[idx][side];
+        if (m.toCur === n) { m.toCur--; } else { m.toCur = n; }
+        refresh();
+    }
+
+    function adj(i, s, k, v) { if(s) matches[i][s][k]=Math.max(0,matches[i][s][k]+v); else matches[i][k]=Math.max(0,matches[i][k]+v); refresh(); }
+
+    function renderB(idx, side) {
+        let h = '';
+        for(let n=1; n<=9; n++) {
+            const isS = matches[idx].cur[side].includes(n); const isD = matches[idx].dead.includes(n);
+            let cls = isS ? 'ball-selected' : (isD ? 'ball-dead' : `b${n}`);
+            h += `<div class="ball ${cls}" onclick="hBall(${idx},'${side}',${n})">${n}</div>`;
+        }
+        return h;
+    }
+
+    function hBall(idx, side, n) {
+        const now = Date.now(); const m = matches[idx];
+        if (now - lastT.time < 350 && lastT.b === n && lastT.s === side) {
+            m.cur.h = m.cur.h.filter(x => x !== n); m.cur.a = m.cur.a.filter(x => x !== n);
+            if (!m.dead.includes(n)) m.dead.push(n); refresh(); return;
+        }
+        lastT = { time: now, b: n, s: side };
+        const opp = side === 'h' ? 'a' : 'h'; m.dead = m.dead.filter(x => x !== n); m.cur[opp] = m.cur[opp].filter(x => x !== n);
+        if (m.cur[side].includes(n)) m.cur[side] = m.cur[side].filter(x => x !== n); else m.cur[side].push(n);
+        if (n === 9 && m.cur[side].includes(9)) {
+            showM("END RACK", "Confirm 9-ball completion.", [
+                { text: "9-ON-SNAP", color: "#2ecc71", f: () => eRack(idx) },
+                { text: "REGULAR", color: "#f1c40f", f: () => eRack(idx) },
+                { text: "CANCEL", f: () => { m.cur[side] = m.cur[side].filter(x => x !== 9); refresh(); } }
+            ]);
+        }
+        refresh();
+    }
+
+    function eRack(idx) {
+        const m = matches[idx];
+        for(let i=1; i<=8; i++) { if(!m.cur.h.includes(i) && !m.cur.a.includes(i) && !m.dead.includes(i)) m.dead.push(i); }
+        m.h.b = Math.min(races[m.h.sl], m.h.b + m.cur.h.reduce((a, n) => a + (n === 9 ? 2 : 1), 0));
+        m.a.b = Math.min(races[m.a.sl], m.a.b + m.cur.a.reduce((a, n) => a + (n === 9 ? 2 : 1), 0));
+        m.cur = { h: [], a: [] }; m.dead = []; m.h.toCur = 0; m.a.toCur = 0;
+        refresh();
+    }
+
+    function finM(i) { showM("FINISH MATCH", "Lock results for Match " + (i+1) + "?", [{ text: "FINISH", color: "#6a0dad", f: () => { matches[i].done=true; refresh(); } }, { text: "NO", f: () => {} }]); }
+    function editM(i) { matches[i].done = false; refresh(); }
+    function resetM(i) { showM("RESET", "Wipe all data for this match?", [{ text: "WIPE DATA", color: "red", f: () => { matches[i] = { done:false, inn:0, dead:[], h:{n:'',sl:3,b:0,d:0,toCur:0}, a:{n:'',sl:3,b:0,d:0,toCur:0}, cur:{h:[],a:[]} }; refresh(); } }, { text: "CANCEL", f: () => {} }]); }
+
+    function addMatch() {
+        if(matches.length < 5) { matches.push({ done:false, inn:0, dead:[], h:{n:'',sl:3,b:0,d:0,toCur:0}, a:{n:'',sl:3,b:0,d:0,toCur:0}, cur:{h:[],a:[]} }); refresh(); }
+    }
+
+    function exportJPG() {
+        html2canvas(document.getElementById('capture-area'), {backgroundColor:'#1a1a1a', scale: 2}).then(c => {
+            const l = document.createElement('a'); l.download = 'MVP_Scores.jpg'; l.href = c.toDataURL(); l.click();
+        });
+    }
+
+    document.getElementById('team-h').value = localStorage.getItem('team_h') || "";
+    document.getElementById('team-a').value = localStorage.getItem('team_a') || "";
+    saveG(); if(matches.length === 0) addMatch(); refresh();
+</script>
+</body>
+</html>
