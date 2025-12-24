@@ -115,7 +115,6 @@
     function updatePlayerName(idx, side, name) {
         matches[idx][side].n = name;
         localStorage.setItem('billiard_vFinal_MVP_vFix', JSON.stringify(matches));
-        // We don't call refresh() here to prevent losing input focus
     }
 
     function calculateSplit(idx) {
@@ -152,8 +151,8 @@
                 </div>
                 <div style="padding:15px;display:grid;grid-template-columns:1fr 1fr;gap:20px;background:white;position:relative;color:#333;">
                     <div style="position:absolute; top:5px; left:50%; transform:translateX(-50%); font-weight:900; color:var(--purple); font-size:0.7rem;">INN: ${m.inn} | DB: ${m.deadTotal}</div>
-                    <div><b>${m.h.n||'Player'}</b> (SL${m.h.sl})<br>Balls: ${m.h.b}/${races[m.h.sl]}<br>TOs: ${m.h.toTotal}</div>
-                    <div><b>${m.a.n||'Player'}</b> (SL${m.a.sl})<br>Balls: ${m.a.b}/${races[m.a.sl]}<br>TOs: ${m.a.toTotal}</div>
+                    <div><b>${m.h.n||'Player'}</b> (SL${m.h.sl})<br>Balls: ${m.h.b}/${races[m.h.sl]}<br>TOs: ${m.h.toTotal} | DEF: ${m.h.d}</div>
+                    <div><b>${m.a.n||'Player'}</b> (SL${m.a.sl})<br>Balls: ${m.a.b}/${races[m.a.sl]}<br>TOs: ${m.a.toTotal} | DEF: ${m.a.d}</div>
                 </div>`;
             } else {
                 card.innerHTML = `<div class="head-active"><span>M${i+1}</span>
@@ -167,14 +166,14 @@
                         <button class="lag-btn ${m.lag==='h'?'lag-won':''}" onclick="setLag(${i},'h')">LAG WIN</button>
                         <select onchange="setSL(${i},'h',this.value)">${Object.keys(races).map(s=>`<option value="${s}" ${m.h.sl==s?'selected':''}>SL ${s}</option>`)}</select>
                         <div style="margin:5px 0;">${renderTO(i,'h')}</div><div class="ball-container">${renderB(i,'h')}</div>
-                        <div style="font-size:0.7rem;color:#333;">DEF: <b>${m.h.d}</b> <button onclick="adj(${i},'h','d',1)">+</button></div>
+                        <div style="font-size:0.7rem;color:#333;">DEF: <b>${m.h.d}</b> <button onclick="adj(${i},'h','d',1)">+</button> <button onclick="adj(${i},'h','d',-1)">-</button></div>
                         <div class="need-val">NEED: ${Math.max(0, races[m.h.sl] - m.h.b)}</div>
                     </div>
                     <div style="text-align:center;"><input value="${m.a.n}" oninput="updatePlayerName(${i},'a',this.value)" placeholder="Away Player">
                         <button class="lag-btn ${m.lag==='a'?'lag-won':''}" onclick="setLag(${i},'a')">LAG WIN</button>
                         <select onchange="setSL(${i},'a',this.value)">${Object.keys(races).map(s=>`<option value="${s}" ${m.a.sl==s?'selected':''}>SL ${s}</option>`)}</select>
                         <div style="margin:5px 0;">${renderTO(i,'a')}</div><div class="ball-container">${renderB(i,'a')}</div>
-                        <div style="font-size:0.7rem;color:#333;">DEF: <b>${m.a.d}</b> <button onclick="adj(${i},'a','d',1)">+</button></div>
+                        <div style="font-size:0.7rem;color:#333;">DEF: <b>${m.a.d}</b> <button onclick="adj(${i},'a','d',1)">+</button> <button onclick="adj(${i},'a','d',-1)">-</button></div>
                         <div class="need-val">NEED: ${Math.max(0, races[m.a.sl] - m.a.b)}</div>
                     </div>
                 </div>`;
@@ -257,7 +256,7 @@
         let txt = `🏆 MVP TV BILLIARDS\n${document.getElementById('team-h').value} vs ${document.getElementById('team-a').value}\n==========================\n`;
         matches.forEach((m, i) => {
             const s = calculateSplit(i);
-            txt += `M${i+1}: ${m.h.n||'H'} vs ${m.a.n||'A'}\nSCORE: ${s.h}-${s.a} | INN: ${m.inn} | TO: ${m.h.toTotal}/${m.a.toTotal}\n--------------------------\n`;
+            txt += `M${i+1}: ${m.h.n||'H'} vs ${m.a.n||'A'}\nSCORE: ${s.h}-${s.a} | INN: ${m.inn} | DEF: ${m.h.d}/${m.a.d} | TO: ${m.h.toTotal}/${m.a.toTotal}\n--------------------------\n`;
         });
         txt += `TOTAL: ${document.getElementById('h-total').innerText} - ${document.getElementById('a-total').innerText}`;
         return txt;
@@ -284,7 +283,6 @@
         });
     }
 
-    // Initialize Team Names from Storage
     document.getElementById('team-h').value = localStorage.getItem('team_h') || "";
     document.getElementById('team-a').value = localStorage.getItem('team_a') || "";
     saveG(); if(matches.length === 0) addMatch(); refresh();
