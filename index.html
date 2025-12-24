@@ -93,18 +93,35 @@
 </div>
 
 <script>
-    // Data derived from the "8-Ball Games Must Win Chart" (Left Side)
+    // Data from "8-Ball Games Must Win Chart"
     const raceTable = {
-        2: {2: "2/2", 3: "2/3", 4: "2/4", 5: "2/5", 6: "2/6", 7: "2/7"},
-        3: {2: "3/2", 3: "2/2", 4: "2/3", 5: "2/4", 6: "2/5", 7: "2/6"},
-        4: {2: "4/2", 3: "3/2", 4: "3/3", 5: "3/4", 6: "3/5", 7: "2/5"},
-        5: {2: "5/2", 3: "4/2", 4: "4/3", 5: "4/4", 6: "4/5", 7: "3/5"},
-        6: {2: "6/2", 3: "5/2", 4: "5/3", 5: "5/4", 6: "5/5", 7: "4/5"},
-        7: {2: "7/2", 3: "6/2", 4: "5/2", 5: "5/3", 6: "5/4", 7: "5/5"}
+        2: {2: [2,2], 3: [2,3], 4: [2,4], 5: [2,5], 6: [2,6], 7: [2,7]},
+        3: {2: [3,2], 3: [2,2], 4: [2,3], 5: [2,4], 6: [2,5], 7: [2,6]},
+        4: {2: [4,2], 3: [3,2], 4: [3,3], 5: [3,4], 6: [3,5], 7: [2,5]},
+        5: {2: [5,2], 3: [4,2], 4: [4,3], 5: [4,4], 6: [4,5], 7: [3,5]},
+        6: {2: [6,2], 3: [5,2], 4: [5,3], 5: [5,4], 6: [5,5], 7: [4,5]},
+        7: {2: [7,2], 3: [6,2], 4: [5,2], 5: [5,3], 6: [5,4], 7: [5,5]}
     };
 
     let matches = JSON.parse(localStorage.getItem('billiardOneScreenV6')) || [];
     let activeWin = { i: null, s: null };
+
+    function calculateMatchPoints(i) {
+        const m = matches[i];
+        const race = raceTable[m.h.sl][m.a.sl];
+        const hNeeded = race[0];
+        const aNeeded = race[1];
+
+        // Logic: Winner of the race gets 2 or 3 pts, loser gets 0 or 1
+        if (m.h.games >= hNeeded) {
+            m.hPts = 3; m.aPts = 0;
+        } else if (m.a.games >= aNeeded) {
+            m.aPts = 3; m.hPts = 0;
+        } else {
+            // Partial match points if not finished (optional safeguard)
+            m.hPts = 0; m.aPts = 0;
+        }
+    }
 
     function refresh() {
         localStorage.setItem('billiardOneScreenV6', JSON.stringify(matches));
@@ -115,38 +132,41 @@
         const aN = document.getElementById('a-team').value || 'AWAY';
 
         matches.forEach((m, i) => {
+            calculateMatchPoints(i);
             hTot += Number(m.hPts); aTot += Number(m.aPts);
             const card = document.createElement('div');
             card.className = 'match-card';
-            
-            // Calculate race based on Chart
-            const raceGoal = raceTable[m.h.sl][m.a.sl];
+            const race = raceTable[m.h.sl][m.a.sl];
+            const raceGoal = `${race[0]}/${race[1]}`;
 
             if (m.isDone) {
+                const lagWinnerName = m.lag === 'h' ? hN : (m.lag === 'a' ? aN : 'Not Recorded');
                 card.innerHTML = `
                     <div class="match-header">MATCH ${i+1} FINALIZED (${raceGoal}) <span style="text-decoration:underline;cursor:pointer" onclick="toggleEdit(${i})">Edit</span></div>
                     <div class="summary-view">
                         <div class="sum-row"><b>${m.h.name} (SL${m.h.sl})</b> <span class="score-pill">${m.hPts}</span></div>
                         <div style="font-size:0.65rem; margin-bottom:4px; color:#555;">
-                            Wins: ${m.h.games} [${m.h.gameList.join(',') || 'None'}] | DEF:${m.h.def} | TO:${m.h.to}
+                            Wins: ${m.h.games} / ${race[0]} [${m.h.gameList.join(',') || 'None'}] | DEF:${m.h.def} | TO:${m.h.to}
                         </div>
                         <div class="sum-row"><b>${m.a.name} (SL${m.a.sl})</b> <span class="score-pill">${m.aPts}</span></div>
                         <div style="font-size:0.65rem; margin-bottom:4px; color:#555;">
-                            Wins: ${m.a.games} [${m.a.gameList.join(',') || 'None'}] | DEF:${m.a.def} | TO:${m.a.to}
+                            Wins: ${m.a.games} / ${race[1]} [${m.a.gameList.join(',') || 'None'}] | DEF:${m.a.def} | TO:${m.a.to}
                         </div>
-                        <div class="hl-stat hl-inn" style="display:block; text-align:center;">Innings: ${m.inn}</div>
+                        <div class="hl-stat hl-inn" style="display:block; text-align:center;">
+                            Lag Winner: <b>${lagWinnerName}</b> | Innings: ${m.inn}
+                        </div>
                     </div>`;
             } else {
                 card.innerHTML = `
                     <div class="match-header">M${i+1} ACTIVE - RACE: ${raceGoal} <button onclick="setDone(${i})" style="background:var(--felt); color:white; border:none; border-radius:4px; padding:2px 6px;">FINISH</button></div>
                     <div class="lag-radios">
-                        <label><input type="radio" name="lag${i}" onclick="setLag(${i},'h')" ${m.lag==='h'?'checked':''}> ${hN.substring(0,8)} Lag</label>
-                        <label><input type="radio" name="lag${i}" onclick="setLag(${i},'a')" ${m.lag==='a'?'checked':''}> ${aN.substring(0,8)} Lag</label>
+                        <label><input type="radio" name="lag${i}" onclick="setLag(${i},'h')" ${m.lag==='h'?'checked':''}> ${hN.substring(0,10)} Lag</label>
+                        <label><input type="radio" name="lag${i}" onclick="setLag(${i},'a')" ${m.lag==='a'?'checked':''}> ${aN.substring(0,10)} Lag</label>
                     </div>
                     <div class="grid-main">${renderSide(i, 'h', m.h)}${renderSide(i, 'a', m.a)}</div>
                     <div class="pts-row">
-                        <div class="pts-cell">H-PTS:<select onchange="upPts(${i},'hPts',this.value)">${[0,1,2,3].map(n=>`<option ${m.hPts==n?'selected':''}>${n}</option>`)}</select></div>
-                        <div class="pts-cell">A-PTS:<select onchange="upPts(${i},'aPts',this.value)">${[0,1,2,3].map(n=>`<option ${m.aPts==n?'selected':''}>${n}</option>`)}</select></div>
+                        <div class="pts-cell">AUTO-PTS: <b>${m.hPts}</b></div>
+                        <div class="pts-cell">AUTO-PTS: <b>${m.aPts}</b></div>
                     </div>
                     <div style="text-align:center; padding:4px; font-size:0.65rem; background:#fff; border-top:1px solid #eee;">
                         INNINGS: <button class="btn" onclick="stepM(${i},'inn',-1)">-</button> <b>${m.inn}</b> <button class="btn" onclick="stepM(${i},'inn',1)">+</button>
@@ -174,26 +194,17 @@
         </div></div>`;
     }
 
-    function upSL(i, s, v) { 
-        matches[i][s].sl = parseInt(v); 
-        refresh(); // Refresh to update Race calculation
-    }
-
+    function upSL(i, s, v) { matches[i][s].sl = parseInt(v); refresh(); }
     function up(i, s, f, v) { matches[i][s][f] = v; localStorage.setItem('billiardOneScreenV6', JSON.stringify(matches)); }
-    function upPts(i, f, v) { matches[i][f] = v; refresh(); }
     function step(i, s, f, d) { if(f==='games' && d < 0) matches[i][s].gameList.pop(); matches[i][s][f] = Math.max(0, matches[i][s][f] + d); refresh(); }
     function stepM(i, f, d) { matches[i][f] = Math.max(0, matches[i][f] + d); refresh(); }
     function pop(i, s) { activeWin = {i, s}; document.getElementById('modal-overlay').style.display='flex'; }
-    
     function recordWin(t) {
-        const {i, s} = activeWin; 
-        matches[i][s].games++;
+        const {i, s} = activeWin; matches[i][s].games++;
         const gNum = matches[i].h.games + matches[i].a.games;
         matches[i][s].gameList.push("G" + gNum + (t==='Normal'?'':`(${t})`));
-        document.getElementById('modal-overlay').style.display='none'; 
-        refresh();
+        document.getElementById('modal-overlay').style.display='none'; refresh();
     }
-
     function addMatch() { if(matches.length < 5) { matches.push({ inn:0, hPts:0, aPts:0, lag:'', isDone:false, h:emptyS(), a:emptyS() }); refresh(); } }
     function emptyS() { return { name:'', sl:3, games:0, def:0, to:0, gameList:[] }; }
     function setLag(i, w) { matches[i].lag = w; refresh(); }
