@@ -38,7 +38,7 @@
             margin-bottom: 6px; overflow: hidden; border: 1px solid #ccc;
         }
 
-        /* ACTIVE MATCH CONTRAST & VERTICAL SPACE */
+        /* ACTIVE MATCH EXPANSION */
         .match-card.active {
             border: 2px solid var(--chalk);
             box-shadow: 0 0 15px rgba(52, 152, 219, 0.4);
@@ -64,14 +64,13 @@
             font-weight: bold; border: 1px solid var(--gold); font-size: 0.75rem;
         }
         
-        .hl-stat { font-size: 0.65rem; font-weight: bold; padding: 1px 4px; border-radius: 3px; }
-        .hl-inn { background: #fef9e7; color: #7d6608; border: 1px solid #f9e79f; }
+        .hl-inn { background: #fef9e7; color: #7d6608; border: 1px solid #f9e79f; padding: 1px 4px; border-radius: 3px; }
 
         .lag-prompt { font-size: 0.65rem; text-align: center; padding: 4px; font-weight: bold; color: #444; background: #d6eaf8; }
         .lag-radios { display: flex; justify-content: space-around; padding: 6px; background: #fff; border-bottom: 1px solid #ddd; font-size: 0.8rem;}
         
         .grid-main { display: grid; grid-template-columns: 1fr 1fr; background: #fff; flex-grow: 1; }
-        .side { padding: 8px; border-right: 1px solid #eee; display: flex; flex-direction: column; justify-content: space-evenly; }
+        .side { padding: 8px; border-right: 1px solid #eee; display: flex; flex-direction: column; justify-content: space-around; }
         
         input[type="text"], select { border: 1px solid #bbb; border-radius: 4px; padding: 5px; margin-bottom: 5px; font-size: 0.9rem; width: 100%; box-sizing: border-box;}
         
@@ -79,7 +78,7 @@
         .stat-box { background: #f8f9fa; border-radius: 5px; padding: 4px 8px; text-align: center; border: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
         .stat-label { font-size: 0.6rem; font-weight: bold; color: #666; }
         .stepper { display: flex; align-items: center; gap: 6px; }
-        .btn { width: 26px; height: 26px; border-radius: 4px; border: 1px solid #bbb; background: #fff; cursor: pointer; font-weight: bold; font-size: 1rem; }
+        .btn { width: 28px; height: 28px; border-radius: 4px; border: 1px solid #bbb; background: #fff; cursor: pointer; font-weight: bold; font-size: 1rem; }
 
         .pts-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; padding: 8px; background: #f1f3f5; border-top: 1px solid #ddd; align-items: center;}
         .pts-cell { font-size: 0.65rem; font-weight: bold; text-align: center; }
@@ -91,7 +90,6 @@
         #modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 2000; }
         .modal { background: #fff; padding: 15px; border-radius: 12px; width: 240px; text-align: center; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
         .win-btn { width: 100%; margin: 5px 0; padding: 12px; border-radius: 6px; border: 1px solid #ddd; font-weight: bold; background: #fff; color: #000; cursor: pointer; font-size: 0.9rem;}
-        .win-btn:active { background: #eee; }
     </style>
 </head>
 <body>
@@ -116,9 +114,8 @@
     <div id="match-container" style="flex-grow:1; display:flex; flex-direction:column;"></div>
 
     <div class="footer">
-        <div><span class="h-lbl">H</span>: <span id="team-h-total" style="color:var(--gold); font-size:1.2rem;">0</span></div>
-        <div style="font-size: 0.6rem; opacity: 0.7; align-self: center;">SCORECARD</div>
-        <div><span class="a-lbl">A</span>: <span id="team-a-total" style="color:var(--gold); font-size:1.2rem;">0</span></div>
+        <div><span class="h-lbl">HOME</span>: <span id="team-h-total" style="color:var(--gold); font-size:1.2rem;">0</span></div>
+        <div><span class="a-lbl">AWAY</span>: <span id="team-a-total" style="color:var(--gold); font-size:1.2rem;">0</span></div>
     </div>
 </div>
 
@@ -126,21 +123,23 @@
     <button class="action-btn" style="grid-column: span 2; background: var(--felt);" onclick="addMatch()">+ New Match</button>
     <button class="action-btn" style="background: var(--chalk);" onclick="exportJPG()">Save JPG</button>
     <button class="action-btn" style="background: var(--gold); color:#333;" onclick="exportText()">Copy Log</button>
-    <button class="action-btn" style="grid-column: span 2; background: #c0392b; font-size: 0.5rem; padding: 4px;" onclick="clearAll()">Reset All</button>
+    <button class="action-btn" style="grid-column: span 2; background: #c0392b; font-size: 0.55rem; padding: 5px;" onclick="clearAll()">Reset Session</button>
 </div>
 
 <script>
-    let matches = JSON.parse(localStorage.getItem('billiardV8')) || [];
+    // Unified Key for Storage to prevent "Not Working" on refresh
+    const STORAGE_KEY = 'billiardPro_v9';
+    let matches = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
     let activeWin = { i: null, s: null };
 
     function refresh() {
-        localStorage.setItem('billiardV8', JSON.stringify(matches));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(matches));
         const container = document.getElementById('match-container');
         container.innerHTML = '';
         let hTot = 0, aTot = 0;
+        
         const hN = document.getElementById('h-team').value || 'HOME';
         const aN = document.getElementById('a-team').value || 'AWAY';
-
         document.querySelectorAll('.h-lbl').forEach(el => el.innerText = hN);
         document.querySelectorAll('.a-lbl').forEach(el => el.innerText = aN);
 
@@ -152,17 +151,17 @@
             if (m.isDone) {
                 const lagName = m.lag === 'h' ? hN : aN;
                 card.innerHTML = `
-                    <div class="match-header">M${i+1} FINALIZED <span style="text-decoration:underline;cursor:pointer;font-size:0.6rem;" onclick="toggleEdit(${i})">EDIT</span></div>
+                    <div class="match-header">M${i+1} FINAL <span style="text-decoration:underline;cursor:pointer;font-size:0.6rem;" onclick="toggleEdit(${i})">EDIT</span></div>
                     <div class="summary-view">
-                        <div class="sum-row"><b>${m.h.name}</b> <span class="score-pill">${m.hPts}</span></div>
-                        <div class="sum-row"><b>${m.a.name}</b> <span class="score-pill">${m.aPts}</span></div>
-                        <div class="hl-stat hl-inn" style="display:block; text-align:center; font-size:0.6rem; margin-top: 4px;">
-                            LAG: ${lagName} | INN: ${m.inn}
+                        <div class="sum-row"><b>${m.h.name || 'Player'}</b> <span class="score-pill">${m.hPts}</span></div>
+                        <div class="sum-row"><b>${m.a.name || 'Player'}</b> <span class="score-pill">${m.aPts}</span></div>
+                        <div style="text-align:center; font-size:0.6rem; margin-top:4px;">
+                            <span class="hl-inn">INN: ${m.inn} | Lag: ${lagName}</span>
                         </div>
                     </div>`;
             } else {
                 card.innerHTML = `
-                    <div class="match-header">MATCH ${i+1} ACTIVE <button onclick="setDone(${i})" style="background:#fff; color:var(--chalk); border:none; border-radius:3px; padding:2px 8px; cursor:pointer; font-size: 0.6rem; font-weight:bold;">FINISH</button></div>
+                    <div class="match-header">MATCH ${i+1} ACTIVE <button onclick="setDone(${i})" style="background:#fff; color:var(--chalk); border:none; border-radius:3px; padding:2px 8px; cursor:pointer; font-weight:bold;">FINISH</button></div>
                     <div class="lag-prompt">LAG WINNER?</div>
                     <div class="lag-radios">
                         <label><input type="radio" name="lag${i}" onclick="setLag(${i},'h')" ${m.lag==='h'?'checked':''}> ${hN}</label>
@@ -173,9 +172,9 @@
                         ${renderSide(i, 'a', m.a)}
                     </div>
                     <div class="pts-row">
-                        <div class="pts-cell">${hN} PTS<select onchange="upPts(${i},'hPts',this.value)">${[0,1,2,3].map(n=>`<option ${m.hPts==n?'selected':''}>${n}</option>`)}</select></div>
-                        <div class="pts-cell">INN<div class="stepper" style="justify-content:center"><button class="btn" onclick="stepM(${i},'inn',-1)">-</button><b style="font-size:1.1rem">${m.inn}</b><button class="btn" onclick="stepM(${i},'inn',1)">+</button></div></div>
-                        <div class="pts-cell">${aN} PTS<select onchange="upPts(${i},'aPts',this.value)">${[0,1,2,3].map(n=>`<option ${m.aPts==n?'selected':''}>${n}</option>`)}</select></div>
+                        <div class="pts-cell">H PTS<select onchange="upPts(${i},'hPts',this.value)">${[0,1,2,3].map(n=>`<option ${m.hPts==n?'selected':''}>${n}</option>`)}</select></div>
+                        <div class="pts-cell">INN<div class="stepper" style="justify-content:center"><button class="btn" onclick="stepM(${i},'inn',-1)">-</button><b style="font-size:1.1rem; padding: 0 4px;">${m.inn}</b><button class="btn" onclick="stepM(${i},'inn',1)">+</button></div></div>
+                        <div class="pts-cell">A PTS<select onchange="upPts(${i},'aPts',this.value)">${[0,1,2,3].map(n=>`<option ${m.aPts==n?'selected':''}>${n}</option>`)}</select></div>
                     </div>`;
             }
             container.appendChild(card);
@@ -199,7 +198,7 @@
     function box(i, s, lbl, k, p=false) {
         return `<div class="stat-box"><span class="stat-label">${lbl}</span><div class="stepper">
             <button class="btn" onclick="step(${i},'${s}','${k}',-1)">-</button>
-            <span class="val" style="font-size: 0.9rem; font-weight: bold; min-width: 14px;">${matches[i][s][k]}</span>
+            <span style="font-size: 0.9rem; font-weight: bold; min-width: 14px;">${matches[i][s][k]}</span>
             <button class="btn" onclick="${p?`pop(${i},'${s}')`:`step(${i},'${s}','${k}',1)`}">+</button>
         </div></div>`;
     }
@@ -207,7 +206,7 @@
     function addMatch() { if(matches.length < 5) { matches.push({ inn:0, hPts:0, aPts:0, lag:'', isDone:false, h:emptyS(), a:emptyS() }); refresh(); } }
     function emptyS() { return { name:'', sl:3, games:0, def:0, to:0, gameList:[] }; }
     function setLag(i, w) { matches[i].lag = w; refresh(); }
-    function up(i, s, f, v) { matches[i][s][f] = v; localStorage.setItem('billiardV8', JSON.stringify(matches)); }
+    function up(i, s, f, v) { matches[i][s][f] = v; localStorage.setItem(STORAGE_KEY, JSON.stringify(matches)); }
     function upPts(i, f, v) { matches[i][f] = v; refresh(); }
     function step(i, s, f, d) { if(f==='games' && d < 0) matches[i][s].gameList.pop(); matches[i][s][f] = Math.max(0, matches[i][s][f] + d); refresh(); }
     function stepM(i, f, d) { matches[i][f] = Math.max(0, matches[i][f] + d); refresh(); }
@@ -220,11 +219,16 @@
     }
     function setDone(i) { matches[i].isDone = true; refresh(); }
     function toggleEdit(i) { matches[i].isDone = false; refresh(); }
-    function saveT() { localStorage.setItem('hTeam', document.getElementById('h-team').value); localStorage.setItem('awayTeam', document.getElementById('a-team').value); refresh(); }
-    function clearAll() { if(confirm("Clear session?")) { matches=[]; localStorage.clear(); refresh(); } }
-    function exportJPG() { html2canvas(document.getElementById('capture-area')).then(c => { const l=document.createElement('a'); l.download='score.jpg'; l.href=c.toDataURL(); l.click(); }); }
-    function exportText() { let t=""; matches.forEach((m,i)=>t+=`M${i+1}: ${m.h.name} vs ${m.a.name} (${m.hPts}-${m.aPts})\n`); navigator.clipboard.writeText(t); alert("Log Copied!"); }
+    function saveT() { 
+        localStorage.setItem('hTeam', document.getElementById('h-team').value); 
+        localStorage.setItem('awayTeam', document.getElementById('a-team').value); 
+        refresh(); 
+    }
+    function clearAll() { if(confirm("Reset all data?")) { matches=[]; localStorage.clear(); refresh(); } }
+    function exportJPG() { html2canvas(document.getElementById('capture-area')).then(c => { const l=document.createElement('a'); l.download='scorecard.jpg'; l.href=c.toDataURL(); l.click(); }); }
+    function exportText() { let t=""; matches.forEach((m,i)=>t+=`M${i+1}: ${m.h.name} vs ${m.a.name} (${m.hPts}-${m.aPts})\n`); navigator.clipboard.writeText(t); alert("Copied!"); }
     
+    // Initial Load
     document.getElementById('h-team').value = localStorage.getItem('hTeam') || '';
     document.getElementById('a-team').value = localStorage.getItem('awayTeam') || '';
     refresh();
