@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Billiard Pro League Scorer</title>
+    <title>MVPTV Billiard Scorer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { 
@@ -16,6 +16,9 @@
             background-image: radial-gradient(circle, #3d7a35 0%, #1a3a16 100%);
             margin: 0; padding: 5px; color: #fff; overflow-x: hidden;
         }
+        .logo-container { text-align: center; margin-bottom: 10px; padding: 10px; }
+        .logo-container img { max-width: 200px; height: auto; filter: drop-shadow(0 0 5px rgba(0,0,0,0.5)); }
+        
         .sheet { 
             background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(5px);
             border: 4px solid var(--wood); border-radius: 12px;
@@ -38,11 +41,6 @@
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
             font-weight: bold; border: 2px solid var(--gold); font-size: 0.8rem;
         }
-        .hl-stat { font-size: 0.65rem; font-weight: bold; padding: 2px 4px; border-radius: 4px; }
-        .hl-def { background: #d1f2eb; color: #0b5345; }
-        .hl-to { background: #d6eaf8; color: #1b4f72; }
-        .hl-inn { background: #fef9e7; color: #7d6608; border: 1px solid #f9e79f; }
-        .lag-radios { display: flex; justify-content: space-around; padding: 4px; background: #fff; border-bottom: 1px solid #ddd; font-size: 0.75rem; }
         .grid-main { display: grid; grid-template-columns: 1fr 1fr; background: #fff; }
         .side { padding: 5px; border-right: 1px solid #eee; }
         input[type="text"], select { border: 1px solid #ddd; border-radius: 4px; padding: 4px; margin-bottom: 4px; font-size: 0.8rem; width: 100%; }
@@ -51,8 +49,8 @@
         .stat-label { font-size: 0.5rem; font-weight: bold; color: #777; display: block; }
         .stepper { display: flex; align-items: center; justify-content: center; gap: 2px; }
         .btn { width: 20px; height: 20px; border-radius: 50%; border: 1px solid #ccc; background: #fff; cursor: pointer; font-size: 0.7rem; }
-        .pts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; padding: 6px; background: #f1f3f5; border-top: 1px solid #ddd; }
-        .footer { padding: 8px; border-top: 2px solid var(--gold); display: flex; justify-content: space-between; font-weight: bold; }
+        .pts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; padding: 6px; background: #f1f3f5; border-top: 1px solid #ddd; font-size: 0.7rem; font-weight: bold;}
+        .footer { padding: 8px; border-top: 2px solid var(--gold); display: flex; justify-content: space-between; font-weight: bold; font-size: 0.8rem; }
         .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 8px; }
         .action-btn { padding: 8px; border: none; border-radius: 8px; font-weight: bold; color: white; cursor: pointer; font-size: 0.7rem; }
         #modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 2000; }
@@ -61,6 +59,10 @@
     </style>
 </head>
 <body>
+
+<div class="logo-container">
+    <img src="https://i.imgur.com/8m4F7P6.png" alt="MVPTV LOGO">
+</div>
 
 <div id="modal-overlay">
     <div class="modal">
@@ -80,8 +82,8 @@
     </div>
     <div id="match-container"></div>
     <div class="footer">
-        <div>H: <span id="team-h-total" style="color:var(--gold); font-size:1.1rem;">0</span></div>
-        <div>A: <span id="team-a-total" style="color:var(--gold); font-size:1.1rem;">0</span></div>
+        <div><span id="footer-h-name">HOME</span>: <span id="team-h-total" style="color:var(--gold); font-size:1.1rem;">0</span></div>
+        <div><span id="footer-a-name">AWAY</span>: <span id="team-a-total" style="color:var(--gold); font-size:1.1rem;">0</span></div>
     </div>
 </div>
 
@@ -93,7 +95,7 @@
 </div>
 
 <script>
-    // Data from "8-Ball Games Must Win Chart"
+    // Race Table from Provided Chart
     const raceTable = {
         2: {2: [2,2], 3: [2,3], 4: [2,4], 5: [2,5], 6: [2,6], 7: [2,7]},
         3: {2: [3,2], 3: [2,2], 4: [2,3], 5: [2,4], 6: [2,5], 7: [2,6]},
@@ -106,21 +108,15 @@
     let matches = JSON.parse(localStorage.getItem('billiardOneScreenV6')) || [];
     let activeWin = { i: null, s: null };
 
-    function calculateMatchPoints(i) {
+    function calculatePoints(i) {
         const m = matches[i];
         const race = raceTable[m.h.sl][m.a.sl];
-        const hNeeded = race[0];
-        const aNeeded = race[1];
+        const hGoal = race[0];
+        const aGoal = race[1];
 
-        // Logic: Winner of the race gets 2 or 3 pts, loser gets 0 or 1
-        if (m.h.games >= hNeeded) {
-            m.hPts = 3; m.aPts = 0;
-        } else if (m.a.games >= aNeeded) {
-            m.aPts = 3; m.hPts = 0;
-        } else {
-            // Partial match points if not finished (optional safeguard)
-            m.hPts = 0; m.aPts = 0;
-        }
+        if (m.h.games >= hGoal) { m.hPts = 3; m.aPts = 0; }
+        else if (m.a.games >= aGoal) { m.aPts = 3; m.hPts = 0; }
+        else { m.hPts = 0; m.aPts = 0; }
     }
 
     function refresh() {
@@ -128,45 +124,43 @@
         const container = document.getElementById('match-container');
         container.innerHTML = '';
         let hTot = 0, aTot = 0;
-        const hN = document.getElementById('h-team').value || 'HOME';
-        const aN = document.getElementById('a-team').value || 'AWAY';
+        const hN = (document.getElementById('h-team').value || 'HOME').toUpperCase();
+        const aN = (document.getElementById('a-team').value || 'AWAY').toUpperCase();
+        
+        document.getElementById('footer-h-name').innerText = hN;
+        document.getElementById('footer-a-name').innerText = aN;
 
         matches.forEach((m, i) => {
-            calculateMatchPoints(i);
+            calculatePoints(i);
             hTot += Number(m.hPts); aTot += Number(m.aPts);
             const card = document.createElement('div');
             card.className = 'match-card';
             const race = raceTable[m.h.sl][m.a.sl];
-            const raceGoal = `${race[0]}/${race[1]}`;
 
             if (m.isDone) {
-                const lagWinnerName = m.lag === 'h' ? hN : (m.lag === 'a' ? aN : 'Not Recorded');
+                const lagName = m.lag === 'h' ? hN : (m.lag === 'a' ? aN : 'N/A');
                 card.innerHTML = `
-                    <div class="match-header">MATCH ${i+1} FINALIZED (${raceGoal}) <span style="text-decoration:underline;cursor:pointer" onclick="toggleEdit(${i})">Edit</span></div>
+                    <div class="match-header">MATCH ${i+1} FINALIZED (${race[0]}/${race[1]}) <span style="text-decoration:underline;cursor:pointer" onclick="toggleEdit(${i})">Edit</span></div>
                     <div class="summary-view">
                         <div class="sum-row"><b>${m.h.name} (SL${m.h.sl})</b> <span class="score-pill">${m.hPts}</span></div>
-                        <div style="font-size:0.65rem; margin-bottom:4px; color:#555;">
-                            Wins: ${m.h.games} / ${race[0]} [${m.h.gameList.join(',') || 'None'}] | DEF:${m.h.def} | TO:${m.h.to}
-                        </div>
+                        <div style="font-size:0.6rem; margin-bottom:4px; color:#666;">Wins: ${m.h.games}/${race[0]} | ${m.h.gameList.join(',')}</div>
                         <div class="sum-row"><b>${m.a.name} (SL${m.a.sl})</b> <span class="score-pill">${m.aPts}</span></div>
-                        <div style="font-size:0.65rem; margin-bottom:4px; color:#555;">
-                            Wins: ${m.a.games} / ${race[1]} [${m.a.gameList.join(',') || 'None'}] | DEF:${m.a.def} | TO:${m.a.to}
-                        </div>
-                        <div class="hl-stat hl-inn" style="display:block; text-align:center;">
-                            Lag Winner: <b>${lagWinnerName}</b> | Innings: ${m.inn}
+                        <div style="font-size:0.6rem; margin-bottom:4px; color:#666;">Wins: ${m.a.games}/${race[1]} | ${m.a.gameList.join(',')}</div>
+                        <div style="text-align:center; font-size:0.65rem; background:#eee; padding:3px; margin-top:5px; border-radius:4px;">
+                            LAG WINNER: <b>${lagName}</b> | INNINGS: ${m.inn}
                         </div>
                     </div>`;
             } else {
                 card.innerHTML = `
-                    <div class="match-header">M${i+1} ACTIVE - RACE: ${raceGoal} <button onclick="setDone(${i})" style="background:var(--felt); color:white; border:none; border-radius:4px; padding:2px 6px;">FINISH</button></div>
+                    <div class="match-header">M${i+1} ACTIVE - RACE: ${race[0]}/${race[1]} <button onclick="setDone(${i})" style="background:var(--felt); color:white; border:none; border-radius:4px; padding:2px 6px;">FINISH</button></div>
                     <div class="lag-radios">
-                        <label><input type="radio" name="lag${i}" onclick="setLag(${i},'h')" ${m.lag==='h'?'checked':''}> ${hN.substring(0,10)} Lag</label>
-                        <label><input type="radio" name="lag${i}" onclick="setLag(${i},'a')" ${m.lag==='a'?'checked':''}> ${aN.substring(0,10)} Lag</label>
+                        <label><input type="radio" name="lag${i}" onclick="setLag(${i},'h')" ${m.lag==='h'?'checked':''}> ${hN.substring(0,8)} LAG</label>
+                        <label><input type="radio" name="lag${i}" onclick="setLag(${i},'a')" ${m.lag==='a'?'checked':''}> ${aN.substring(0,8)} LAG</label>
                     </div>
                     <div class="grid-main">${renderSide(i, 'h', m.h)}${renderSide(i, 'a', m.a)}</div>
                     <div class="pts-row">
-                        <div class="pts-cell">AUTO-PTS: <b>${m.hPts}</b></div>
-                        <div class="pts-cell">AUTO-PTS: <b>${m.aPts}</b></div>
+                        <div>${hN}: <b>${m.hPts} PTS</b></div>
+                        <div>${aN}: <b>${m.aPts} PTS</b></div>
                     </div>
                     <div style="text-align:center; padding:4px; font-size:0.65rem; background:#fff; border-top:1px solid #eee;">
                         INNINGS: <button class="btn" onclick="stepM(${i},'inn',-1)">-</button> <b>${m.inn}</b> <button class="btn" onclick="stepM(${i},'inn',1)">+</button>
@@ -212,8 +206,8 @@
     function toggleEdit(i) { matches[i].isDone = false; refresh(); }
     function saveT() { localStorage.setItem('hTeam', document.getElementById('h-team').value); localStorage.setItem('awayTeam', document.getElementById('a-team').value); refresh(); }
     function clearAll() { if(confirm("Clear session?")) { matches=[]; localStorage.clear(); refresh(); } }
-    function exportJPG() { html2canvas(document.getElementById('capture-area')).then(c => { const l=document.createElement('a'); l.download='score.jpg'; l.href=c.toDataURL(); l.click(); }); }
-    function exportText() { let t=""; matches.forEach((m,i)=>t+=`M${i+1}: ${m.h.name} vs ${m.a.name} (${m.hPts}-${m.aPts})\n`); navigator.clipboard.writeText(t); alert("Copied!"); }
+    function exportJPG() { html2canvas(document.getElementById('capture-area')).then(c => { const l=document.createElement('a'); l.download='mvp_score.jpg'; l.href=c.toDataURL(); l.click(); }); }
+    function exportText() { let t=""; matches.forEach((m,i)=>t+=`M${i+1}: ${m.h.name} vs ${m.a.name} (${m.hPts}-${m.aPts})\n`); navigator.clipboard.writeText(t); alert("Log Copied!"); }
 
     document.getElementById('h-team').value = localStorage.getItem('hTeam') || '';
     document.getElementById('a-team').value = localStorage.getItem('awayTeam') || '';
