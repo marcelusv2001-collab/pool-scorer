@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Billiard Scorekeeper</title>
+    <title>Offline Billiard Scorekeeper</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { 
@@ -76,8 +76,11 @@
             text-transform: uppercase;
         }
 
-        .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 15px; }
-        .action-btn { padding: 12px; border: none; border-radius: 10px; font-weight: 800; color: white; cursor: pointer; text-transform: uppercase; font-size: 0.7rem; }
+        /* UPDATED BUTTON GRID */
+        .actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .action-btn { padding: 15px 5px; border: none; border-radius: 10px; font-weight: 800; color: white; cursor: pointer; text-transform: uppercase; font-size: 0.7rem; }
+        .full-row { grid-column: span 2; }
+        
         .mini-reset-btn { background: var(--danger); border: none; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.6rem; cursor: pointer; margin-left: 5px; }
     </style>
 </head>
@@ -124,11 +127,13 @@
     <div><span class="total-score-label" id="a-team-label">AWAY</span><div class="total-val" id="a-total">0</div></div>
 </div>
 
-<div class="actions">
-    <button class="action-btn" style="background: var(--felt); grid-column: span 2;" onclick="addMatch()">+ New Match</button>
-    <button class="action-btn" style="background: var(--chalk);" onclick="exportJPG()">Save JPG</button>
-    <button class="action-btn" style="background: var(--gold); color:#333;" onclick="copyLog()">Copy Log</button>
-    <button class="action-btn" style="background: var(--danger); grid-column: span 2;" onclick="confirmResetAll()">Reset All Sessions</button>
+<div class="actions-grid">
+    <button class="action-btn full-row" style="background: var(--felt);" onclick="addMatch()">+ New Match</button>
+    <button class="action-btn" style="background: var(--chalk);" onclick="exportJPG()">Save Image</button>
+    <button class="action-btn" style="background: #27ae60;" onclick="copyClipboard()">Copy To Clipboard</button>
+    <button class="action-btn" style="background: var(--gold); color:#333;" onclick="exportTXT()">Export To Txt</button>
+    <button class="action-btn" style="background: #9b59b6;" onclick="exportJPG()">Export Scorecard</button>
+    <button class="action-btn full-row" style="background: var(--danger);" onclick="confirmResetAll()">Reset All Sessions</button>
 </div>
 
 <script>
@@ -216,7 +221,6 @@
             container.appendChild(card);
         });
 
-        // Update Total Point Bar
         document.getElementById('h-total').innerText = grandTotalH;
         document.getElementById('a-total').innerText = grandTotalA;
         document.getElementById('h-team-label').innerText = document.getElementById('h-team').value || 'HOME';
@@ -247,7 +251,7 @@
 
     function upSL(i,s,v) { matches[i][s].sl=parseInt(v); refresh(); }
     function up(i,s,f,v) { matches[i][s][f]=v; localStorage.setItem(STORAGE_KEY, JSON.stringify(matches)); }
-    function st(i,s,f,d) { matches[i][s][f]=Math.max(0, matches[i][s][f]+d); refresh(); }
+    function st(i,s,f,d) { matches[i][s][f]=Math.max(0, matches[i][s][k]+d); refresh(); }
     function stM(i,f,d) { matches[i][f]=Math.max(0, matches[i][f]+d); refresh(); }
     function setLag(i,w) { matches[i].lag = w; refresh(); }
     function remW(i,s) { if(matches[i][s].games>0){matches[i][s].games--; matches[i][s].history.pop(); refresh();}}
@@ -264,7 +268,45 @@
     function setD(i){matches[i].done=true; refresh();}
     function toggleEdit(i){matches[i].done=false; refresh();}
     function saveT(){localStorage.setItem('hT', document.getElementById('h-team').value); localStorage.setItem('aT', document.getElementById('a-team').value); refresh();}
-    function exportJPG(){ html2canvas(document.getElementById('capture-area'), {backgroundColor: "#1a3a16"}).then(c=>{const l=document.createElement('a'); l.download='Scorecard.jpg'; l.href=c.toDataURL(); l.click();});}
+
+    // NEW EXPORT FUNCTIONS
+    function exportJPG(){ 
+        html2canvas(document.getElementById('capture-area'), {backgroundColor: "#1a3a16"}).then(c=>{
+            const l=document.createElement('a'); 
+            l.download='MVP_Scorecard.jpg'; 
+            l.href=c.toDataURL(); 
+            l.click();
+        });
+    }
+
+    function generateLogText() {
+        let text = `MVP TV Scorecard\n`;
+        text += `${document.getElementById('h-team').value || 'HOME'} vs ${document.getElementById('a-team').value || 'AWAY'}\n`;
+        text += `========================\n`;
+        matches.forEach((m, i) => {
+            text += `MATCH ${i+1}: ${m.h.name || 'H'} vs ${m.a.name || 'A'}\n`;
+            text += `Score: ${m.hPts} - ${m.aPts} | Inn: ${m.inn}\n`;
+            text += `------------------------\n`;
+        });
+        text += `TOTAL: ${document.getElementById('h-total').innerText} - ${document.getElementById('a-total').innerText}`;
+        return text;
+    }
+
+    function exportTXT() {
+        const text = generateLogText();
+        const blob = new Blob([text], { type: 'text/plain' });
+        const l = document.createElement('a');
+        l.download = 'MVP_Score_Log.txt';
+        l.href = window.URL.createObjectURL(blob);
+        l.click();
+    }
+
+    function copyClipboard() {
+        const text = generateLogText();
+        navigator.clipboard.writeText(text).then(() => {
+            showDialog("Log copied to clipboard!", false);
+        });
+    }
 
     document.getElementById('h-team').value = localStorage.getItem('hT') || '';
     document.getElementById('a-team').value = localStorage.getItem('aT') || '';
