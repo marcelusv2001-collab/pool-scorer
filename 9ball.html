@@ -28,7 +28,6 @@
         
         .ball-container { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 10px 0; }
         .ball { width: 38px; height: 38px; border-radius: 50%; border: 1px solid #aaa; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 900; color: #fff; cursor: pointer; text-shadow: 1px 1px 1px #000; box-shadow: inset -2px -2px 4px rgba(0,0,0,0.5); }
-        /* Gray background for selected balls */
         .ball-selected { background-color: var(--selected-gray) !important; border: 3px solid #000; transform: scale(1.1); box-shadow: none; text-shadow: none; }
         
         .b1,.b9{background:#ffea00; color:#000; text-shadow:none} .b9{border:2px dashed #000}
@@ -76,7 +75,7 @@
 
 <script>
     const raceReq = { 1:14, 2:19, 3:25, 4:31, 5:38, 6:46, 7:55, 8:65, 9:75 };
-    const STORE_KEY = 'mvp_9ball_v6_gray';
+    const STORE_KEY = 'mvp_9ball_v7_stable';
     let matches = JSON.parse(localStorage.getItem(STORE_KEY)) || [];
 
     function saveTeams() {
@@ -90,6 +89,12 @@
         document.getElementById('team-h').value = localStorage.getItem('mvp_team_h') || "";
         document.getElementById('team-a').value = localStorage.getItem('mvp_team_a') || "";
         saveTeams();
+    }
+
+    function updatePlayer(idx, side, field, val) {
+        matches[idx][side][field] = val;
+        localStorage.setItem(STORE_KEY, JSON.stringify(matches));
+        // We don't call refresh() on every keystroke to prevent losing focus
     }
 
     function refresh() {
@@ -111,8 +116,8 @@
                 card.innerHTML = `
                     <div class="head-done">M${i+1} FINAL | ${hPts} - ${aPts} <button onclick="toggleEdit(${i})" style="margin-left:auto; font-size:0.6rem;">EDIT</button></div>
                     <div style="display:grid; grid-template-columns:1fr 1fr; padding:15px; text-align:center;">
-                        <div><b>${m.h.name || 'Player'}</b><br>${m.h.balls}/${hR}<br><small>TOs Used: ${m.h.toTotal}</small></div>
-                        <div><b>${m.a.name || 'Player'}</b><br>${m.a.balls}/${aR}<br><small>TOs Used: ${m.a.toTotal}</small></div>
+                        <div><b>${m.h.name || 'Player'}</b><br>SL:${m.h.sl} | ${m.h.balls}/${hR}<br><small>TOs Used: ${m.h.toTotal}</small></div>
+                        <div><b>${m.a.name || 'Player'}</b><br>SL:${m.a.sl} | ${m.a.balls}/${aR}<br><small>TOs Used: ${m.a.toTotal}</small></div>
                     </div>`;
             } else {
                 card.innerHTML = `
@@ -120,16 +125,16 @@
                     <div style="display:grid; grid-template-columns:1fr 1fr; padding:10px; gap:10px;">
                         <div style="text-align:center;">
                             <button class="lag-btn ${m.h.lag?'lag-won':''}" onclick="toggleLag(${i},'h')">LAG WINNER</button>
-                            <input placeholder="Home Player" value="${m.h.name}" oninput="matches[${i}].h.name=this.value">
-                            <select onchange="matches[${i}].h.sl=this.value; refresh()">${Object.keys(raceReq).map(n=>`<option value="${n}" ${m.h.sl==n?'selected':''}>SL ${n}</option>`)}</select>
+                            <input placeholder="Home Player" value="${m.h.name}" onchange="updatePlayer(${i},'h','name',this.value)">
+                            <select onchange="updatePlayer(${i},'h','sl',this.value); refresh()">${Object.keys(raceReq).map(n=>`<option value="${n}" ${m.h.sl==n?'selected':''}>SL ${n}</option>`)}</select>
                             <div style="margin:5px 0;">${renderTOs(i, 'h')}</div>
                             <div class="ball-container">${renderBalls(i, 'h')}</div>
                             <div class="stat-box">PTS: ${m.h.balls}</div>
                         </div>
                         <div style="text-align:center;">
                             <button class="lag-btn ${m.a.lag?'lag-won':''}" onclick="toggleLag(${i},'a')">LAG WINNER</button>
-                            <input placeholder="Away Player" value="${m.a.name}" oninput="matches[${i}].a.name=this.value">
-                            <select onchange="matches[${i}].a.sl=this.value; refresh()">${Object.keys(raceReq).map(n=>`<option value="${n}" ${m.a.sl==n?'selected':''}>SL ${n}</option>`)}</select>
+                            <input placeholder="Away Player" value="${m.a.name}" onchange="updatePlayer(${i},'a','name',this.value)">
+                            <select onchange="updatePlayer(${i},'a','sl',this.value); refresh()">${Object.keys(raceReq).map(n=>`<option value="${n}" ${m.a.sl==n?'selected':''}>SL ${n}</option>`)}</select>
                             <div style="margin:5px 0;">${renderTOs(i, 'a')}</div>
                             <div class="ball-container">${renderBalls(i, 'a')}</div>
                             <div class="stat-box">PTS: ${m.a.balls}</div>
@@ -187,7 +192,7 @@
         const hp = m.cur.h.reduce((acc, n) => acc + (n === 9 ? 2 : 1), 0);
         const ap = m.cur.a.reduce((acc, n) => acc + (n === 9 ? 2 : 1), 0);
         if (num === 9 || (hp + ap + m.dbCur) >= 10) {
-            setTimeout(() => { if(confirm("End current rack? (Timeouts will reset for next rack)")) recordRack(mIdx); refresh(); }, 30);
+            setTimeout(() => { if(confirm("End current rack?")) recordRack(mIdx); refresh(); }, 30);
         }
         refresh();
     }
@@ -199,7 +204,7 @@
         m.h.balls = Math.min(raceReq[m.h.sl], m.h.balls + hAdd);
         m.a.balls = Math.min(raceReq[m.a.sl], m.a.balls + aAdd);
         m.dbCur = 0; m.cur = { h: [], a: [] };
-        m.h.toCur = 0; m.a.toCur = 0; // Reset TO indicators for the next rack
+        m.h.toCur = 0; m.a.toCur = 0;
     }
 
     function calc9Pts(p, t, op, ot) {
