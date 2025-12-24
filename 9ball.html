@@ -3,7 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MVP TV Scorekeeper PRO</title>
+    
+    <title>8-Ball 3PT | 9-Ball 20PT</title>
+    <meta name="apple-mobile-web-app-title" content="8B 3PT | 9B 20PT">
+    <meta name="application-name" content="8B 3PT | 9B 20PT">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <link rel="manifest" id="pwa-manifest">
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { --slate: #1a1a1a; --gold: #f1c40f; --purple: #6a0dad; --danger: #e74c3c; }
@@ -18,7 +26,7 @@
         .logo-box { background: white; padding: 8px 20px; border-radius: 12px; border: 3px solid var(--gold); display: inline-block; }
         .logo-mvp { color:#00FF00; font-size: 26px; font-weight: 900; }
         .logo-tv { color:#FF0000; font-size: 34px; font-style: italic; font-weight: 900; margin-left: -5px; }
-        .sub-logo { display: block; color: white; font-size: 0.9rem; font-weight: 300; letter-spacing: 1px; margin-top: 5px; opacity: 0.9; }
+        .sub-logo { display: block; color: white; font-size: 0.9rem; font-weight: 700; letter-spacing: 1px; margin-top: 8px; }
         
         .match-card { border-radius: 15px; margin-bottom: 15px; overflow: hidden; color: #333; background: white; border: 2px solid var(--gold); }
         .card-done { border-left: 12px solid var(--purple); opacity: 0.98; }
@@ -44,7 +52,6 @@
         
         .total-score-bar { background: #000; color: var(--gold); padding: 20px; border-radius: 15px; margin: 15px 0; display: grid; grid-template-columns: 1fr auto 1fr; text-align: center; border: 3px solid var(--gold); }
         
-        /* New Button Grid Styling */
         .button-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
         .action-btn { width: 100%; padding: 18px; border: none; border-radius: 12px; font-weight: 900; color: white; cursor: pointer; font-size: 0.9rem; }
         .long-btn { grid-column: span 2; margin-top: 10px; }
@@ -58,7 +65,7 @@
 
 <div class="branding">
     <div class="logo-box"><span class="logo-mvp">MVP</span><span class="logo-tv">TV</span></div>
-    <span class="sub-logo">Billiard Offline Scorekeeper</span>
+    <span class="sub-logo">8-Ball 3PT System | 9-Ball 20PT System</span>
 </div>
 
 <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
@@ -84,6 +91,19 @@
 </div>
 
 <script>
+    // --- APP HUB CONFIG ---
+    const myManifest = {
+        "name": "8-Ball 3PT | 9-Ball 20PT System",
+        "short_name": "8B 3PT | 9B 20PT",
+        "start_url": ".",
+        "display": "standalone",
+        "background_color": "#1a1a1a",
+        "theme_color": "#6a0dad"
+    };
+    const blob = new Blob([JSON.stringify(myManifest)], {type: 'application/json'});
+    document.getElementById('pwa-manifest').setAttribute('href', URL.createObjectURL(blob));
+
+    // --- LOGIC ---
     const races = { 1:14, 2:19, 3:25, 4:31, 5:38, 6:46, 7:55, 8:65, 9:75 };
     const scoreChart = {
         1: [2, 3, 4, 6, 7, 8, 10, 11, 13], 2: [3, 5, 7, 8, 10, 12, 14, 16, 18],
@@ -116,11 +136,6 @@
         localStorage.setItem('team_a', a);
         document.getElementById('disp-h').innerText = h || "HOME";
         document.getElementById('disp-a').innerText = a || "AWAY";
-    }
-
-    function updatePlayerName(idx, side, name) {
-        matches[idx][side].n = name;
-        localStorage.setItem('billiard_vFinal_MVP_vFix', JSON.stringify(matches));
     }
 
     function calculateSplit(idx) {
@@ -168,14 +183,14 @@
                     <button onclick="finM(${i})" style="background:black;color:white;border:none;padding:4px 8px;font-size:0.7rem;">FINISH</button></div>
                 </div>
                 <div style="padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                    <div style="text-align:center;"><input value="${m.h.n}" oninput="updatePlayerName(${i},'h',this.value)" placeholder="Home Player">
+                    <div style="text-align:center;"><input value="${m.h.n}" oninput="matches[${i}].h.n=this.value;saveG()" placeholder="Home Player">
                         <button class="lag-btn ${m.lag==='h'?'lag-won':''}" onclick="setLag(${i},'h')">LAG WIN</button>
                         <select onchange="setSL(${i},'h',this.value)">${Object.keys(races).map(s=>`<option value="${s}" ${m.h.sl==s?'selected':''}>SL ${s}</option>`)}</select>
                         <div style="margin:5px 0;">${renderTO(i,'h')}</div><div class="ball-container">${renderB(i,'h')}</div>
                         <div style="font-size:0.7rem;color:#333;">DEF: <b>${m.h.d}</b> <button onclick="adj(${i},'h','d',1)">+</button> <button onclick="adj(${i},'h','d',-1)">-</button></div>
                         <div class="need-val">NEED: ${Math.max(0, races[m.h.sl] - m.h.b)}</div>
                     </div>
-                    <div style="text-align:center;"><input value="${m.a.n}" oninput="updatePlayerName(${i},'a',this.value)" placeholder="Away Player">
+                    <div style="text-align:center;"><input value="${m.a.n}" oninput="matches[${i}].a.n=this.value;saveG()" placeholder="Away Player">
                         <button class="lag-btn ${m.lag==='a'?'lag-won':''}" onclick="setLag(${i},'a')">LAG WIN</button>
                         <select onchange="setSL(${i},'a',this.value)">${Object.keys(races).map(s=>`<option value="${s}" ${m.a.sl==s?'selected':''}>SL ${s}</option>`)}</select>
                         <div style="margin:5px 0;">${renderTO(i,'a')}</div><div class="ball-container">${renderB(i,'a')}</div>
@@ -249,7 +264,7 @@
 
     function resetM(i) {
         showM("RESET MATCH", "Wipe M" + (i+1) + "?", [{ text: "WIPE", color: "red", f: () => { 
-            matches[i] = { done:false, lag:null, dead:[], deadTotal:0, inn:0, h:{n:'',sl:3,b:0,d:0,toCur:0,toTotal:0}, a:{n:'',sl:3,b:0,d:0,toCur:0,toTotal:0},_cur:{h:[],a:[]} }; 
+            matches[i] = { done:false, lag:null, dead:[], deadTotal:0, inn:0, h:{n:'',sl:3,b:0,d:0,toCur:0,toTotal:0}, a:{n:'',sl:3,b:0,d:0,toCur:0,toTotal:0}, cur:{h:[],a:[]} }; 
             refresh(); 
         } }, { text: "CANCEL", f: () => {} }]);
     }
