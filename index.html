@@ -7,26 +7,27 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { --border: #000; --bg: #f8f9fa; --accent: #2c3e50; }
-        body { font-family: -apple-system, sans-serif; background: #444; margin: 0; padding: 5px; overflow-x: hidden; }
+        body { font-family: -apple-system, sans-serif; background: #333; margin: 0; padding: 5px; color: #000; }
         .sheet { background: white; border: 2px solid var(--border); max-width: 500px; margin: auto; padding: 10px; min-height: 95vh; display: flex; flex-direction: column; }
         
-        /* Match Containers */
+        .team-header { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 10px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+        .team-header input { font-weight: bold; text-align: center; background: #eee; border: 1px solid #000; font-size: 0.9rem; }
+
         .match-card { border: 1px solid #000; margin-bottom: 8px; border-radius: 4px; overflow: hidden; }
         .match-header { background: var(--accent); color: white; padding: 6px 10px; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center; }
         
-        /* Summary Mode */
-        .summary-view { padding: 10px; background: #e9ecef; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; }
-        .summary-info { flex: 2; line-height: 1.4; }
+        .summary-view { padding: 10px; background: #e9ecef; line-height: 1.4; font-size: 0.85rem; }
+        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 5px; border-top: 1px solid #ccc; padding-top: 5px; }
         .edit-link { color: #007bff; text-decoration: underline; font-size: 0.75rem; cursor: pointer; }
 
-        /* Active Mode */
+        .active-view { background: #fff; }
+        .lag-row { background: #f1f3f5; padding: 5px; text-align: center; border-bottom: 1px solid #000; font-size: 0.7rem; font-weight: bold; }
         .grid-main { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid #000; }
         .side { padding: 8px; border-right: 1px solid #ddd; }
         .side:last-child { border-right: none; }
         .side-label { font-size: 0.65rem; font-weight: bold; text-transform: uppercase; color: #666; }
         
         input, select { width: 100%; border: 1px solid #ccc; border-radius: 3px; padding: 4px; margin-bottom: 4px; font-size: 0.9rem; box-sizing: border-box; }
-        
         .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 5px; }
         .stat-box { border: 1px solid #eee; padding: 3px; border-radius: 3px; text-align: center; }
         .stat-label { font-size: 0.6rem; font-weight: bold; display: block; }
@@ -38,12 +39,10 @@
         .pts-row { display: flex; justify-content: space-around; padding: 8px; background: #f1f3f5; border-top: 1px solid #ddd; font-size: 0.8rem; font-weight: bold; }
         .pts-row input { width: 45px; margin: 0; text-align: center; border: 1px solid #000; }
 
-        /* Modal */
         #modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 2000; }
         .modal { background: white; padding: 15px; border-radius: 8px; width: 260px; text-align: center; }
         .modal button { display: block; width: 100%; margin: 8px 0; padding: 12px; font-weight: bold; cursor: pointer; border: 1px solid #333; border-radius: 5px; }
 
-        /* Footer & Actions */
         .footer { margin-top: auto; padding: 10px; border-top: 2px solid #000; display: flex; justify-content: space-between; font-weight: bold; font-size: 0.9rem; }
         .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 5px; }
         .action-btn { padding: 10px; border: 1px solid #000; font-weight: bold; cursor: pointer; font-size: 0.75rem; text-transform: uppercase; border-radius: 4px; }
@@ -53,7 +52,7 @@
 
 <div id="modal-overlay">
     <div class="modal">
-        <h3 style="margin-top:0;">Game Won Type</h3>
+        <h3 style="margin-top:0;">Game Win Type</h3>
         <button onclick="recordWinType('8BB')">8-Ball Break (8BB)</button>
         <button onclick="recordWinType('B&R')">Break & Run (B&R)</button>
         <button onclick="recordWinType('S8')" style="background:#fff2f2; color:#d63031;">Scratch on 8 (S8)</button>
@@ -64,8 +63,9 @@
 </div>
 
 <div id="capture-area" class="sheet">
-    <div style="text-align:center; border-bottom:1px solid #000; padding-bottom:5px;">
-        <strong style="font-size: 1rem;">8-BALL LEAGUE COMPANION</strong>
+    <div class="team-header">
+        <div><label style="font-size:0.6rem;">HOME TEAM</label><input type="text" id="home-team-name" oninput="saveTeams()" placeholder="HOME TEAM"></div>
+        <div><label style="font-size:0.6rem;">AWAY TEAM</label><input type="text" id="away-team-name" oninput="saveTeams()" placeholder="AWAY TEAM"></div>
     </div>
 
     <div id="match-container" style="flex-grow:1;"></div>
@@ -95,7 +95,6 @@
 
         matches.forEach((m, i) => {
             hTotal += Number(m.homePts); aTotal += Number(m.awayPts);
-            
             const card = document.createElement('div');
             card.className = 'match-card';
             
@@ -103,15 +102,26 @@
                 card.innerHTML = `
                     <div class="match-header">MATCH ${i+1} - FINISHED <span class="edit-link" onclick="toggleEdit(${i})">Edit</span></div>
                     <div class="summary-view">
-                        <div class="summary-info">
-                            <strong>${m.home.name || 'H'}</strong> (SL${m.home.sl}) vs <strong>${m.away.name || 'A'}</strong> (SL${m.away.sl})<br>
-                            Innings: ${m.innings} | Win types: ${getWinSummary(m)}
+                        <strong>${m.home.name || 'H'}</strong> (SL${m.home.sl}) vs <strong>${m.away.name || 'A'}</strong> (SL${m.away.sl})<br>
+                        <small>Lag: ${m.lagWinner.toUpperCase()} | Innings: ${m.innings} | Points: ${m.homePts}-${m.awayPts}</small>
+                        <div class="summary-grid">
+                            <div>
+                                <b>HOME:</b><br>
+                                Won: ${m.home.games} | Def: ${m.home.def} | T.O: ${m.home.timeouts}
+                            </div>
+                            <div>
+                                <b>AWAY:</b><br>
+                                Won: ${m.away.games} | Def: ${m.away.def} | T.O: ${m.away.timeouts}
+                            </div>
                         </div>
-                        <div style="text-align:right; font-weight:bold; font-size:1.1rem;">${m.homePts} - ${m.awayPts}</div>
                     </div>`;
             } else {
                 card.innerHTML = `
                     <div class="match-header">MATCH ${i+1} - ACTIVE <button onclick="setComplete(${i})" style="font-size:0.6rem;">DONE</button></div>
+                    <div class="lag-row">
+                        LAG: <input type="radio" name="lag${i}" onclick="upLag(${i},'home')" ${m.lagWinner==='home'?'checked':''}> H
+                        <input type="radio" name="lag${i}" onclick="upLag(${i},'away')" ${m.lagWinner==='away'?'checked':''}> A
+                    </div>
                     <div class="grid-main">
                         ${renderSide(i, 'home', m.home)}
                         ${renderSide(i, 'away', m.away)}
@@ -120,7 +130,7 @@
                         <div>HOME PTS: <input type="number" value="${m.homePts}" oninput="upPts(${i}, 'homePts', this.value)"></div>
                         <div>AWAY PTS: <input type="number" value="${m.awayPts}" oninput="upPts(${i}, 'awayPts', this.value)"></div>
                     </div>
-                    <div style="text-align:center; padding:5px; border-top:1px solid #eee;">
+                    <div style="text-align:center; padding:5px;">
                         INN: <button class="btn" onclick="stepM(${i}, 'innings', -1)">-</button>
                         <span class="val">${m.innings}</span>
                         <button class="btn" onclick="stepM(${i}, 'innings', 1)">+</button>
@@ -128,6 +138,8 @@
             }
             container.appendChild(card);
         });
+        document.getElementById('home-team-name').value = localStorage.getItem('homeTeam') || '';
+        document.getElementById('away-team-name').value = localStorage.getItem('awayTeam') || '';
         document.getElementById('team-h').innerText = hTotal;
         document.getElementById('team-a').innerText = aTotal;
         document.getElementById('m-count').innerText = matches.length;
@@ -143,7 +155,7 @@
                 </select>
                 <div class="stat-grid">
                     ${box(idx, side, 'WON', 'games', true)}
-                    ${box(idx, side, 'TO', 'timeouts')}
+                    ${box(idx, side, 'T.O', 'timeouts')}
                     ${box(idx, side, 'DEF', 'def')}
                 </div>
             </div>`;
@@ -151,20 +163,20 @@
 
     function box(idx, side, lbl, key, pop=false) {
         return `<div class="stat-box"><span class="stat-label">${lbl}</span><div class="stepper">
-            <button class="btn" onclick="step(${idx}, '${side}', '${key}', -1)">-</button>
+            <button class="btn" style="width:24px; height:24px;" onclick="step(${idx}, '${side}', '${key}', -1)">-</button>
             <span class="val">${matches[idx][side][key]}</span>
-            <button class="btn" onclick="${pop ? `pop(${idx}, '${side}')` : `step(${idx}, '${side}', '${key}', 1)`}">+</button>
+            <button class="btn" style="width:24px; height:24px;" onclick="${pop ? `pop(${idx}, '${side}')` : `step(${idx}, '${side}', '${key}', 1)`}">+</button>
         </div></div>`;
     }
 
-    function getWinSummary(m) {
-        const types = [];
-        ['home','away'].forEach(s => Object.entries(m[s].winTypes).forEach(([k,v]) => { if(v>0) types.push(`${k}x${v}`); }));
-        return types.join(', ') || 'None';
+    function saveTeams() {
+        localStorage.setItem('homeTeam', document.getElementById('home-team-name').value);
+        localStorage.setItem('awayTeam', document.getElementById('away-team-name').value);
     }
 
     function addMatch() { if(matches.length < 5) { matches.push(newMatchObj()); refresh(); } }
-    function newMatchObj() { return { innings: 0, homePts: 0, awayPts: 0, isComplete: false, home: { name: '', sl: 3, games: 0, def: 0, timeouts: 0, winTypes: { '8BB':0, 'B&R':0, 'S8':0, 'E8':0, 'WP':0 } }, away: { name: '', sl: 3, games: 0, def: 0, timeouts: 0, winTypes: { '8BB':0, 'B&R':0, 'S8':0, 'E8':0, 'WP':0 } } }; }
+    function newMatchObj() { return { innings: 0, homePts: 0, awayPts: 0, lagWinner: '', isComplete: false, home: { name: '', sl: 3, games: 0, def: 0, timeouts: 0, winTypes: { '8BB':0, 'B&R':0, 'S8':0, 'E8':0, 'WP':0 } }, away: { name: '', sl: 3, games: 0, def: 0, timeouts: 0, winTypes: { '8BB':0, 'B&R':0, 'S8':0, 'E8':0, 'WP':0 } } }; }
+    function upLag(i, w) { matches[i].lagWinner = w; refresh(); }
     function up(i, s, f, v) { matches[i][s][f] = v; localStorage.setItem('billiardOneScreen', JSON.stringify(matches)); }
     function upPts(i, f, v) { matches[i][f] = v; refresh(); }
     function step(i, s, f, d) { matches[i][s][f] = Math.max(0, matches[i][s][f] + d); refresh(); }
