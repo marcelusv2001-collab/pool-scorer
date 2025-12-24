@@ -3,380 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Billiard Pro Backup</title>
+    <title>8-Ball Offline Scorer</title>
     <link rel="manifest" href="manifest.json">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        :root { --bg: #f4f7f6; --text: #2c3e50; --accent: #27ae60; --table-border: #bdc3c7; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text); padding: 10px; margin: 0; }
-        .scoresheet { background: white; border: 2px solid var(--text); padding: 10px; max-width: 600px; margin: auto; }
-        h2 { text-transform: uppercase; border-bottom: 2px solid var(--text); padding-bottom: 5px; margin-top: 0; }
+        :root { --apa-blue: #0056b3; --border: #333; }
+        body { font-family: "Courier New", Courier, monospace; background: #999; margin: 0; padding: 10px; }
+        .paper { background: #fff; border: 1px solid var(--border); max-width: 600px; margin: auto; padding: 20px; box-shadow: 10px 10px 0px rgba(0,0,0,0.2); }
+        .header-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 2px solid var(--border); }
+        .header-table td { border: 1px solid var(--border); padding: 5px; font-size: 0.8rem; }
         
-        .grid-row { display: flex; border-bottom: 1px solid var(--table-border); padding: 10px 0; align-items: center; }
-        .label { flex: 2; font-weight: bold; font-size: 0.9rem; }
-        .controls { flex: 1; display: flex; justify-content: space-around; align-items: center; }
+        .match-section { border: 2px solid var(--border); margin-bottom: 10px; }
+        .player-row { display: flex; background: #eee; border-bottom: 2px solid var(--border); }
+        .player-info { flex: 2; padding: 10px; border-right: 2px solid var(--border); }
+        .score-box { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fff; }
         
-        .btn-step { background: #eee; border: 1px solid #ccc; width: 35px; height: 35px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; }
-        .val { font-size: 1.3rem; font-weight: bold; width: 30px; text-align: center; }
+        .grid-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; padding: 10px; background: #fff; }
+        .stat-btn-group { display: flex; align-items: center; justify-content: space-between; border: 1px solid #ccc; padding: 5px; border-radius: 4px; }
         
-        .totals-box { background: #ecf0f1; padding: 15px; margin-top: 20px; border-radius: 8px; }
-        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        button.primary { padding: 15px; background: var(--accent); color: white; border: none; border-radius: 5px; font-weight: bold; }
-        button.secondary { padding: 15px; background: #2980b9; color: white; border: none; border-radius: 5px; font-weight: bold; }
+        .btn { width: 35px; height: 35px; border: 1px solid var(--border); background: #f0f0f0; font-weight: bold; cursor: pointer; }
+        .btn:active { background: #ccc; }
+        .val { font-size: 1.2rem; font-weight: bold; width: 30px; text-align: center; }
+
+        .action-menu { position: sticky; bottom: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; padding: 10px; background: #999; }
+        button.main { padding: 15px; border: 2px solid #000; font-weight: bold; cursor: pointer; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
-<div id="capture-area" class="scoresheet">
-    <h2>Billiard Match Backup</h2>
-    
-    <div class="grid-row">
-        <div class="label">Total Innings</div>
-        <div class="controls">
-            <button class="btn-step" onclick="step('innings', -1)">-</button>
-            <span id="innings" class="val">0</span>
-            <button class="btn-step" onclick="step('innings', 1)">+</button>
-        </div>
-    </div>
+<div id="capture-area" class="paper">
+    <table class="header-table">
+        <tr>
+            <td colspan="2"><strong>8-BALL SCORESHEET</strong></td>
+            <td>WEEK: <input type="text" style="width:40px; border:none; border-bottom:1px solid #000;"></td>
+        </tr>
+    </table>
 
-    <div class="grid-row">
-        <div class="label">Defensive Shots</div>
-        <div class="controls">
-            <button class="btn-step" onclick="step('defensive', -1)">-</button>
-            <span id="defensive" class="val">0</span>
-            <button class="btn-step" onclick="step('defensive', 1)">+</button>
-        </div>
-    </div>
+    <div id="match-list"></div>
 
-    <div class="grid-row">
-        <div class="label">Dead Balls (9-Ball)</div>
-        <div class="controls">
-            <button class="btn-step" onclick="step('dead', -1)">-</button>
-            <span id="dead" class="val">0</span>
-            <button class="btn-step" onclick="step('dead', 1)">+</button>
-        </div>
-    </div>
-
-    <div class="totals-box">
-        <strong>Session Running Totals:</strong>
-        <p id="match-summary">Matches Tracked: 0 | Avg Innings: 0</p>
+    <div style="margin-top:10px; font-weight:bold; border-top:2px solid #000; padding-top:10px;">
+        TOTAL TEAM POINTS: <span id="grand-total">0</span>
     </div>
 </div>
 
-<div class="action-grid">
-    <button class="primary" onclick="exportJPG()">Export as JPG</button>
-    <button class="secondary" onclick="exportText()">Copy Text Summary</button>
-    <button style="background:#e74c3c; color:white;" onclick="saveMatch()">Finish & Save Match</button>
+<div class="action-menu">
+    <button class="main" style="grid-column: span 2; background: #27ae60; color: white;" onclick="addNewMatch()">+ Add New Match</button>
+    <button class="main" style="background: #2980b9; color: white;" onclick="exportJPG()">Export JPG</button>
+    <button class="main" style="background: #f1c40f;" onclick="copyText()">Copy Text</button>
+    <button class="main" style="grid-column: span 2; background: #e74c3c; color: white;" onclick="resetSheet()">Reset Entire Night</button>
 </div>
 
 <script>
-    let currentMatch = { innings: 0, defensive: 0, dead: 0 };
-    let sessionHistory = JSON.parse(localStorage.getItem('sessionHistory')) || [];
+    let matches = JSON.parse(localStorage.getItem('offlineMatches')) || [];
 
-    function step(field, delta) {
-        currentMatch[field] = Math.max(0, currentMatch[field] + delta);
-        document.getElementById(field).innerText = currentMatch[field];
-    }
-
-    function saveMatch() {
-        sessionHistory.push({...currentMatch});
-        localStorage.setItem('sessionHistory', JSON.stringify(sessionHistory));
-        updateTotals();
-        // Reset current match
-        currentMatch = { innings: 0, defensive: 0, dead: 0 };
-        ['innings','defensive','dead'].forEach(id => document.getElementById(id).innerText = 0);
-        alert("Match added to session history!");
-    }
-
-    function updateTotals() {
-        const totalInnings = sessionHistory.reduce((sum, m) => sum + m.innings, 0);
-        const count = sessionHistory.length;
-        const avg = count > 0 ? (totalInnings / count).toFixed(1) : 0;
-        document.getElementById('match-summary').innerText = Matches Tracked: ${count} | Avg Innings: ${avg};
-   <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Billiard Pro Backup</title>
-    <link rel="manifest" href="manifest.json">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <style>
-        :root { --bg: #f4f7f6; --text: #2c3e50; --accent: #27ae60; --table-border: #bdc3c7; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text); padding: 10px; margin: 0; }
-        .scoresheet { background: white; border: 2px solid var(--text); padding: 15px; max-width: 600px; margin: auto; }
-        h2 { text-transform: uppercase; border-bottom: 2px solid var(--text); padding-bottom: 5px; margin-top: 0; font-size: 1.2rem; }
-        
-        .grid-row { display: flex; border-bottom: 1px solid var(--table-border); padding: 12px 0; align-items: center; }
-        .label { flex: 2; font-weight: bold; font-size: 0.9rem; }
-        .controls { flex: 1.5; display: flex; justify-content: space-between; align-items: center; }
-        
-        .btn-step { background: #eee; border: 1px solid #ccc; width: 45px; height: 45px; border-radius: 8px; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .btn-step:active { background: #ddd; }
-        .val { font-size: 1.6rem; font-weight: bold; min-width: 45px; text-align: center; }
-        
-        select { padding: 8px; font-size: 1.1rem; border-radius: 5px; border: 1px solid #ccc; width: 100%; }
-        
-        .totals-box { background: #ecf0f1; padding: 15px; margin-top: 20px; border-radius: 8px; border: 1px solid #bdc3c7; }
-        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px auto; max-width: 600px; }
-        button { padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; }
-        .primary { background: var(--accent); color: white; }
-        .secondary { background: #2980b9; color: white; }
-        .danger { background: #e74c3c; color: white; grid-column: span 2; font-size: 1.2rem; }
-        
-        #history-log { margin-top: 10px; font-size: 0.9rem; max-height: 180px; overflow-y: auto; background: #fff; padding: 8px; border: 1px solid #ccc; color: #333; text-align: left; line-height: 1.4; }
-    </style>
-</head>
-<body>
-
-<div id="capture-area" class="scoresheet">
-    <h2>Match Scorer (Backup)</h2>
-    
-    <div class="grid-row">
-        <div class="label">Player SL</div>
-        <div class="controls">
-            <select id="sl">
-                <option value="1">SL 1</option><option value="2">SL 2</option>
-                <option value="3" selected>SL 3</option><option value="4">SL 4</option>
-                <option value="5">SL 5</option><option value="6">SL 6</option>
-                <option value="7">SL 7</option><option value="8">SL 8</option>
-                <option value="9">SL 9</option>
-            </select>
-        </div>
-    </div>
-
-    <div class="grid-row">
-        <div class="label">Innings</div>
-        <div class="controls">
-            <button class="btn-step" onclick="changeVal('innings', -1)">-</button>
-            <span id="innings-display" class="val">0</span>
-            <button class="btn-step" onclick="changeVal('innings', 1)">+</button>
-        </div>
-    </div>
-
-    <div class="grid-row">
-        <div class="label">Defensive</div>
-        <div class="controls">
-            <button class="btn-step" onclick="changeVal('defensive', -1)">-</button>
-            <span id="defensive-display" class="val">0</span>
-            <button class="btn-step" onclick="changeVal('defensive', 1)">+</button>
-        </div>
-    </div>
-
-    <div class="grid-row">
-        <div class="label">Dead Balls</div>
-        <div class="controls">
-            <button class="btn-step" onclick="changeVal('dead', -1)">-</button>
-            <span id="dead-display" class="val">0</span>
-            <button class="btn-step" onclick="changeVal('dead', 1)">+</button>
-        </div>
-    </div>
-
-    <div class="totals-box">
-        <strong>Session History:</strong>
-        <div id="history-log">No matches saved yet.</div>
-        <hr>
-        <p id="session-stats" style="font-weight:bold;">Matches: 0 | Innings: 0</p>
-    </div>
-</div>
-
-<div class="action-grid">
-    <button class="danger" onclick="saveMatch()">FINISH & SAVE MATCH</button>
-    <button class="primary" onclick="exportJPG()">SAVE JPG</button>
-    <button class="secondary" onclick="exportText()">COPY TEXT</button>
-    <button style="grid-column: span 2; background: #7f8c8d; color: white;" onclick="clearSession()">RESET NIGHT</button>
-</div>
-
-<script>
-    let matchData = { innings: 0, defensive: 0, dead: 0 };
-    let sessionHistory = JSON.parse(localStorage.getItem('billiardHistory')) || [];
-
-    function updateUI() {
-        document.getElementById('innings-display').innerText = matchData.innings;
-        document.getElementById('defensive-display').innerText = matchData.defensive;
-        document.getElementById('dead-display').innerText = matchData.dead;
-        
-        const log = document.getElementById('history-log');
-        if (sessionHistory.length === 0) {
-            log.innerHTML = "No matches saved yet.";
-        } else {
-            log.innerHTML = sessionHistory.map((m, i) => 
-                `<strong>Match ${i+1}:</strong> (SL${m.sl}) - Inn: ${m.innings}, Def: ${m.defensive}, Dead: ${m.dead}`
-            ).join('<br>');
-        }
-        
-        const totalInnings = sessionHistory.reduce((s, m) => s + m.innings, 0);
-        document.getElementById('session-stats').innerText = `Matches: ${sessionHistory.length} | Total Innings: ${totalInnings}`;
-    }
-
-    function changeVal(field, delta) {
-        matchData[field] = Math.max(0, matchData[field] + delta);
-        updateUI();
-    }
-
-    function saveMatch() {
-        const finishedMatch = { ...matchData, sl: document.getElementById('sl').value };
-        sessionHistory.push(finishedMatch);
-        localStorage.setItem('billiardHistory', JSON.stringify(sessionHistory));
-        matchData = { innings: 0, defensive: 0, dead: 0 };
-        updateUI();
-        alert("Match saved! Counters are now reset for your next match.");
-    }
-
-    function exportText() {
-        if (sessionHistory.length === 0) return alert("No matches to copy!");
-        let text = "POOL SESSION SUMMARY\n==================\n";
-        sessionHistory.forEach((m, i) => {
-            text += `Match ${i+1} [SL${m.sl}]: ${m.innings} Inn, ${m.defensive} Def, ${m.dead} Dead\n`;
-        });
-   <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>League Scorer - 8 Ball</title>
-    <link rel="manifest" href="manifest.json">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <style>
-        :root { --border: #000; --header-bg: #e0e0e0; }
-        body { font-family: Arial, sans-serif; background: #ccc; margin: 0; padding: 10px; color: #000; }
-        .scoresheet { background: #fff; border: 2px solid var(--border); max-width: 650px; margin: auto; padding: 15px; }
-        .header { text-align: center; border-bottom: 2px solid var(--border); margin-bottom: 10px; padding-bottom: 5px; }
-        
-        .match-row { border: 1px solid var(--border); margin-bottom: 15px; background: #fff; }
-        .match-header { background: var(--header-bg); padding: 5px; font-weight: bold; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
-        
-        .input-group { display: flex; flex-wrap: wrap; padding: 10px; border-bottom: 1px solid #ddd; }
-        .input-group label { font-size: 0.75rem; font-weight: bold; margin-right: 5px; }
-        .input-group input { border: 1px solid #ccc; padding: 4px; width: 80px; margin-right: 15px; }
-
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; }
-        .stat-item { display: flex; flex-direction: column; align-items: center; border: 1px solid #eee; padding: 5px; border-radius: 5px; }
-        .stat-label { font-size: 0.7rem; font-weight: bold; margin-bottom: 5px; }
-        
-        .controls { display: flex; align-items: center; gap: 10px; }
-        .btn { width: 40px; height: 40px; border: 1px solid #000; background: #f0f0f0; font-size: 1.5rem; cursor: pointer; font-weight: bold; }
-        .count { font-size: 1.4rem; font-weight: bold; min-width: 30px; text-align: center; }
-
-        .footer-totals { margin-top: 15px; padding: 10px; border-top: 2px solid #000; font-weight: bold; font-size: 1.1rem; display: flex; justify-content: space-between; }
-
-        .action-bar { position: sticky; bottom: 0; background: #ccc; padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; border-top: 2px solid #333; }
-        .action-bar button { padding: 12px; font-weight: bold; border: 2px solid #000; cursor: pointer; }
-        .btn-finish { background: #27ae60; color: #fff; grid-column: span 2; }
-    </style>
-</head>
-<body>
-
-<div id="capture-area" class="scoresheet">
-    <div class="header">
-        <strong style="font-size: 1.2rem;">8-BALL SCORESHEET BACKUP</strong>
-    </div>
-
-    <div id="active-matches"></div>
-
-    <div class="footer-totals">
-        <span>TOTAL GAMES WON:</span>
-        <span id="grand-games">0</span>
-    </div>
-</div>
-
-<div class="action-bar">
-    <button class="btn-finish" onclick="saveMatch()">Finish Current Match</button>
-    <button style="background: #2980b9; color: white;" onclick="exportJPG()">Export JPG</button>
-    <button style="background: #f1c40f;" onclick="exportText()">Copy Summary</button>
-    <button style="background: #e74c3c; color: white; grid-column: span 2;" onclick="resetSheet()">Reset Entire Sheet</button>
-</div>
-
-<script>
-    let savedMatches = JSON.parse(localStorage.getItem('eightBallSession')) || [];
-    let currentData = { name: '', sl: 3, num: '', games: 0, innings: 0, def: 0 };
-
-    function render() {
-        const container = document.getElementById('active-matches');
-        container.innerHTML = '';
-
-        // Show Completed Matches
-        savedMatches.forEach((m, i) => {
-            container.innerHTML += `
-            <div class="match-row" style="background: #f9f9f9; opacity: 0.8;">
-                <div class="match-header">MATCH ${i+1} - COMPLETED</div>
-                <div style="padding: 10px; font-size: 0.8rem;">
-                    <strong>${m.name} (SL${m.sl})</strong> | Games: ${m.games} | Inn: ${m.innings} | Def: ${m.def}
-                </div>
-            </div>`;
-        });
-
-        // Show Current Match
-        if (savedMatches.length < 5) {
-            container.innerHTML += `
-            <div class="match-row">
-                <div class="match-header">MATCH ${savedMatches.length + 1} - ACTIVE</div>
-                <div class="input-group">
-                    <label>NAME:</label><input type="text" id="name" value="${currentData.name}" onchange="updateData('name', this.value)">
-                    <label>SL:</label><input type="number" id="sl" value="${currentData.sl}" style="width: 40px;" onchange="updateData('sl', this.value)">
-                    <label>NO:</label><input type="text" id="num" value="${currentData.num}" style="width: 60px;" onchange="updateData('num', this.value)">
-                </div>
-                <div class="stat-grid">
-                    ${counter('GAMES WON', 'games')}
-                    ${counter('INNINGS', 'innings')}
-                    ${counter('DEFENSIVE', 'def')}
-                </div>
-            </div>`;
-        }
-        updateTotals();
-    }
-
-    function counter(label, key) {
-        return `
-        <div class="stat-item">
-            <span class="stat-label">${label}</span>
-            <div class="controls">
-                <button class="btn" onclick="step('${key}', -1)">-</button>
-                <span class="count">${currentData[key]}</span>
-                <button class="btn" onclick="step('${key}', 1)">+</button>
-            </div>
-        </div>`;
-    }
-
-    function updateData(key, val) { currentData[key] = val; }
-    function step(key, val) { 
-        currentData[key] = Math.max(0, currentData[key] + val); 
-        render(); 
-    }
-
-    function saveMatch() {
-        if (savedMatches.length >= 5) return;
-        savedMatches.push({...currentData});
-        localStorage.setItem('eightBallSession', JSON.stringify(savedMatches));
-        currentData = { name: '', sl: 3, num: '', games: 0, innings: 0, def: 0 };
+    function updateStorage() {
+        localStorage.setItem('offlineMatches', JSON.stringify(matches));
         render();
     }
 
-    function updateTotals() {
-        const total = savedMatches.reduce((sum, m) => sum + parseInt(m.games), 0);
-        document.getElementById('grand-games').innerText = total;
+    function addNewMatch() {
+        if(matches.length >= 5) return alert("Limit 5 matches.");
+        matches.push({ name: '', sl: 3, games: 0, innings: 0, def: 0 });
+        updateStorage();
+    }
+
+    function editMatch(index, field, value) {
+        matches[index][field] = value;
+        updateStorage();
+    }
+
+    function step(index, field, delta) {
+        matches[index][field] = Math.max(0, matches[index][field] + delta);
+        updateStorage();
+    }
+
+    function render() {
+        const list = document.getElementById('match-list');
+        list.innerHTML = '';
+        let totalGames = 0;
+
+        matches.forEach((m, i) => {
+            totalGames += parseInt(m.games);
+            list.innerHTML += `
+                <div class="match-section">
+                    <div class="player-row">
+                        <div class="player-info">
+                            <input type="text" placeholder="PLAYER NAME" value="${m.name}" onchange="editMatch(${i}, 'name', this.value)" style="width:100%; margin-bottom:5px; border:none; border-bottom:1px solid #000;">
+                            <div style="display:flex; gap:10px; font-size:0.7rem;">
+                                SL: <input type="number" value="${m.sl}" onchange="editMatch(${i}, 'sl', this.value)" style="width:30px;">
+                            </div>
+                        </div>
+                        <div class="score-box">
+                            <div style="font-size:0.6rem;">GAMES WON</div>
+                            <div class="stat-btn-group" style="border:none;">
+                                <button class="btn" onclick="step(${i}, 'games', -1)">-</button>
+                                <span class="val">${m.games}</span>
+                                <button class="btn" onclick="step(${i}, 'games', 1)">+</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid-container">
+                        <div class="stat-btn-group">
+                            <span style="font-size:0.7rem;">INNINGS</span>
+                            <button class="btn" onclick="step(${i}, 'innings', -1)">-</button>
+                            <span class="val">${m.innings}</span>
+                            <button class="btn" onclick="step(${i}, 'innings', 1)">+</button>
+                        </div>
+                        <div class="stat-btn-group">
+                            <span style="font-size:0.7rem;">DEFENSIVE</span>
+                            <button class="btn" onclick="step(${i}, 'def', -1)">-</button>
+                            <span class="val">${m.def}</span>
+                            <button class="btn" onclick="step(${i}, 'def', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        document.getElementById('grand-total').innerText = totalGames;
     }
 
     function exportJPG() {
         html2canvas(document.getElementById('capture-area')).then(canvas => {
             const link = document.createElement('a');
-            link.download = '8ball_backup.jpg';
+            link.download = '8ball_scoresheet.jpg';
             link.href = canvas.toDataURL();
             link.click();
         });
     }
 
-    function exportText() {
-        let txt = "8-BALL LEAGUE SUMMARY\\n";
-        savedMatches.forEach((m, i) => {
-            txt += `M${i+1}: ${m.name} (SL${m.sl}) - Won: ${m.games}, Inn: ${m.innings}\\n`;
-        });
+    function copyText() {
+        let txt = "OFFLINE SCORESHEET\\n";
+        matches.forEach((m, i) => txt += `M${i+1}: ${m.name}(SL${m.sl}) G:${m.games} I:${m.innings} D:${m.def}\\n`);
         navigator.clipboard.writeText(txt);
-        alert("Text copied!");
+        alert("Scores copied!");
     }
 
     function resetSheet() {
-        if (confirm("Clear all match data?")) {
-            savedMatches = [];
-            localStorage.removeItem('eightBallSession');
-            currentData = { name: '', sl: 3, num: '', games: 0, innings
+        if(confirm("Start new night?")) {
+            matches = [];
+            updateStorage();
+        }
+    }
+
+    render();
+</script>
+</body>
+</html>
