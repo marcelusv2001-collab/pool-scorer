@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MVP TV Scorekeeper Hub</title>
+    <title>MVP TV Hub</title>
+    <link rel="manifest" href="manifest.json">
     <style>
         body { 
-            font-family: 'Inter', sans-serif; 
-            background: #1a1a1a; 
+            font-family: 'Inter', sans-serif; background: #1a1a1a; 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
             height: 100vh; margin: 0; color: white;
         }
@@ -27,14 +27,24 @@
 </head>
 <body>
 
-    <div class="logo-box"><span class="logo-mvp">MVP</span><span class="logo-tv">TV</span></div>
+    <div class="logo-box">
+        <span class="logo-mvp">MVP</span><span class="logo-tv">TV</span>
+    </div>
     
     <div class="menu-container">
         <button class="choice-btn btn-8" onclick="location.href='8ball.html'">8-Ball Mode</button>
         <button class="choice-btn btn-9" onclick="location.href='9ball.html'">9-Ball Mode</button>
     </div>
 
-    <p style="margin-top: 40px; color: #666; font-size: 0.8rem;">Select Match Variant</p>
-
+    <script>
+        // THIS CODE ACTIVATES OFFLINE MODE
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('Offline Engine Ready!'))
+                .catch(err => console.log('Offline Engine Failed', err));
+            });
+        }
+    </script>
 </body>
 </html>
