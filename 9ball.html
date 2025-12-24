@@ -3,40 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MVP 9-Ball Tracker v5.0 Final</title>
+    <title>MVP 9-Ball Pro Tracker</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { 
             --felt: #f1c40f; --slate: #1a1a1a; --gold: #f1c40f; --chalk: #3498db; --danger: #e74c3c;
-            --active-bg: #ffffff; --done-bg: #f9f9f9;
+            --active-bg: #ffffff; --done-bg: #f9f9f9; --selected-gray: #7f8c8d;
         }
         * { box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--slate); margin: 0; padding: 10px; color: #fff; }
         
-        .branding { text-align: center; margin-bottom: 15px; }
-        .logo-box { background: white; padding: 10px 20px; border-radius: 15px; border: 3px solid var(--gold); display: inline-block; }
-        .logo-mvp { color:#00FF00; font-size: 28px; font-weight: 900; }
-        .logo-tv { color:#FF0000; font-size: 38px; font-style: italic; font-weight: 900; font-family: 'Brush Script MT', cursive; margin-left: -5px; }
+        .branding { text-align: center; margin-bottom: 10px; }
+        .logo-box { background: white; padding: 8px 15px; border-radius: 12px; border: 3px solid var(--gold); display: inline-block; }
+        .logo-mvp { color:#00FF00; font-size: 24px; font-weight: 900; }
+        .logo-tv { color:#FF0000; font-size: 32px; font-style: italic; font-weight: 900; font-family: 'Brush Script MT', cursive; margin-left: -5px; }
         
-        .match-card { border-radius: 15px; margin-bottom: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); color: #333; }
-        .card-active { background: var(--active-bg); border: 2px solid var(--felt); }
-        .card-done { background: var(--done-bg); border-left: 12px solid #333; opacity: 0.9; }
+        .team-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .match-card { border-radius: 15px; margin-bottom: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); color: #333; background: white; }
+        .card-active { border: 2px solid var(--felt); }
+        .card-done { border-left: 12px solid #333; opacity: 0.95; }
         
-        .head-active { background: var(--felt); color: #000; padding: 12px; font-weight: 900; display: flex; justify-content: space-between; align-items: center; }
+        .head-active { background: var(--felt); color: #000; padding: 10px; font-weight: 900; display: flex; justify-content: space-between; align-items: center; }
         .head-done { background: #222; color: #fff; padding: 10px; font-weight: 800; display: flex; justify-content: space-between; align-items: center; }
         
-        .ball-container { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 12px 0; }
-        .ball { width: 40px; height: 40px; border-radius: 50%; border: 1px solid #aaa; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: 900; color: #fff; cursor: pointer; text-shadow: 1px 1px 1px #000; box-shadow: inset -3px -3px 6px rgba(0,0,0,0.5); }
-        .ball-selected { border: 4px solid #000; transform: scale(1.15); z-index: 10; box-shadow: 0 5px 15px rgba(0,0,0,0.4); }
+        .ball-container { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 10px 0; }
+        .ball { width: 38px; height: 38px; border-radius: 50%; border: 1px solid #aaa; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 900; color: #fff; cursor: pointer; text-shadow: 1px 1px 1px #000; box-shadow: inset -2px -2px 4px rgba(0,0,0,0.5); }
+        /* Gray background for selected balls */
+        .ball-selected { background-color: var(--selected-gray) !important; border: 3px solid #000; transform: scale(1.1); box-shadow: none; text-shadow: none; }
         
         .b1,.b9{background:#ffea00; color:#000; text-shadow:none} .b9{border:2px dashed #000}
         .b2{background:#0052cc} .b3{background:#cc0000} .b4{background:#4b0082} .b5{background:#ff8c00} .b6{background:#008000} .b7{background:#8b4513} .b8{background:#000}
 
-        input, select { font-weight: 700; border: 1px solid #ccc; border-radius: 8px; padding: 12px; width: 100%; margin-bottom: 10px; font-size: 1rem; background: white; }
-        .stat-box { background: #eee; border-radius: 10px; padding: 12px; text-align: center; font-size: 1rem; font-weight: 900; border: 1px solid #ddd; }
+        input, select { font-weight: 700; border: 1px solid #ccc; border-radius: 6px; padding: 8px; width: 100%; margin-bottom: 5px; font-size: 0.9rem; background: white; }
+        .stat-box { background: #eee; border-radius: 8px; padding: 8px; text-align: center; font-size: 0.85rem; font-weight: 900; border: 1px solid #ddd; margin-top: 5px; }
         
-        .total-score-bar { background: #000; color: var(--gold); padding: 20px; border-radius: 15px; margin: 15px 0; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; text-align: center; border: 2px solid var(--gold); }
-        .action-btn { width: 100%; padding: 20px; border: none; border-radius: 15px; font-weight: 900; color: white; cursor: pointer; text-transform: uppercase; font-size: 1.1rem; margin-top: 10px; }
+        .to-btn { padding: 5px 10px; font-size: 0.7rem; border-radius: 4px; border: 1px solid #ccc; background: #fff; cursor: pointer; font-weight: 900; }
+        .to-used { background: var(--danger); color: white; border-color: var(--danger); }
+        
+        .lag-btn { width: 100%; font-size: 0.7rem; font-weight: 900; padding: 4px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; margin-bottom: 5px; }
+        .lag-won { background: #00FF00; color: black; border-color: #008000; }
+
+        .total-score-bar { background: #000; color: var(--gold); padding: 15px; border-radius: 15px; margin: 15px 0; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; text-align: center; border: 2px solid var(--gold); }
+        .action-btn { width: 100%; padding: 18px; border: none; border-radius: 12px; font-weight: 900; color: white; cursor: pointer; text-transform: uppercase; font-size: 1rem; margin-top: 8px; }
     </style>
 </head>
 <body>
@@ -45,26 +53,44 @@
     <div class="logo-box"><span class="logo-mvp">MVP</span><span class="logo-tv">TV</span></div>
 </div>
 
+<div class="team-inputs">
+    <input id="team-h" placeholder="Home Team Name" oninput="saveTeams()">
+    <input id="team-a" placeholder="Away Team Name" oninput="saveTeams()">
+</div>
+
 <div id="capture-area" style="padding:5px;">
     <div id="match-container"></div>
 
     <div class="total-score-bar">
-        <div><small>HOME TEAM</small><div id="h-total" style="font-size:2.8rem;font-weight:900;">0</div></div>
-        <div style="font-size:0.8rem; font-weight:900; padding: 0 25px; border-left: 2px solid #333; border-right: 2px solid #333;">MATCH<br>POINTS</div>
-        <div><small>AWAY TEAM</small><div id="a-total" style="font-size:2.8rem;font-weight:900;">0</div></div>
+        <div><small id="disp-team-h">HOME</small><div id="h-total" style="font-size:2.5rem;font-weight:900;">0</div></div>
+        <div style="font-size:0.7rem; font-weight:900; padding: 0 15px; border-left: 1px solid #333; border-right: 1px solid #333;">TOTAL<br>POINTS</div>
+        <div><small id="disp-team-a">AWAY</small><div id="a-total" style="font-size:2.5rem;font-weight:900;">0</div></div>
     </div>
 </div>
 
-<div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom: 80px;">
+<div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 60px;">
     <button class="action-btn" style="background:var(--felt); color:#000; grid-column: span 2;" onclick="addMatch()">+ New Match</button>
-    <button class="action-btn" style="background:var(--chalk);" onclick="exportJPG()">Export Scorecard</button>
-    <button class="action-btn" style="background:var(--danger);" onclick="resetAll()">Reset App</button>
+    <button class="action-btn" style="background:var(--chalk);" onclick="exportJPG()">Save Image</button>
+    <button class="action-btn" style="background:var(--danger);" onclick="resetAll()">Reset All</button>
 </div>
 
 <script>
     const raceReq = { 1:14, 2:19, 3:25, 4:31, 5:38, 6:46, 7:55, 8:65, 9:75 };
-    const STORE_KEY = 'mvp_9ball_v5_final_certified';
+    const STORE_KEY = 'mvp_9ball_v6_gray';
     let matches = JSON.parse(localStorage.getItem(STORE_KEY)) || [];
+
+    function saveTeams() {
+        localStorage.setItem('mvp_team_h', document.getElementById('team-h').value);
+        localStorage.setItem('mvp_team_a', document.getElementById('team-a').value);
+        document.getElementById('disp-team-h').innerText = document.getElementById('team-h').value || "HOME";
+        document.getElementById('disp-team-a').innerText = document.getElementById('team-a').value || "AWAY";
+    }
+
+    function loadTeams() {
+        document.getElementById('team-h').value = localStorage.getItem('mvp_team_h') || "";
+        document.getElementById('team-a').value = localStorage.getItem('mvp_team_a') || "";
+        saveTeams();
+    }
 
     function refresh() {
         localStorage.setItem(STORE_KEY, JSON.stringify(matches));
@@ -83,38 +109,65 @@
             
             if (m.done) {
                 card.innerHTML = `
-                    <div class="head-done">MATCH ${i+1} FINAL | ${hPts} - ${aPts} <button onclick="toggleEdit(${i})" style="margin-left:auto; padding:5px 12px; font-size:0.8rem; border-radius:5px;">RE-OPEN</button></div>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; padding:25px; text-align:center;">
-                        <div><small>HOME</small><br><b style="font-size:1.3rem;">${m.h.name || 'Player'}</b><br><span style="font-size:1.8rem;">${m.h.balls}</span>/${hR}</div>
-                        <div><small>AWAY</small><br><b style="font-size:1.3rem;">${m.a.name || 'Player'}</b><br><span style="font-size:1.8rem;">${m.a.balls}</span>/${aR}</div>
+                    <div class="head-done">M${i+1} FINAL | ${hPts} - ${aPts} <button onclick="toggleEdit(${i})" style="margin-left:auto; font-size:0.6rem;">EDIT</button></div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; padding:15px; text-align:center;">
+                        <div><b>${m.h.name || 'Player'}</b><br>${m.h.balls}/${hR}<br><small>TOs Used: ${m.h.toTotal}</small></div>
+                        <div><b>${m.a.name || 'Player'}</b><br>${m.a.balls}/${aR}<br><small>TOs Used: ${m.a.toTotal}</small></div>
                     </div>`;
             } else {
                 card.innerHTML = `
-                    <div class="head-active">M${i+1} LIVE | RACE ${hR}-${aR} <button onclick="finish(${i})" style="font-weight:900; background:#000; color:#fff; border:none; padding:10px 20px; border-radius:8px;">FINISH</button></div>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; padding:15px; gap:20px;">
+                    <div class="head-active">M${i+1} ACTIVE | RACE ${hR}-${aR} <button onclick="finish(${i})" style="font-weight:900; background:#000; color:#fff; border:none; padding:5px 10px; border-radius:6px;">FINISH</button></div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; padding:10px; gap:10px;">
                         <div style="text-align:center;">
-                            <input placeholder="Home Name" value="${m.h.name}" oninput="matches[${i}].h.name=this.value">
-                            <select onchange="matches[${i}].h.sl=this.value; refresh()">${Object.keys(raceReq).map(n=>`<option value="${n}" ${m.h.sl==n?'selected':''}>SL ${n} (Race ${raceReq[n]})</option>`)}</select>
+                            <button class="lag-btn ${m.h.lag?'lag-won':''}" onclick="toggleLag(${i},'h')">LAG WINNER</button>
+                            <input placeholder="Home Player" value="${m.h.name}" oninput="matches[${i}].h.name=this.value">
+                            <select onchange="matches[${i}].h.sl=this.value; refresh()">${Object.keys(raceReq).map(n=>`<option value="${n}" ${m.h.sl==n?'selected':''}>SL ${n}</option>`)}</select>
+                            <div style="margin:5px 0;">${renderTOs(i, 'h')}</div>
                             <div class="ball-container">${renderBalls(i, 'h')}</div>
-                            <div class="stat-box">TOTAL: ${m.h.balls}</div>
+                            <div class="stat-box">PTS: ${m.h.balls}</div>
                         </div>
                         <div style="text-align:center;">
-                            <input placeholder="Away Name" value="${m.a.name}" oninput="matches[${i}].a.name=this.value">
-                            <select onchange="matches[${i}].a.sl=this.value; refresh()">${Object.keys(raceReq).map(n=>`<option value="${n}" ${m.a.sl==n?'selected':''}>SL ${n} (Race ${raceReq[n]})</option>`)}</select>
+                            <button class="lag-btn ${m.a.lag?'lag-won':''}" onclick="toggleLag(${i},'a')">LAG WINNER</button>
+                            <input placeholder="Away Player" value="${m.a.name}" oninput="matches[${i}].a.name=this.value">
+                            <select onchange="matches[${i}].a.sl=this.value; refresh()">${Object.keys(raceReq).map(n=>`<option value="${n}" ${m.a.sl==n?'selected':''}>SL ${n}</option>`)}</select>
+                            <div style="margin:5px 0;">${renderTOs(i, 'a')}</div>
                             <div class="ball-container">${renderBalls(i, 'a')}</div>
-                            <div class="stat-box">TOTAL: ${m.a.balls}</div>
+                            <div class="stat-box">PTS: ${m.a.balls}</div>
                         </div>
                     </div>
-                    <div style="background:#f0f0f0; padding:15px; text-align:center; color:#333; font-weight:900; border-top:1px solid #ddd;">
-                        DEAD BALLS: <button onclick="adjDB(${i},-1)" style="padding:10px 25px; border-radius:10px;">-</button> 
-                        <span style="font-size:2rem; margin:0 30px; vertical-align:middle;">${m.dbCur}</span> 
-                        <button onclick="adjDB(${i},1)" style="padding:10px 25px; border-radius:10px;">+</button>
+                    <div style="background:#eee; padding:10px; text-align:center; color:#333; font-weight:900; border-top:1px solid #ddd;">
+                        DEAD BALLS: <button onclick="adjDB(${i},-1)">-</button> <span>${m.dbCur}</span> <button onclick="adjDB(${i},1)">+</button>
                     </div>`;
             }
             container.appendChild(card);
         });
         document.getElementById('h-total').innerText = tH;
         document.getElementById('a-total').innerText = tA;
+    }
+
+    function renderTOs(mIdx, side) {
+        const m = matches[mIdx];
+        const sl = m[side].sl;
+        const max = sl <= 3 ? 2 : 1;
+        let h = '';
+        for(let j=1; j<=max; j++) {
+            const used = m[side].toCur >= j;
+            h += `<button class="to-btn ${used?'to-used':''}" onclick="useTO(${mIdx},'${side}',${j})">TO ${j}</button> `;
+        }
+        return h;
+    }
+
+    function useTO(mIdx, side, num) {
+        const m = matches[mIdx];
+        if (m[side].toCur === num) { m[side].toCur--; m[side].toTotal--; }
+        else { m[side].toCur = num; m[side].toTotal++; }
+        refresh();
+    }
+
+    function toggleLag(mIdx, side) {
+        matches[mIdx].h.lag = (side === 'h');
+        matches[mIdx].a.lag = (side === 'a');
+        refresh();
     }
 
     function renderBalls(mIdx, side) {
@@ -131,12 +184,10 @@
         m.cur[opp] = m.cur[opp].filter(n => n !== num);
         if (m.cur[side].includes(num)) m.cur[side] = m.cur[side].filter(n => n !== num);
         else m.cur[side].push(num);
-        
         const hp = m.cur.h.reduce((acc, n) => acc + (n === 9 ? 2 : 1), 0);
         const ap = m.cur.a.reduce((acc, n) => acc + (n === 9 ? 2 : 1), 0);
-
         if (num === 9 || (hp + ap + m.dbCur) >= 10) {
-            setTimeout(() => { if(confirm("End current rack?")) recordRack(mIdx); refresh(); }, 30);
+            setTimeout(() => { if(confirm("End current rack? (Timeouts will reset for next rack)")) recordRack(mIdx); refresh(); }, 30);
         }
         refresh();
     }
@@ -148,6 +199,7 @@
         m.h.balls = Math.min(raceReq[m.h.sl], m.h.balls + hAdd);
         m.a.balls = Math.min(raceReq[m.a.sl], m.a.balls + aAdd);
         m.dbCur = 0; m.cur = { h: [], a: [] };
+        m.h.toCur = 0; m.a.toCur = 0; // Reset TO indicators for the next rack
     }
 
     function calc9Pts(p, t, op, ot) {
@@ -162,17 +214,13 @@
     }
 
     function adjDB(i, v) { matches[i].dbCur = Math.max(0, matches[i].dbCur + v); refresh(); }
-    function finish(i) { if(confirm("Confirm: Mark as Final?")) { matches[i].done = true; refresh(); } }
+    function finish(i) { if(confirm("Mark as Final?")) { matches[i].done = true; refresh(); } }
     function toggleEdit(i) { matches[i].done = false; refresh(); }
-    function addMatch() { if(matches.length < 5) { matches.push({done:false, dbCur:0, h:{name:'',sl:3,balls:0}, a:{name:'',sl:3,balls:0}, cur:{h:[],a:[]}}); refresh(); } }
-    function resetAll() { if(confirm("WIPE ALL DATA?")) { matches=[]; localStorage.clear(); addMatch(); refresh(); } }
-    
-    function exportJPG() { 
-        html2canvas(document.getElementById('capture-area'), {backgroundColor:'#1a1a1a', scale: 2}).then(c => { 
-            const l=document.createElement('a'); l.download='MVP_9Ball_Results.jpg'; l.href=c.toDataURL('image/jpeg', 1.0); l.click(); 
-        }); 
-    }
+    function addMatch() { if(matches.length < 5) { matches.push({done:false, dbCur:0, h:{name:'',sl:3,balls:0,toCur:0,toTotal:0,lag:false}, a:{name:'',sl:3,balls:0,toCur:0,toTotal:0,lag:false}, cur:{h:[],a:[]}}); refresh(); } }
+    function resetAll() { if(confirm("Reset all data?")) { matches=[]; localStorage.clear(); addMatch(); loadTeams(); } }
+    function exportJPG() { html2canvas(document.getElementById('capture-area'), {backgroundColor:'#1a1a1a', scale: 2}).then(c => { const l=document.createElement('a'); l.download='MVP_Results.jpg'; l.href=c.toDataURL('image/jpeg', 1.0); l.click(); }); }
 
+    loadTeams();
     if(matches.length === 0) addMatch();
     refresh();
 </script>
