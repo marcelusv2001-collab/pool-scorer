@@ -14,10 +14,11 @@
         .modal-content { background: #fff; color: #000; margin: 20% auto; padding: 25px; border-radius: 15px; width: 85%; text-align: center; border: 5px solid var(--purple); }
         .modal-btn { padding: 12px 15px; margin: 5px; border: none; border-radius: 8px; font-weight: 900; cursor: pointer; color: white; min-width: 80px; }
 
-        .branding { text-align: center; margin-bottom: 10px; }
+        .branding { text-align: center; margin-bottom: 20px; }
         .logo-box { background: white; padding: 8px 20px; border-radius: 12px; border: 3px solid var(--gold); display: inline-block; }
         .logo-mvp { color:#00FF00; font-size: 26px; font-weight: 900; }
         .logo-tv { color:#FF0000; font-size: 34px; font-style: italic; font-weight: 900; margin-left: -5px; }
+        .sub-logo { display: block; color: white; font-size: 0.9rem; font-weight: 300; letter-spacing: 1px; margin-top: 5px; opacity: 0.9; }
         
         .match-card { border-radius: 15px; margin-bottom: 15px; overflow: hidden; color: #333; background: white; border: 2px solid var(--gold); }
         .card-done { border-left: 12px solid var(--purple); opacity: 0.98; }
@@ -51,7 +52,12 @@
     <div class="modal-content"><h2 id="modal-title"></h2><p id="modal-text"></p><div id="modal-actions"></div></div>
 </div>
 
-<div class="branding"><div class="logo-box"><span class="logo-mvp">MVP</span><span class="logo-tv">TV</span></div></div>
+<div class="branding">
+    <div class="logo-box">
+        <span class="logo-mvp">MVP</span><span class="logo-tv">TV</span>
+    </div>
+    <span class="sub-logo">Billiard Offline Scorekeeper</span>
+</div>
 
 <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
     <input id="team-h" placeholder="HOME TEAM" oninput="saveG()">
@@ -102,16 +108,26 @@
         document.getElementById('custom-modal').style.display = 'block';
     }
 
+    // UPDATED: Team name sync without re-rendering everything
     function saveG() {
-        localStorage.setItem('team_h', document.getElementById('team-h').value);
-        localStorage.setItem('team_a', document.getElementById('team-a').value);
-        document.getElementById('disp-h').innerText = document.getElementById('team-h').value || "HOME";
-        document.getElementById('disp-a').innerText = document.getElementById('team-a').value || "AWAY";
+        const hVal = document.getElementById('team-h').value;
+        const aVal = document.getElementById('team-a').value;
+        localStorage.setItem('team_h', hVal);
+        localStorage.setItem('team_a', aVal);
+        document.getElementById('disp-h').innerText = hVal || "HOME";
+        document.getElementById('disp-a').innerText = aVal || "AWAY";
+    }
+
+    // UPDATED: Sync player name to data array without refreshing UI
+    function updatePlayerName(matchIdx, side, name) {
+        matches[matchIdx][side].n = name;
+        localStorage.setItem('billiard_vFinal_MVP_vFix', JSON.stringify(matches));
     }
 
     function refresh() {
         localStorage.setItem('billiard_vFinal_MVP_vFix', JSON.stringify(matches));
-        const c = document.getElementById('match-container'); c.innerHTML = '';
+        const container = document.getElementById('match-container');
+        container.innerHTML = '';
         let tH = 0, tA = 0;
 
         matches.forEach((m, i) => {
@@ -121,12 +137,15 @@
             card.className = `match-card ${m.done ? 'card-done' : ''}`;
             
             if (m.done) {
-                card.innerHTML = `<div style="background:#222;color:#fff;padding:12px;font-weight:900;display:flex;justify-content:space-between;">
+                card.innerHTML = `<div style="background:#222;color:#fff;padding:12px;font-weight:900;display:flex;justify-content:space-between;align-items:center;">
                     <span>MATCH ${i+1} | ${hPt}-${aPt}</span>
-                    <button onclick="editM(${i})" style="font-size:0.7rem;">EDIT</button>
+                    <div>
+                        <button onclick="resetM(${i})" style="font-size:0.7rem; background:red; color:white; border:none; padding:4px 8px; border-radius:4px; margin-right:5px;">RESET</button>
+                        <button onclick="editM(${i})" style="font-size:0.7rem;">EDIT</button>
+                    </div>
                 </div>
                 <div style="padding:15px;display:grid;grid-template-columns:1fr 1fr;gap:20px;background:white;position:relative;">
-                    <div style="position:absolute; top:5px; left:50%; transform:translateX(-50%); font-weight:900; color:var(--purple);">INN: ${m.inn}</div>
+                    <div style="position:absolute; top:5px; left:50%; transform:translateX(-50%); font-weight:900; color:var(--purple); font-size:0.75rem;">INN: ${m.inn}</div>
                     <div><b>${m.h.n||'Player'}</b> (SL${m.h.sl})<br>Lag: ${m.lag==='h'?'WON':'—'}<br>Balls: ${m.h.b}/${races[m.h.sl]}<br>Def: ${m.h.d}</div>
                     <div><b>${m.a.n||'Player'}</b> (SL${m.a.sl})<br>Lag: ${m.lag==='a'?'WON':'—'}<br>Balls: ${m.a.b}/${races[m.a.sl]}<br>Def: ${m.a.d}</div>
                 </div>`;
@@ -134,12 +153,13 @@
                 card.innerHTML = `<div class="head-active"><span>MATCH ${i+1}</span>
                     <div>
                         <span style="margin-right:15px;">INN: <button onclick="adj(${i},null,'inn',-1)">-</button> <b>${m.inn}</b> <button onclick="adj(${i},null,'inn',1)">+</button></span>
+                        <button onclick="resetM(${i})" style="background:red;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:0.7rem;font-weight:900; margin-right:5px;">RESET</button>
                         <button onclick="finM(${i})" style="background:black;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:0.7rem;font-weight:900;">FINISH</button>
                     </div>
                 </div>
                 <div style="padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                     <div style="text-align:center;">
-                        <input value="${m.h.n}" oninput="matches[${i}].h.n=this.value; localStorage.setItem('billiard_vFinal_MVP_vFix', JSON.stringify(matches))" placeholder="Name">
+                        <input value="${m.h.n}" oninput="updatePlayerName(${i},'h',this.value)" placeholder="Name">
                         <button class="lag-btn ${m.lag==='h'?'lag-won':''}" onclick="setLag(${i},'h')">LAG WINNER</button>
                         <select onchange="setSL(${i},'h',this.value)">${Object.keys(races).map(s=>`<option value="${s}" ${m.h.sl==s?'selected':''}>SL ${s}</option>`)}</select>
                         <div style="margin:5px 0;">${renderTO(i,'h')}</div>
@@ -148,7 +168,7 @@
                         <div class="need-val">NEED: ${Math.max(0, races[m.h.sl] - m.h.b)}</div>
                     </div>
                     <div style="text-align:center;">
-                        <input value="${m.a.n}" oninput="matches[${i}].a.n=this.value; localStorage.setItem('billiard_vFinal_MVP_vFix', JSON.stringify(matches))" placeholder="Name">
+                        <input value="${m.a.n}" oninput="updatePlayerName(${i},'a',this.value)" placeholder="Name">
                         <button class="lag-btn ${m.lag==='a'?'lag-won':''}" onclick="setLag(${i},'a')">LAG WINNER</button>
                         <select onchange="setSL(${i},'a',this.value)">${Object.keys(races).map(s=>`<option value="${s}" ${m.a.sl==s?'selected':''}>SL ${s}</option>`)}</select>
                         <div style="margin:5px 0;">${renderTO(i,'a')}</div>
@@ -158,7 +178,7 @@
                     </div>
                 </div>`;
             }
-            c.appendChild(card);
+            container.appendChild(card);
         });
         document.getElementById('h-total').innerText = tH;
         document.getElementById('a-total').innerText = tA;
@@ -221,15 +241,24 @@
         m.a.b = Math.min(races[m.a.sl], m.a.b + m.cur.a.reduce((a, n) => a + (n === 9 ? 2 : 1), 0));
         m.cur = { h: [], a: [] }; m.dead = []; m.h.toCur = 0; m.a.toCur = 0; 
         
-        // Auto-Win Detection
         if(m.h.b >= races[m.h.sl] || m.a.b >= races[m.a.sl]) {
             const winner = m.h.b >= races[m.h.sl] ? (m.h.n || "Home") : (m.a.n || "Away");
-            showM("MATCH POINT!", winner + " has reached their goal. Finalize match?", [
+            showM("MATCH POINT!", winner + " reached goal. Finalize match?", [
                 { text: "FINISH", color: "var(--purple)", f: () => { m.done = true; refresh(); } },
                 { text: "KEEP PLAYING", f: () => refresh() }
             ]);
         }
         refresh();
+    }
+
+    function resetM(i) {
+        showM("RESET MATCH", "Wipe Match " + (i+1) + " data?", [
+            { text: "WIPE", color: "red", f: () => { 
+                matches[i] = { done:false, lag:null, dead:[], inn:0, h:{n:'',sl:3,b:0,d:0,toCur:0,toTotal:0}, a:{n:'',sl:3,b:0,d:0,toCur:0,toTotal:0}, cur:{h:[],a:[]} }; 
+                refresh(); 
+            } },
+            { text: "CANCEL", f: () => {} }
+        ]);
     }
 
     function resetAll() {
@@ -254,6 +283,7 @@
 
     function finM(i) { showM("FINISH", "Finalize Scorecard?", [{ text: "YES", color: "#6a0dad", f: () => { matches[i].done=true; refresh(); } }, { text: "NO", f: () => {} }]); }
     function editM(i) { matches[i].done = false; refresh(); }
+    
     function addMatch() {
         if(matches.length < 5) {
             matches.push({ done:false, lag:null, dead:[], inn:0, h:{n:'',sl:3,b:0,d:0,toCur:0,toTotal:0}, a:{n:'',sl:3,b:0,d:0,toCur:0,toTotal:0}, cur:{h:[],a:[]} });
@@ -267,9 +297,12 @@
         });
     }
 
+    // Load initial values
     document.getElementById('team-h').value = localStorage.getItem('team_h') || "";
     document.getElementById('team-a').value = localStorage.getItem('team_a') || "";
-    saveG(); if(matches.length === 0) addMatch(); refresh();
+    saveG(); 
+    if(matches.length === 0) addMatch(); 
+    refresh();
 </script>
 </body>
 </html>
