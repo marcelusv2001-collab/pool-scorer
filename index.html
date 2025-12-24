@@ -229,30 +229,154 @@
         sessionHistory.forEach((m, i) => {
             text += `Match ${i+1} [SL${m.sl}]: ${m.innings} Inn, ${m.defensive} Def, ${m.dead} Dead\n`;
         });
-        navigator.clipboard.writeText(text);
-        alert("Full history copied to clipboard!");
+   <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>League Scorer - 8 Ball</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root { --border: #000; --header-bg: #e0e0e0; }
+        body { font-family: Arial, sans-serif; background: #ccc; margin: 0; padding: 10px; color: #000; }
+        .scoresheet { background: #fff; border: 2px solid var(--border); max-width: 650px; margin: auto; padding: 15px; }
+        .header { text-align: center; border-bottom: 2px solid var(--border); margin-bottom: 10px; padding-bottom: 5px; }
+        
+        .match-row { border: 1px solid var(--border); margin-bottom: 15px; background: #fff; }
+        .match-header { background: var(--header-bg); padding: 5px; font-weight: bold; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
+        
+        .input-group { display: flex; flex-wrap: wrap; padding: 10px; border-bottom: 1px solid #ddd; }
+        .input-group label { font-size: 0.75rem; font-weight: bold; margin-right: 5px; }
+        .input-group input { border: 1px solid #ccc; padding: 4px; width: 80px; margin-right: 15px; }
+
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; }
+        .stat-item { display: flex; flex-direction: column; align-items: center; border: 1px solid #eee; padding: 5px; border-radius: 5px; }
+        .stat-label { font-size: 0.7rem; font-weight: bold; margin-bottom: 5px; }
+        
+        .controls { display: flex; align-items: center; gap: 10px; }
+        .btn { width: 40px; height: 40px; border: 1px solid #000; background: #f0f0f0; font-size: 1.5rem; cursor: pointer; font-weight: bold; }
+        .count { font-size: 1.4rem; font-weight: bold; min-width: 30px; text-align: center; }
+
+        .footer-totals { margin-top: 15px; padding: 10px; border-top: 2px solid #000; font-weight: bold; font-size: 1.1rem; display: flex; justify-content: space-between; }
+
+        .action-bar { position: sticky; bottom: 0; background: #ccc; padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; border-top: 2px solid #333; }
+        .action-bar button { padding: 12px; font-weight: bold; border: 2px solid #000; cursor: pointer; }
+        .btn-finish { background: #27ae60; color: #fff; grid-column: span 2; }
+    </style>
+</head>
+<body>
+
+<div id="capture-area" class="scoresheet">
+    <div class="header">
+        <strong style="font-size: 1.2rem;">8-BALL SCORESHEET BACKUP</strong>
+    </div>
+
+    <div id="active-matches"></div>
+
+    <div class="footer-totals">
+        <span>TOTAL GAMES WON:</span>
+        <span id="grand-games">0</span>
+    </div>
+</div>
+
+<div class="action-bar">
+    <button class="btn-finish" onclick="saveMatch()">Finish Current Match</button>
+    <button style="background: #2980b9; color: white;" onclick="exportJPG()">Export JPG</button>
+    <button style="background: #f1c40f;" onclick="exportText()">Copy Summary</button>
+    <button style="background: #e74c3c; color: white; grid-column: span 2;" onclick="resetSheet()">Reset Entire Sheet</button>
+</div>
+
+<script>
+    let savedMatches = JSON.parse(localStorage.getItem('eightBallSession')) || [];
+    let currentData = { name: '', sl: 3, num: '', games: 0, innings: 0, def: 0 };
+
+    function render() {
+        const container = document.getElementById('active-matches');
+        container.innerHTML = '';
+
+        // Show Completed Matches
+        savedMatches.forEach((m, i) => {
+            container.innerHTML += `
+            <div class="match-row" style="background: #f9f9f9; opacity: 0.8;">
+                <div class="match-header">MATCH ${i+1} - COMPLETED</div>
+                <div style="padding: 10px; font-size: 0.8rem;">
+                    <strong>${m.name} (SL${m.sl})</strong> | Games: ${m.games} | Inn: ${m.innings} | Def: ${m.def}
+                </div>
+            </div>`;
+        });
+
+        // Show Current Match
+        if (savedMatches.length < 5) {
+            container.innerHTML += `
+            <div class="match-row">
+                <div class="match-header">MATCH ${savedMatches.length + 1} - ACTIVE</div>
+                <div class="input-group">
+                    <label>NAME:</label><input type="text" id="name" value="${currentData.name}" onchange="updateData('name', this.value)">
+                    <label>SL:</label><input type="number" id="sl" value="${currentData.sl}" style="width: 40px;" onchange="updateData('sl', this.value)">
+                    <label>NO:</label><input type="text" id="num" value="${currentData.num}" style="width: 60px;" onchange="updateData('num', this.value)">
+                </div>
+                <div class="stat-grid">
+                    ${counter('GAMES WON', 'games')}
+                    ${counter('INNINGS', 'innings')}
+                    ${counter('DEFENSIVE', 'def')}
+                </div>
+            </div>`;
+        }
+        updateTotals();
+    }
+
+    function counter(label, key) {
+        return `
+        <div class="stat-item">
+            <span class="stat-label">${label}</span>
+            <div class="controls">
+                <button class="btn" onclick="step('${key}', -1)">-</button>
+                <span class="count">${currentData[key]}</span>
+                <button class="btn" onclick="step('${key}', 1)">+</button>
+            </div>
+        </div>`;
+    }
+
+    function updateData(key, val) { currentData[key] = val; }
+    function step(key, val) { 
+        currentData[key] = Math.max(0, currentData[key] + val); 
+        render(); 
+    }
+
+    function saveMatch() {
+        if (savedMatches.length >= 5) return;
+        savedMatches.push({...currentData});
+        localStorage.setItem('eightBallSession', JSON.stringify(savedMatches));
+        currentData = { name: '', sl: 3, num: '', games: 0, innings: 0, def: 0 };
+        render();
+    }
+
+    function updateTotals() {
+        const total = savedMatches.reduce((sum, m) => sum + parseInt(m.games), 0);
+        document.getElementById('grand-games').innerText = total;
     }
 
     function exportJPG() {
         html2canvas(document.getElementById('capture-area')).then(canvas => {
             const link = document.createElement('a');
-            link.download = 'league_report.jpg';
-            link.href = canvas.toDataURL("image/jpeg");
+            link.download = '8ball_backup.jpg';
+            link.href = canvas.toDataURL();
             link.click();
         });
     }
 
-    function clearSession() {
-        if (confirm("Clear all matches and start a new night?")) {
-            sessionHistory = [];
-            localStorage.removeItem('billiardHistory');
-            matchData = { innings: 0, defensive: 0, dead: 0 };
-            updateUI();
-        }
+    function exportText() {
+        let txt = "8-BALL LEAGUE SUMMARY\\n";
+        savedMatches.forEach((m, i) => {
+            txt += `M${i+1}: ${m.name} (SL${m.sl}) - Won: ${m.games}, Inn: ${m.innings}\\n`;
+        });
+        navigator.clipboard.writeText(txt);
+        alert("Text copied!");
     }
 
-    updateUI();
-</script>
-
-</body>
-</html>
+    function resetSheet() {
+        if (confirm("Clear all match data?")) {
+            savedMatches = [];
+            localStorage.removeItem('eightBallSession');
+            currentData = { name: '', sl: 3, num: '', games: 0, innings
