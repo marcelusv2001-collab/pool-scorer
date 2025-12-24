@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <title>8-Ball 3PT | 9-Ball 20PT</title>
-    <meta name="apple-mobile-web-app-title" content="8B 3PT | 9B 20PT">
-    <meta name="application-name" content="8B 3PT | 9B 20PT">
+    <title>Offline Billiard Scorekeeper</title>
+    <meta name="apple-mobile-web-app-title" content="Billiard Score">
+    <meta name="application-name" content="Billiard Score">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
@@ -26,7 +26,7 @@
         .logo-box { background: white; padding: 8px 20px; border-radius: 12px; border: 3px solid var(--gold); display: inline-block; }
         .logo-mvp { color:#00FF00; font-size: 26px; font-weight: 900; }
         .logo-tv { color:#FF0000; font-size: 34px; font-style: italic; font-weight: 900; margin-left: -5px; }
-        .sub-logo { display: block; color: white; font-size: 0.9rem; font-weight: 700; letter-spacing: 1px; margin-top: 8px; }
+        .sub-logo { display: block; color: white; font-size: 0.9rem; font-weight: 300; letter-spacing: 1px; margin-top: 5px; opacity: 0.9; }
         
         .match-card { border-radius: 15px; margin-bottom: 15px; overflow: hidden; color: #333; background: white; border: 2px solid var(--gold); }
         .card-done { border-left: 12px solid var(--purple); opacity: 0.98; }
@@ -65,7 +65,7 @@
 
 <div class="branding">
     <div class="logo-box"><span class="logo-mvp">MVP</span><span class="logo-tv">TV</span></div>
-    <span class="sub-logo">8-Ball 3PT System | 9-Ball 20PT System</span>
+    <span class="sub-logo">Offline Billiard Scorekeeper</span>
 </div>
 
 <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
@@ -93,8 +93,8 @@
 <script>
     // --- APP HUB CONFIG ---
     const myManifest = {
-        "name": "8-Ball 3PT | 9-Ball 20PT System",
-        "short_name": "8B 3PT | 9B 20PT",
+        "name": "Offline Billiard Scorekeeper",
+        "short_name": "Scorekeeper",
         "start_url": ".",
         "display": "standalone",
         "background_color": "#1a1a1a",
