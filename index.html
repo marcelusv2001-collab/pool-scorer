@@ -30,6 +30,10 @@
         .team-header { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; }
         .team-header input { background: rgba(255,255,255,0.1); border: 1px solid var(--gold); color: var(--gold); border-radius: 8px; padding: 10px; text-align: center; font-weight: 800; width: 100%; }
 
+        .total-score-bar { background: #000; color: var(--gold); padding: 10px; border-radius: 10px; margin: 10px 0; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; text-align: center; border: 1px solid var(--gold); }
+        .total-score-label { font-size: 0.6rem; text-transform: uppercase; font-weight: 900; color: #fff; display: block; }
+        .total-val { font-size: 1.4rem; font-weight: 900; }
+
         .match-card { border-radius: 12px; margin-bottom: 12px; overflow: hidden; box-shadow: 0 6px 12px rgba(0,0,0,0.3); position: relative; }
         .card-active { background: var(--active-bg); border-left: 6px solid var(--felt); }
         .card-done { background: var(--done-bg); border-left: 6px solid #95a5a6; }
@@ -114,6 +118,12 @@
     <div id="match-container"></div>
 </div>
 
+<div class="total-score-bar" id="total-points-display">
+    <div><span class="total-score-label" id="h-team-label">HOME</span><div class="total-val" id="h-total">0</div></div>
+    <div style="font-weight: 900; font-size: 1.2rem; border-left: 1px solid #444; border-right: 1px solid #444; padding: 0 15px;">TOTAL</div>
+    <div><span class="total-score-label" id="a-team-label">AWAY</span><div class="total-val" id="a-total">0</div></div>
+</div>
+
 <div class="actions">
     <button class="action-btn" style="background: var(--felt); grid-column: span 2;" onclick="addMatch()">+ New Match</button>
     <button class="action-btn" style="background: var(--chalk);" onclick="exportJPG()">Save JPG</button>
@@ -131,7 +141,7 @@
         7:{2:[7,2],3:[6,2],4:[5,2],5:[5,3],6:[5,4],7:[5,5]}
     };
 
-    const STORAGE_KEY = 'mvp_final_v5_stable';
+    const STORAGE_KEY = 'mvp_final_v6_points';
     let matches = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
     let activeWin = { i: null, s: null };
 
@@ -155,9 +165,17 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(matches));
         const container = document.getElementById('match-container');
         container.innerHTML = '';
+        
+        let grandTotalH = 0;
+        let grandTotalA = 0;
+
         matches.forEach((m, i) => {
             const race = raceTable[m.h.sl][m.a.sl];
             calcPoints(m, race);
+            
+            grandTotalH += m.hPts;
+            grandTotalA += m.aPts;
+
             const card = document.createElement('div');
             card.className = `match-card ${m.done ? 'card-done' : 'card-active'}`;
             
@@ -197,6 +215,12 @@
             }
             container.appendChild(card);
         });
+
+        // Update Total Point Bar
+        document.getElementById('h-total').innerText = grandTotalH;
+        document.getElementById('a-total').innerText = grandTotalA;
+        document.getElementById('h-team-label').innerText = document.getElementById('h-team').value || 'HOME';
+        document.getElementById('a-team-label').innerText = document.getElementById('a-team').value || 'AWAY';
     }
 
     function renderSide(i,s,d,cap) {
