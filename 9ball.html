@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Billiards Scorekeeper MVP PRO</title>
+    <title>MVP TV Scorekeeper PRO</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { --slate: #1a1a1a; --gold: #f1c40f; --purple: #6a0dad; --danger: #e74c3c; }
         * { box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--slate); margin: 0; padding: 10px; color: #fff; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--slate); margin: 0; padding: 10px; color: #fff; }
         
         #custom-modal { display: none; position: fixed; z-index: 10001; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); }
         .modal-content { background: #fff; color: #000; margin: 20% auto; padding: 25px; border-radius: 15px; width: 85%; text-align: center; border: 5px solid var(--purple); }
@@ -21,16 +21,16 @@
         
         .match-card { border-radius: 15px; margin-bottom: 15px; overflow: hidden; color: #333; background: white; border: 2px solid var(--gold); }
         .card-done { border-left: 12px solid var(--purple); opacity: 0.98; }
-        .head-active { background: var(--gold); color: #000; padding: 12px; font-weight: 900; display: flex; justify-content: space-between; align-items: center; }
+        .head-active { background: var(--gold); color: #000; padding: 10px; font-weight: 900; display: flex; justify-content: space-between; align-items: center; }
         
         .ball-container { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; margin: 8px 0; }
-        .ball { width: 34px; height: 34px; border-radius: 50%; border: 1px solid #aaa; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 900; color: #fff; cursor: pointer; text-shadow: 1px 1px 1px #000; }
-        .b1, .b9 { background: #ffea00; color: #000; text-shadow: none; } .b9 { border: 2px dashed #000; }
-        .b2 { background: #0052cc; } .b3 { background: #cc0000; } .b4 { background: #4b0082; }
-        .b5 { background: #ff8c00; } .b6 { background: #008000; } .b7 { background: #8b4513; } .b8 { background: #000; }
+        .ball { width: 32px; height: 32px; border-radius: 50%; border: 1px solid #aaa; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 900; color: #fff; cursor: pointer; }
+        .b1, .b9 { background: #ffea00; color: #000; } .b2 { background: #0052cc; } .b3 { background: #cc0000; } 
+        .b4 { background: #4b0082; } .b5 { background: #ff8c00; } .b6 { background: #008000; } 
+        .b7 { background: #8b4513; } .b8 { background: #000; } .b9 { border: 2px dashed #000; }
 
-        .ball-selected { background: #ffffff !important; color: var(--purple) !important; border: 3px solid var(--purple) !important; text-shadow: none !important; transform: scale(1.1); }
-        .ball-dead { background: #333 !important; color: #ff0000 !important; border: 2px dashed #ff0000 !important; opacity: 0.4; text-shadow: none !important; }
+        .ball-selected { background: #ffffff !important; color: var(--purple) !important; border: 3px solid var(--purple) !important; transform: scale(1.1); }
+        .ball-dead { background: #333 !important; opacity: 0.4; }
         
         .lag-btn { background: #eee; border: 1px solid #ccc; font-size: 0.65rem; padding: 5px; border-radius: 4px; cursor: pointer; width: 100%; margin-bottom: 5px; font-weight: 900; }
         .lag-won { background: var(--purple) !important; color: white !important; }
@@ -39,10 +39,10 @@
         .to-used { background: var(--danger); color: white; border-color: var(--danger); }
         
         input, select { padding: 8px; border-radius: 8px; border: 1px solid #ccc; width: 100%; margin-bottom: 4px; font-weight: 900; }
-        .need-val { font-weight: 900; color: var(--purple); font-size: 0.85rem; background: #f0e6ff; padding: 2px 5px; border-radius: 4px; margin-top: 5px; }
+        .need-val { font-weight: 900; color: var(--purple); font-size: 0.8rem; background: #f0e6ff; padding: 3px; border-radius: 4px; margin-top: 5px; }
         
         .total-score-bar { background: #000; color: var(--gold); padding: 20px; border-radius: 15px; margin: 15px 0; display: grid; grid-template-columns: 1fr auto 1fr; text-align: center; border: 3px solid var(--gold); }
-        .action-btn { width: 100%; padding: 20px; border: none; border-radius: 12px; font-weight: 900; color: white; cursor: pointer; margin-top: 10px; font-size: 1.1rem; }
+        .action-btn { width: 100%; padding: 18px; border: none; border-radius: 12px; font-weight: 900; color: white; cursor: pointer; margin-top: 10px; font-size: 1rem; }
     </style>
 </head>
 <body>
@@ -69,19 +69,21 @@
 
 <button class="action-btn" style="background:var(--gold); color:#000;" onclick="addMatch()">+ New Match</button>
 <button class="action-btn" style="background:#3498db;" onclick="exportJPG()">Save Image</button>
+<button class="action-btn" style="background:#27ae60;" onclick="exportTXT()">Export to TXT</button>
+<button class="action-btn" style="background:var(--danger);" onclick="resetAll()">RESET ALL MATCHES</button>
 
 <script>
     const races = { 1:14, 2:19, 3:25, 4:31, 5:38, 6:46, 7:55, 8:65, 9:75 };
     const chart = {
-        1: [ {m:2, p:20}, {m:3, p:19}, {m:4, p:18}, {m:6, p:17}, {m:7, p:16}, {m:8, p:15}, {m:10, p:14}, {m:11, p:13}, {m:13, p:12} ],
-        2: [ {m:3, p:20}, {m:5, p:19}, {m:7, p:18}, {m:8, p:17}, {m:10, p:16}, {m:12, p:15}, {m:14, p:14}, {m:16, p:13}, {m:18, p:12} ],
-        3: [ {m:4, p:20}, {m:6, p:19}, {m:9, p:18}, {m:11, p:17}, {m:14, p:16}, {m:16, p:15}, {m:19, p:14}, {m:21, p:13}, {m:24, p:12} ],
-        4: [ {m:5, p:20}, {m:8, p:19}, {m:11, p:18}, {m:14, p:17}, {m:18, p:16}, {m:21, p:15}, {m:24, p:14}, {m:27, p:13}, {m:30, p:12} ],
-        5: [ {m:6, p:20}, {m:10, p:19}, {m:14, p:18}, {m:18, p:17}, {m:22, p:16}, {m:26, p:15}, {m:29, p:14}, {m:33, p:13}, {m:37, p:12} ],
-        6: [ {m:8, p:20}, {m:12, p:19}, {m:17, p:18}, {m:22, p:17}, {m:27, p:16}, {m:31, p:15}, {m:36, p:14}, {m:40, p:13}, {m:45, p:12} ],
-        7: [ {m:10, p:20}, {m:15, p:19}, {m:21, p:18}, {m:26, p:17}, {m:32, p:16}, {m:37, p:15}, {m:43, p:14}, {m:49, p:13}, {m:54, p:12} ],
-        8: [ {m:13, p:20}, {m:19, p:19}, {m:26, p:18}, {m:32, p:17}, {m:39, p:16}, {m:45, p:15}, {m:52, p:14}, {m:58, p:13}, {m:64, p:12} ],
-        9: [ {m:17, p:20}, {m:24, p:19}, {m:31, p:18}, {m:38, p:17}, {m:46, p:16}, {m:53, p:15}, {m:60, p:14}, {m:67, p:13}, {m:74, p:12} ]
+        1: [{m:2,p:20},{m:3,p:19},{m:4,p:18},{m:6,p:17},{m:7,p:16},{m:8,p:15},{m:10,p:14},{m:11,p:13},{m:13,p:12}],
+        2: [{m:3,p:20},{m:5,p:19},{m:7,p:18},{m:8,p:17},{m:10,p:16},{m:12,p:15},{m:14,p:14},{m:16,p:13},{m:18,p:12}],
+        3: [{m:4,p:20},{m:6,p:19},{m:9,p:18},{m:11,p:17},{m:14,p:16},{m:16,p:15},{m:19,p:14},{m:21,p:13},{m:24,p:12}],
+        4: [{m:5,p:20},{m:8,p:19},{m:11,p:18},{m:14,p:17},{m:18,p:16},{m:21,p:15},{m:24,p:14},{m:27,p:13},{m:30,p:12}],
+        5: [{m:6,p:20},{m:10,p:19},{m:14,p:18},{m:18,p:17},{m:22,p:16},{m:26,p:15},{m:29,p:14},{m:33,p:13},{m:37,p:12}],
+        6: [{m:8,p:20},{m:12,p:19},{m:17,p:18},{m:22,p:17},{m:27,p:16},{m:31,p:15},{m:36,p:14},{m:40,p:13},{m:45,p:12}],
+        7: [{m:10,p:20},{m:15,p:19},{m:21,p:18},{m:26,p:17},{m:32,p:16},{m:37,p:15},{m:43,p:14},{m:49,p:13},{m:54,p:12}],
+        8: [{m:13,p:20},{m:19,p:19},{m:26,p:18},{m:32,p:17},{m:39,p:16},{m:45,p:15},{m:52,p:14},{m:58,p:13},{m:64,p:12}],
+        9: [{m:17,p:20},{m:24,p:19},{m:31,p:18},{m:38,p:17},{m:46,p:16},{m:53,p:15},{m:60,p:14},{m:67,p:13},{m:74,p:12}]
     };
 
     let matches = JSON.parse(localStorage.getItem('billiard_vFinal_MVP_vFix')) || [];
@@ -120,30 +122,24 @@
             
             if (m.done) {
                 card.innerHTML = `<div style="background:#222;color:#fff;padding:12px;font-weight:900;display:flex;justify-content:space-between;">
-                    <span>MATCH ${i+1} FINAL | ${hPt}-${aPt}</span>
+                    <span>MATCH ${i+1} | ${hPt}-${aPt}</span>
                     <button onclick="editM(${i})" style="font-size:0.7rem;">EDIT</button>
                 </div>
-                <div style="padding:15px;display:grid;grid-template-columns:1fr 1fr;gap:20px;background:white;">
-                    <div>
-                        <b>${m.h.n||'Player'}</b> (SL${m.h.sl})<br>
-                        Lag: ${m.lag==='h'?'WON':'—'}<br>
-                        Balls: ${m.h.b}/${races[m.h.sl]}<br>
-                        Def/TO: ${m.h.d}/${m.h.toTotal}
-                    </div>
-                    <div>
-                        <b>${m.a.n||'Player'}</b> (SL${m.a.sl})<br>
-                        Lag: ${m.lag==='a'?'WON':'—'}<br>
-                        Balls: ${m.a.b}/${races[m.a.sl]}<br>
-                        Def/TO: ${m.a.d}/${m.a.toTotal}
-                    </div>
+                <div style="padding:15px;display:grid;grid-template-columns:1fr 1fr;gap:20px;background:white;position:relative;">
+                    <div style="position:absolute; top:5px; left:50%; transform:translateX(-50%); font-weight:900; color:var(--purple);">INN: ${m.inn}</div>
+                    <div><b>${m.h.n||'Player'}</b> (SL${m.h.sl})<br>Lag: ${m.lag==='h'?'WON':'—'}<br>Balls: ${m.h.b}/${races[m.h.sl]}<br>Def: ${m.h.d}</div>
+                    <div><b>${m.a.n||'Player'}</b> (SL${m.a.sl})<br>Lag: ${m.lag==='a'?'WON':'—'}<br>Balls: ${m.a.b}/${races[m.a.sl]}<br>Def: ${m.a.d}</div>
                 </div>`;
             } else {
                 card.innerHTML = `<div class="head-active"><span>MATCH ${i+1}</span>
-                    <div><button onclick="resetM(${i})" style="background:red;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:0.7rem;font-weight:900;">RESET</button>
-                    <button onclick="finM(${i})" style="background:black;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:0.7rem;font-weight:900;">FINISH</button></div></div>
+                    <div>
+                        <span style="margin-right:15px;">INN: <button onclick="adj(${i},null,'inn',-1)">-</button> <b>${m.inn}</b> <button onclick="adj(${i},null,'inn',1)">+</button></span>
+                        <button onclick="finM(${i})" style="background:black;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:0.7rem;font-weight:900;">FINISH</button>
+                    </div>
+                </div>
                 <div style="padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                     <div style="text-align:center;">
-                        <input value="${m.h.n}" oninput="updateData(${i},'h','n',this.value)" placeholder="Name">
+                        <input value="${m.h.n}" oninput="matches[${i}].h.n=this.value; localStorage.setItem('billiard_vFinal_MVP_vFix', JSON.stringify(matches))" placeholder="Name">
                         <button class="lag-btn ${m.lag==='h'?'lag-won':''}" onclick="setLag(${i},'h')">LAG WINNER</button>
                         <select onchange="setSL(${i},'h',this.value)">${Object.keys(races).map(s=>`<option value="${s}" ${m.h.sl==s?'selected':''}>SL ${s}</option>`)}</select>
                         <div style="margin:5px 0;">${renderTO(i,'h')}</div>
@@ -152,7 +148,7 @@
                         <div class="need-val">NEED: ${Math.max(0, races[m.h.sl] - m.h.b)}</div>
                     </div>
                     <div style="text-align:center;">
-                        <input value="${m.a.n}" oninput="updateData(${i},'a','n',this.value)" placeholder="Name">
+                        <input value="${m.a.n}" oninput="matches[${i}].a.n=this.value; localStorage.setItem('billiard_vFinal_MVP_vFix', JSON.stringify(matches))" placeholder="Name">
                         <button class="lag-btn ${m.lag==='a'?'lag-won':''}" onclick="setLag(${i},'a')">LAG WINNER</button>
                         <select onchange="setSL(${i},'a',this.value)">${Object.keys(races).map(s=>`<option value="${s}" ${m.a.sl==s?'selected':''}>SL ${s}</option>`)}</select>
                         <div style="margin:5px 0;">${renderTO(i,'a')}</div>
@@ -168,21 +164,14 @@
         document.getElementById('a-total').innerText = tA;
     }
 
-    function updateData(i, side, key, val) {
-        matches[i][side][key] = val;
-        localStorage.setItem('billiard_vFinal_MVP_vFix', JSON.stringify(matches));
-    }
-
     function setLag(i, s) { matches[i].lag = s; refresh(); }
     function setSL(i, s, v) { matches[i][s].sl = parseInt(v); refresh(); }
-    function adj(i, s, k, v) { matches[i][s][k] = Math.max(0, matches[i][s][k] + v); refresh(); }
+    function adj(i, s, k, v) { if(s) matches[i][s][k] = Math.max(0, matches[i][s][k] + v); else matches[i][k] = Math.max(0, matches[i][k] + v); refresh(); }
 
     function getPts(side, idx) {
         const m = matches[idx]; const p = m[side]; const o = (side === 'h' ? m.a : m.h);
-        if (p.b >= races[p.sl]) return 20;
-        if (o.b < races[o.sl]) return 0;
-        const t = chart[p.sl];
-        for (let entry of t) { if (p.b <= entry.m) return 20 - entry.p; }
+        if (p.b >= races[p.sl]) return 20; if (o.b < races[o.sl]) return 0;
+        const t = chart[p.sl]; for (let entry of t) { if (p.b <= entry.m) return 20 - entry.p; }
         return 0;
     }
 
@@ -230,16 +219,44 @@
         for(let i=1; i<=8; i++) { if(!m.cur.h.includes(i) && !m.cur.a.includes(i) && !m.dead.includes(i)) m.dead.push(i); }
         m.h.b = Math.min(races[m.h.sl], m.h.b + m.cur.h.reduce((a, n) => a + (n === 9 ? 2 : 1), 0));
         m.a.b = Math.min(races[m.a.sl], m.a.b + m.cur.a.reduce((a, n) => a + (n === 9 ? 2 : 1), 0));
-        m.cur = { h: [], a: [] }; m.dead = []; m.h.toCur = 0; m.a.toCur = 0; refresh();
+        m.cur = { h: [], a: [] }; m.dead = []; m.h.toCur = 0; m.a.toCur = 0; 
+        
+        // Auto-Win Detection
+        if(m.h.b >= races[m.h.sl] || m.a.b >= races[m.a.sl]) {
+            const winner = m.h.b >= races[m.h.sl] ? (m.h.n || "Home") : (m.a.n || "Away");
+            showM("MATCH POINT!", winner + " has reached their goal. Finalize match?", [
+                { text: "FINISH", color: "var(--purple)", f: () => { m.done = true; refresh(); } },
+                { text: "KEEP PLAYING", f: () => refresh() }
+            ]);
+        }
+        refresh();
+    }
+
+    function resetAll() {
+        showM("RESET ALL", "Wipe EVERYTHING?", [
+            { text: "WIPE", color: "red", f: () => { matches = []; addMatch(); refresh(); } },
+            { text: "CANCEL", f: () => {} }
+        ]);
+    }
+
+    function exportTXT() {
+        let txt = `MVP TV BILLIARDS - ${document.getElementById('team-h').value} vs ${document.getElementById('team-a').value}\n`;
+        txt += `==========================================\n`;
+        matches.forEach((m, i) => {
+            txt += `MATCH ${i+1}: ${m.h.n||'H'} (SL${m.h.sl}) vs ${m.a.n||'A'} (SL${m.a.sl})\n`;
+            txt += `SCORE: ${getPts('h',i)}-${getPts('a',i)} | INNINGS: ${m.inn}\n`;
+            txt += `------------------------------------------\n`;
+        });
+        const blob = new Blob([txt], {type: "text/plain"});
+        const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+        a.download = "APA_Score_Summary.txt"; a.click();
     }
 
     function finM(i) { showM("FINISH", "Finalize Scorecard?", [{ text: "YES", color: "#6a0dad", f: () => { matches[i].done=true; refresh(); } }, { text: "NO", f: () => {} }]); }
     function editM(i) { matches[i].done = false; refresh(); }
-    function resetM(i) { showM("RESET", "Wipe Match?", [{ text: "WIPE", color: "red", f: () => { matches[i] = { done:false, lag:null, dead:[], h:{n:'',sl:3,b:0,d:0,toCur:0,toTotal:0}, a:{n:'',sl:3,b:0,d:0,toCur:0,toTotal:0}, cur:{h:[],a:[]} }; refresh(); } }, { text: "CANCEL", f: () => {} }]); }
-
     function addMatch() {
         if(matches.length < 5) {
-            matches.push({ done:false, lag:null, dead:[], h:{n:'',sl:3,b:0,d:0,toCur:0,toTotal:0}, a:{n:'',sl:3,b:0,d:0,toCur:0,toTotal:0}, cur:{h:[],a:[]} });
+            matches.push({ done:false, lag:null, dead:[], inn:0, h:{n:'',sl:3,b:0,d:0,toCur:0,toTotal:0}, a:{n:'',sl:3,b:0,d:0,toCur:0,toTotal:0}, cur:{h:[],a:[]} });
             refresh();
         }
     }
