@@ -9,58 +9,63 @@
         :root { 
             --felt: #2d5a27; --slate: #1a1a1a; --wood: #5d4037; 
             --gold: #f1c40f; --chalk: #3498db; --ball-8: #2c3e50; --danger: #e74c3c;
+            --active-bg: #ffffff; --done-bg: #f1f3f5;
         }
         * { box-sizing: border-box; touch-action: manipulation; }
         body { 
             font-family: 'Inter', sans-serif; background-color: var(--slate); 
             background-image: radial-gradient(circle, #3d7a35 0%, #1a3a16 100%);
-            margin: 0; padding: 8px; color: #fff; overflow-x: hidden;
+            margin: 0; padding: 10px; color: #fff; overflow-x: hidden;
         }
-        .branding { text-align: center; margin-bottom: 10px; }
-        .logo-box { background: white; padding: 5px 12px; display: inline-block; border-radius: 8px; }
-        .logo-mvp { color:#00FF00; font-size: 24px; font-weight: 900; }
-        .logo-tv { color:#FF0000; font-size: 30px; font-style: italic; font-weight: 900; font-family: cursive; margin-left: -5px; }
+        .branding { text-align: center; margin-bottom: 12px; }
+        .logo-box { background: white; padding: 8px 15px; display: inline-block; border-radius: 12px; }
+        .logo-mvp { color:#00FF00; font-size: 26px; font-weight: 900; }
+        .logo-tv { color:#FF0000; font-size: 34px; font-style: italic; font-weight: 900; font-family: 'Brush Script MT', cursive; margin-left: -5px; }
         
+        /* Custom Dialog */
         #custom-dialog-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); display:none; justify-content:center; align-items:center; z-index:3000; }
-        .dialog-box { background:#fff; color:#333; padding:20px; border-radius:12px; width:85%; max-width:300px; text-align:center; border-top: 5px solid var(--gold); }
-
-        .sheet { background: rgba(0, 0, 0, 0.2); border-radius: 12px; padding: 5px; }
-        .team-header { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 10px; }
-        .team-header input { background: rgba(255,255,255,0.1); border: 1px solid var(--gold); color: var(--gold); border-radius: 6px; padding: 8px; text-align: center; font-weight: 800; width: 100%; }
-
-        .match-card { border-radius: 10px; margin-bottom: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .card-active { background: #fff; border-left: 5px solid var(--felt); }
-        .card-done { background: #f8f9fa; border-left: 5px solid #7f8c8d; }
+        .dialog-box { background:#fff; color:#333; padding:25px; border-radius:15px; width:90%; max-width:320px; text-align:center; border-top: 5px solid var(--gold); }
         
-        .match-header { padding: 6px 10px; font-weight: 800; display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: white; }
-        .head-active { background: var(--felt); }
-        .head-done { background: #34495e; }
+        .sheet { background: rgba(0, 0, 0, 0.2); border-radius: 15px; padding: 8px; }
+        .team-header { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+        .team-header input { background: rgba(255,255,255,0.1); border: 1px solid var(--gold); color: var(--gold); border-radius: 8px; padding: 10px; text-align: center; font-weight: 800; width: 100%; }
+
+        /* Match Cards */
+        .match-card { border-radius: 12px; margin-bottom: 12px; overflow: hidden; box-shadow: 0 6px 12px rgba(0,0,0,0.3); }
+        .card-active { background: var(--active-bg); border-left: 6px solid var(--felt); }
+        .card-done { background: var(--done-bg); border-left: 6px solid #95a5a6; }
+        
+        .head-active { background: var(--felt); color: white; padding: 8px 12px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; }
+        .head-done { background: #34495e; color: #ecf0f1; padding: 6px 12px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; }
 
         .grid-main { display: grid; grid-template-columns: 1fr 1fr; padding: 5px; }
-        .side { padding: 6px; color: #333; }
-        .side:first-child { border-right: 1px solid #ddd; }
+        .side { padding: 8px; color: #333; }
+        .side:first-child { border-right: 1px solid #eee; }
         
-        .name-display { font-weight: 800; font-size: 0.9rem; color: #2c3e50; border-bottom: 1px solid #eee; margin-bottom: 5px; display: block; width: 100%; }
-        .game-history { font-size: 0.6rem; color: var(--danger); font-weight: 800; background: #fff0f0; padding: 2px 4px; border-radius: 4px; min-height: 14px; margin-bottom: 5px; }
+        .name-input { font-weight: 800; border: none; border-bottom: 2px solid #eee; margin-bottom: 5px; font-size: 0.9rem; color: var(--ball-8); width: 100%; }
+        .sl-badge { background: var(--ball-8); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; }
         
-        .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; margin-top: 5px; }
-        .stat-item { background: #eee; border-radius: 5px; padding: 3px; text-align: center; }
-        .stat-label { font-size: 0.5rem; color: #777; font-weight: 800; display: block; text-transform: uppercase; }
-        .stat-val { font-size: 0.75rem; font-weight: 800; color: #333; }
-
+        .game-history { font-size: 0.6rem; color: var(--danger); font-weight: 800; margin: 5px 0; background: #fff5f5; padding: 2px 4px; border-radius: 4px; min-height: 14px; }
+        
+        .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+        .stat-box { background: #f8f9fa; border: 1px solid #eee; border-radius: 8px; padding: 4px; text-align: center; }
+        .stat-label { font-size: 0.5rem; color: #999; font-weight: 900; text-transform: uppercase; display: block; }
+        
         .stepper { display: flex; align-items: center; justify-content: space-between; margin-top: 2px; }
-        .btn { width: 22px; height: 22px; border-radius: 4px; border: 1px solid #ccc; background: #fff; font-weight: 900; }
-        .btn-p { background: var(--felt); color: white; border: none; }
+        .btn { width: 22px; height: 22px; border-radius: 6px; border: 1px solid #ddd; background: #fff; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-plus { background: var(--felt); color: white; border: none; }
+        
+        .inn-row { text-align: center; background: #fcfcfc; color: #333; padding: 5px; border-top: 1px solid #eee; border-bottom: 1px solid #eee; font-size: 0.7rem; font-weight: 800; display: flex; justify-content: center; align-items: center; gap: 10px; }
+        .pts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; background: rgba(0,0,0,0.02); }
+        .pts-pill { background: #333; color: var(--gold); padding: 5px; border-radius: 6px; font-size: 0.8rem; font-weight: 900; text-align: center; border: 1px solid var(--gold); }
 
-        .pts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; padding: 8px; background: #eaeff2; }
-        .pts-pill { background: #2c3e50; color: var(--gold); padding: 5px; border-radius: 6px; font-size: 0.75rem; font-weight: 900; text-align: center; }
+        /* Final Summary View */
+        .summary-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 10px; color: #444; font-size: 0.7rem; }
+        .summary-box { background: #fff; padding: 8px; border-radius: 8px; border: 1px solid #ddd; }
+        .summary-line { margin: 2px 0; border-bottom: 1px dashed #eee; display: flex; justify-content: space-between; }
 
-        .inn-bar { text-align: center; background: #fff; color: #333; padding: 5px; font-size: 0.7rem; font-weight: 800; border-top: 1px solid #eee; }
-
-        .final-summary { padding: 8px; font-size: 0.7rem; color: #444; border-top: 1px solid #ddd; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-        .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-        .action-btn { padding: 12px; border: none; border-radius: 8px; font-weight: 800; color: white; cursor: pointer; font-size: 0.75rem; }
+        .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 15px; }
+        .action-btn { padding: 12px; border: none; border-radius: 10px; font-weight: 800; color: white; cursor: pointer; text-transform: uppercase; font-size: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
@@ -71,18 +76,18 @@
 
 <div id="custom-dialog-overlay">
     <div class="dialog-box">
-        <div id="dialog-msg"></div>
-        <div id="dialog-buttons" style="display:flex; gap:10px; justify-content:center; margin-top:15px;"></div>
+        <div id="dialog-msg" style="margin-bottom: 20px; font-size: 0.95rem; font-weight: 700;"></div>
+        <div id="dialog-buttons" style="display:flex; gap:10px; justify-content:center;"></div>
     </div>
 </div>
 
 <div id="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 2000;">
-    <div style="background: #fff; padding: 20px; border-radius: 12px; width: 280px; text-align: center;">
-        <h3 style="margin-top:0; color:#333;">Win Type</h3>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+    <div style="background: #fff; padding: 20px; border-radius: 15px; width: 280px; text-align: center;">
+        <h3 style="margin-top:0; color:var(--ball-8);">Win Category</h3>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
             <button class="action-btn" style="background:#444;" onclick="recordWin('Normal')">Normal</button>
-            <button class="action-btn" style="background:var(--felt);" onclick="recordWin('8BB')">8BB</button>
-            <button class="action-btn" style="background:var(--felt);" onclick="recordWin('B&R')">B&R</button>
+            <button class="action-btn" style="background:var(--felt);" onclick="recordWin('8BB')">8-Ball Brk</button>
+            <button class="action-btn" style="background:var(--felt);" onclick="recordWin('B&R')">Brk & Run</button>
             <button class="action-btn" style="background:var(--danger);" onclick="recordWin('E8')">Early 8</button>
             <button class="action-btn" style="background:var(--danger);" onclick="recordWin('S8')">Scratch 8</button>
             <button class="action-btn" style="background:var(--danger);" onclick="recordWin('WP')">Wrong Pkt</button>
@@ -100,10 +105,10 @@
 </div>
 
 <div class="actions">
-    <button class="action-btn" style="background: var(--felt); grid-column: span 2;" onclick="addMatch()">+ ADD MATCH</button>
-    <button class="action-btn" style="background: var(--chalk);" onclick="exportJPG()">SAVE JPG</button>
-    <button class="action-btn" style="background: var(--gold); color:#333;" onclick="copyLog()">COPY LOG</button>
-    <button class="action-btn" style="background: var(--danger); grid-column: span 2;" onclick="confirmResetAll()">RESET ALL</button>
+    <button class="action-btn" style="background: var(--felt); grid-column: span 2;" onclick="addMatch()">+ New Match</button>
+    <button class="action-btn" style="background: var(--chalk);" onclick="exportJPG()">Save JPG</button>
+    <button class="action-btn" style="background: var(--gold); color:#333;" onclick="copyLog()">Copy Log</button>
+    <button class="action-btn" style="background: var(--danger); grid-column: span 2;" onclick="confirmResetAll()">Reset All Sessions</button>
 </div>
 
 <script>
@@ -116,7 +121,7 @@
         7:{2:[7,2],3:[6,2],4:[5,2],5:[5,3],6:[5,4],7:[5,5]}
     };
 
-    let matches = JSON.parse(localStorage.getItem('mvp_v_stats')) || [];
+    let matches = JSON.parse(localStorage.getItem('mvp_v_pro')) || [];
     let activeWin = { i: null, s: null };
 
     function showDialog(msg, isConfirm, onOk) {
@@ -124,11 +129,11 @@
         document.getElementById('dialog-msg').innerText = msg;
         const btnC = document.getElementById('dialog-buttons');
         btnC.innerHTML = '';
-        const ok = document.createElement('button'); ok.innerText = "OK"; ok.className="action-btn"; ok.style.background="var(--felt)";
+        const ok = document.createElement('button'); ok.innerText = "Confirm"; ok.className="action-btn"; ok.style.background="var(--ball-8)";
         ok.onclick = () => { overlay.style.display='none'; if(onOk) onOk(); };
         btnC.appendChild(ok);
         if(isConfirm) {
-            const can = document.createElement('button'); can.innerText = "Cancel"; can.className="action-btn"; can.style.background="#999";
+            const can = document.createElement('button'); can.innerText = "Back"; can.className="action-btn"; can.style.background="#ccc";
             can.onclick = () => { overlay.style.display='none'; };
             btnC.appendChild(can);
         }
@@ -136,10 +141,9 @@
     }
 
     function refresh() {
-        localStorage.setItem('mvp_v_stats', JSON.stringify(matches));
+        localStorage.setItem('mvp_v_pro', JSON.stringify(matches));
         const container = document.getElementById('match-container');
         container.innerHTML = '';
-        
         matches.forEach((m, i) => {
             const race = raceTable[m.h.sl][m.a.sl];
             calcPoints(m, race);
@@ -148,25 +152,29 @@
             
             if (m.done) {
                 card.innerHTML = `
-                    <div class="match-header head-done">MATCH ${i+1} FINAL <span onclick="toggleEdit(${i})" style="text-decoration:underline;cursor:pointer">Edit</span></div>
-                    <div class="grid-main">
-                        <div class="side"><b>${m.h.name}</b> (SL${m.h.sl})</div>
-                        <div class="side"><b>${m.a.name}</b> (SL${m.a.sl})</div>
+                    <div class="head-done">MATCH ${i+1} FINALIZED <span onclick="toggleEdit(${i})" style="text-decoration:underline;cursor:pointer">Edit</span></div>
+                    <div class="summary-stats">
+                        <div class="summary-box">
+                            <b>${m.h.name || 'Home'}</b> (SL${m.h.sl})
+                            <div class="summary-line"><span>Wins:</span> <b>${m.h.games}</b></div>
+                            <div class="summary-line"><span>Def:</span> <b>${m.h.def}</b></div>
+                            <div class="summary-line"><span>T.O:</span> <b>${m.h.to}</b></div>
+                        </div>
+                        <div class="summary-box">
+                            <b>${m.a.name || 'Away'}</b> (SL${m.a.sl})
+                            <div class="summary-line"><span>Wins:</span> <b>${m.a.games}</b></div>
+                            <div class="summary-line"><span>Def:</span> <b>${m.a.def}</b></div>
+                            <div class="summary-line"><span>T.O:</span> <b>${m.a.to}</b></div>
+                        </div>
                     </div>
-                    <div class="final-summary">
-                        <div>W: ${m.h.games} | DEF: ${m.h.def} | TO: ${m.h.to}</div>
-                        <div>W: ${m.a.games} | DEF: ${m.a.def} | TO: ${m.a.to}</div>
-                    </div>
-                    <div class="inn-bar">INN: ${m.inn} | POINTS: ${m.hPts} - ${m.aPts}</div>
+                    <div class="inn-row">TOTAL INNINGS: ${m.inn}</div>
+                    <div class="pts-row"><div class="pts-pill">POINTS: ${m.hPts}</div><div class="pts-pill">POINTS: ${m.aPts}</div></div>
                 `;
             } else {
                 card.innerHTML = `
-                    <div class="match-header head-active">M${i+1} LIVE (${race[0]}/${race[1]}) <button onclick="setD(${i})" style="background:#fff; color:var(--felt); border:none; padding:2px 8px; border-radius:4px; font-weight:900;">FINISH</button></div>
-                    <div class="grid-main">
-                        ${renderSide(i, 'h', m.h, race[0])}
-                        ${renderSide(i, 'a', m.a, race[1])}
-                    </div>
-                    <div class="inn-bar">
+                    <div class="head-active">M${i+1} LIVE (${race[0]}/${race[1]}) <button onclick="setD(${i})" style="background:#fff; color:var(--felt); border:none; padding:3px 10px; border-radius:5px; font-weight:900; font-size:0.65rem;">FINISH</button></div>
+                    <div class="grid-main">${renderSide(i,'h',m.h,race[0])}${renderSide(i,'a',m.a,race[1])}</div>
+                    <div class="inn-row">
                         INN: <button class="btn" onclick="stM(${i},'inn',-1)">-</button> <b>${m.inn}</b> <button class="btn" onclick="stM(${i},'inn',1)">+</button>
                     </div>
                     <div class="pts-row"><div class="pts-pill">PTS: ${m.hPts}</div><div class="pts-pill">PTS: ${m.aPts}</div></div>
@@ -176,17 +184,15 @@
         });
     }
 
-    function renderSide(i, s, d, cap) {
+    function renderSide(i,s,d,cap) {
         return `<div class="side">
-            <input type="text" class="name-display" placeholder="Player" value="${d.name}" oninput="up(${i},'${s}','name',this.value)">
-            <div style="font-size:0.6rem; margin-bottom:4px;">SL: 
-                <select onchange="upSL(${i},'${s}',this.value)">${[2,3,4,5,6,7].map(n=>`<option value="${n}" ${d.sl == n ? 'selected' : ''}>${n}</option>`)}</select>
-            </div>
-            <div class="game-history">${d.history.join('·') || ' '}</div>
-            <div class="stat-row">
-                <div class="stat-item"><span class="stat-label">Wins</span><div class="stepper"><button class="btn" onclick="remW(${i},'${s}')">-</button><b>${d.games}</b><button class="btn btn-p" onclick="pop(${i},'${s}')" ${d.games>=cap?'disabled':''}>+</button></div></div>
-                <div class="stat-item"><span class="stat-label">DEF</span><div class="stepper"><button class="btn" onclick="st(${i},'${s}','def',-1)">-</button><b>${d.def}</b><button class="btn" onclick="st(${i},'${s}','def',1)">+</button></div></div>
-                <div class="stat-item"><span class="stat-label">T.O.</span><div class="stepper"><button class="btn" onclick="st(${i},'${s}','to',-1)">-</button><b>${d.to}</b><button class="btn" onclick="st(${i},'${s}','to',1)">+</button></div></div>
+            <input type="text" class="name-input" placeholder="Player" value="${d.name}" oninput="up(${i},'${s}','name',this.value)">
+            <div style="margin-bottom:8px;"><span class="sl-badge">SL ${d.sl}</span> <select style="border:none; font-size:0.6rem;" onchange="upSL(${i},'${s}',this.value)">${[2,3,4,5,6,7].map(n=>`<option value="${n}" ${d.sl == n ? 'selected' : ''}>${n}</option>`)}</select></div>
+            <div class="game-history">${d.history.join(' · ') || ' '}</div>
+            <div class="stat-grid">
+                <div class="stat-box"><span class="stat-label">Wins</span><div class="stepper"><button class="btn" onclick="remW(${i},'${s}')">-</button><b>${d.games}</b><button class="btn btn-plus" onclick="pop(${i},'${s}')" ${d.games>=cap?'disabled':''}>+</button></div></div>
+                <div class="stat-box"><span class="stat-label">DEF</span><div class="stepper"><button class="btn" onclick="st(${i},'${s}','def',-1)">-</button><b>${d.def}</b><button class="btn" onclick="st(${i},'${s}','def',1)">+</button></div></div>
+                <div class="stat-box"><span class="stat-label">T.O.</span><div class="stepper"><button class="btn" onclick="st(${i},'${s}','to',-1)">-</button><b>${d.to}</b><button class="btn" onclick="st(${i},'${s}','to',1)">+</button></div></div>
             </div>
         </div>`;
     }
@@ -201,7 +207,7 @@
     }
 
     function upSL(i,s,v) { matches[i][s].sl=parseInt(v); refresh(); }
-    function up(i,s,f,v) { matches[i][s][f]=v; localStorage.setItem('mvp_v_stats', JSON.stringify(matches)); }
+    function up(i,s,f,v) { matches[i][s][f]=v; localStorage.setItem('mvp_v_pro', JSON.stringify(matches)); }
     function st(i,s,f,d) { matches[i][s][f]=Math.max(0, matches[i][s][f]+d); refresh(); }
     function stM(i,f,d) { matches[i][f]=Math.max(0, matches[i][f]+d); refresh(); }
     function remW(i,s) { if(matches[i][s].games>0){matches[i][s].games--; matches[i][s].history.pop(); refresh();}}
@@ -213,12 +219,12 @@
         document.getElementById('modal-overlay').style.display='none'; refresh();
     }
     function addMatch() { if(matches.length<5){matches.push({inn:0,hPts:0,aPts:0,lag:'',done:false,h:{name:'',sl:3,games:0,def:0,to:0,history:[]},a:{name:'',sl:3,games:0,def:0,to:0,history:[]}}); refresh();}}
-    function confirmResetAll() { showDialog("Wipe all data?", true, () => { matches=[]; localStorage.clear(); refresh(); }); }
+    function confirmResetAll() { showDialog("Reset the entire session?", true, () => { matches=[]; localStorage.clear(); refresh(); }); }
+    function copyLog() { showDialog("Log Copied to Clipboard!", false); }
     function setD(i){matches[i].done=true; refresh();}
     function toggleEdit(i){matches[i].done=false; refresh();}
     function saveT(){localStorage.setItem('hT', document.getElementById('h-team').value); localStorage.setItem('aT', document.getElementById('a-team').value); refresh();}
-    function copyLog() { showDialog("Log Copied!", false); }
-    function exportJPG(){ html2canvas(document.getElementById('capture-area'), {backgroundColor: "#1a3a16"}).then(c=>{const l=document.createElement('a'); l.download='Scorecard.jpg'; l.href=c.toDataURL(); l.click();});}
+    function exportJPG(){ html2canvas(document.getElementById('capture-area'), {backgroundColor: "#1a3a16"}).then(c=>{const l=document.createElement('a'); l.download='MVP_Card.jpg'; l.href=c.toDataURL(); l.click();});}
 
     refresh();
 </script>
