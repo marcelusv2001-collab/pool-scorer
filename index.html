@@ -16,8 +16,8 @@
             background-image: radial-gradient(circle, #3d7a35 0%, #1a3a16 100%);
             margin: 0; padding: 5px; color: #fff; overflow-x: hidden;
         }
-        .logo-container { text-align: center; margin-bottom: 10px; padding: 10px; }
-        .logo-container img { max-width: 200px; height: auto; filter: drop-shadow(0 0 5px rgba(0,0,0,0.5)); }
+        .logo-container { text-align: center; margin-bottom: 10px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px; }
+        .logo-container img { max-width: 100%; height: auto; max-height: 120px; }
         
         .sheet { 
             background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(5px);
@@ -61,7 +61,10 @@
 <body>
 
 <div class="logo-container">
-    <img src="https://i.imgur.com/8m4F7P6.png" alt="MVPTV LOGO">
+    <div style="background: white; padding: 10px; display: inline-block; border-radius: 5px;">
+        <span style="color:#00FF00; font-size: 24px; font-weight: bold;">MVP</span>
+        <span style="color:#FF0000; font-size: 32px; font-style: italic; font-weight: bold; font-family: cursive;">TV</span>
+    </div>
 </div>
 
 <div id="modal-overlay">
@@ -95,7 +98,6 @@
 </div>
 
 <script>
-    // Race Table from Provided Chart
     const raceTable = {
         2: {2: [2,2], 3: [2,3], 4: [2,4], 5: [2,5], 6: [2,6], 7: [2,7]},
         3: {2: [3,2], 3: [2,2], 4: [2,3], 5: [2,4], 6: [2,5], 7: [2,6]},
@@ -114,9 +116,21 @@
         const hGoal = race[0];
         const aGoal = race[1];
 
-        if (m.h.games >= hGoal) { m.hPts = 3; m.aPts = 0; }
-        else if (m.a.games >= aGoal) { m.aPts = 3; m.hPts = 0; }
-        else { m.hPts = 0; m.aPts = 0; }
+        // Reset points first
+        m.hPts = 0; m.aPts = 0;
+
+        // If Home Wins
+        if (m.h.games >= hGoal) {
+            if (m.a.games === 0) { m.hPts = 3; m.aPts = 0; }
+            else if (m.a.games === aGoal - 1) { m.hPts = 2; m.aPts = 1; }
+            else { m.hPts = 2; m.aPts = 0; }
+        } 
+        // If Away Wins
+        else if (m.a.games >= aGoal) {
+            if (m.h.games === 0) { m.aPts = 3; m.hPts = 0; }
+            else if (m.h.games === hGoal - 1) { m.aPts = 2; m.hPts = 1; }
+            else { m.aPts = 2; m.hPts = 0; }
+        }
     }
 
     function refresh() {
