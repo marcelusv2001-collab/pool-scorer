@@ -79,14 +79,10 @@
 <script>
     const races = { 1:14, 2:19, 3:25, 4:31, 5:38, 6:46, 7:55, 8:65, 9:75 };
     const scoreChart = {
-        1: [2, 3, 4, 6, 7, 8, 10, 11, 13], 
-        2: [3, 5, 7, 8, 10, 12, 14, 16, 18],
-        3: [4, 6, 9, 11, 14, 16, 19, 21, 24],
-        4: [5, 8, 11, 14, 18, 21, 24, 27, 30],
-        5: [6, 10, 14, 18, 22, 26, 29, 33, 37],
-        6: [8, 12, 17, 22, 27, 31, 36, 40, 45],
-        7: [10, 15, 21, 26, 32, 37, 43, 49, 54],
-        8: [13, 19, 26, 32, 39, 45, 52, 58, 64],
+        1: [2, 3, 4, 6, 7, 8, 10, 11, 13], 2: [3, 5, 7, 8, 10, 12, 14, 16, 18],
+        3: [4, 6, 9, 11, 14, 16, 19, 21, 24], 4: [5, 8, 11, 14, 18, 21, 24, 27, 30],
+        5: [6, 10, 14, 18, 22, 26, 29, 33, 37], 6: [8, 12, 17, 22, 27, 31, 36, 40, 45],
+        7: [10, 15, 21, 26, 32, 37, 43, 49, 54], 8: [13, 19, 26, 32, 39, 45, 52, 58, 64],
         9: [17, 24, 31, 38, 46, 53, 60, 67, 74]
     };
 
@@ -121,26 +117,20 @@
     }
 
     function getPts(side, idx) {
-        const m = matches[idx];
-        const player = m[side];
-        const opponent = side === 'h' ? m.a : m.h;
+        const m = matches[idx]; const player = m[side]; const opponent = side === 'h' ? m.a : m.h;
         const playerWon = player.b >= races[player.sl];
         const oppWon = opponent.b >= races[opponent.sl];
-        if (playerWon) return 20;
-        if (!oppWon) return 0;
+        if (playerWon) return 20; if (!oppWon) return 0;
         const thresholds = scoreChart[player.sl];
         const pointsAvailable = [20, 19, 18, 17, 16, 15, 14, 13, 12];
-        for (let i = 0; i < thresholds.length; i++) {
-            if (player.b <= thresholds[i]) return 20 - pointsAvailable[i];
-        }
+        for (let i = 0; i < thresholds.length; i++) { if (player.b <= thresholds[i]) return 20 - pointsAvailable[i]; }
         return 0;
     }
 
     function refresh() {
         localStorage.setItem('billiard_vFinal_MVP_vFix', JSON.stringify(matches));
         const container = document.getElementById('match-container');
-        container.innerHTML = '';
-        let tH = 0, tA = 0;
+        container.innerHTML = ''; let tH = 0, tA = 0;
 
         matches.forEach((m, i) => {
             const hPt = getPts('h', i); const aPt = getPts('a', i);
@@ -150,22 +140,22 @@
             
             if (m.done) {
                 card.innerHTML = `<div style="background:#222;color:#fff;padding:12px;font-weight:900;display:flex;justify-content:space-between;align-items:center;">
-                    <span>MATCH ${i+1} | ${hPt}-${aPt}</span>
+                    <span>M${i+1} | ${hPt}-${aPt}</span>
                     <div>
                         <button onclick="resetM(${i})" style="font-size:0.7rem; background:red; color:white; border:none; padding:4px 8px; border-radius:4px; margin-right:5px;">RESET</button>
                         <button onclick="editM(${i})" style="font-size:0.7rem;">EDIT</button>
                     </div>
                 </div>
                 <div style="padding:15px;display:grid;grid-template-columns:1fr 1fr;gap:20px;background:white;position:relative;">
-                    <div style="position:absolute; top:5px; left:50%; transform:translateX(-50%); font-weight:900; color:var(--purple); font-size:0.75rem;">INN: ${m.inn} | DEAD: ${m.deadTotal}</div>
+                    <div style="position:absolute; top:5px; left:50%; transform:translateX(-50%); font-weight:900; color:var(--purple); font-size:0.75rem;">INN: ${m.inn} | DB: ${m.deadTotal}</div>
                     <div><b>${m.h.n||'Player'}</b> (SL${m.h.sl})<br>Balls: ${m.h.b}/${races[m.h.sl]}<br>Def: ${m.h.d}</div>
                     <div><b>${m.a.n||'Player'}</b> (SL${m.a.sl})<br>Balls: ${m.a.b}/${races[m.a.sl]}<br>Def: ${m.a.d}</div>
                 </div>`;
             } else {
-                card.innerHTML = `<div class="head-active"><span>MATCH ${i+1}</span>
+                card.innerHTML = `<div class="head-active"><span>M${i+1}</span>
                     <div>
                         <span style="margin-right:10px;">INN: <button onclick="adj(${i},null,'inn',-1)">-</button> <b>${m.inn}</b> <button onclick="adj(${i},null,'inn',1)">+</button></span>
-                        <span style="margin-right:15px; color:#333; font-size:0.8rem;">DB: <b>${m.dead.length}</b></span>
+                        <span style="margin-right:15px; color:#333; font-size:0.8rem;">DB: <b>${m.deadTotal + m.dead.length}</b></span>
                         <button onclick="resetM(${i})" style="background:red;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:0.7rem;font-weight:900; margin-right:5px;">RESET</button>
                         <button onclick="finM(${i})" style="background:black;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:0.7rem;font-weight:900;">FINISH</button>
                     </div>
@@ -193,8 +183,7 @@
             }
             container.appendChild(card);
         });
-        document.getElementById('h-total').innerText = tH;
-        document.getElementById('a-total').innerText = tA;
+        document.getElementById('h-total').innerText = tH; document.getElementById('a-total').innerText = tA;
     }
 
     function setLag(i, s) { matches[i].lag = s; refresh(); }
@@ -231,8 +220,9 @@
         const opp = side === 'h' ? 'a' : 'h'; m.dead = m.dead.filter(x => x !== n); m.cur[opp] = m.cur[opp].filter(x => x !== n);
         if (m.cur[side].includes(n)) m.cur[side] = m.cur[side].filter(x => x !== n); else m.cur[side].push(n);
         if (n === 9 && m.cur[side].includes(9)) {
-            showM("END RACK", "Ball 9 Made", [
+            showM("END RACK", "Ball 9 Made Early", [
                 { text: "SNAP", color: "#2ecc71", f: () => eRack(idx) },
+                { text: "B&R", color: "#3498db", f: () => eRack(idx) },
                 { text: "REGULAR", color: "#f1c40f", f: () => eRack(idx) },
                 { text: "CANCEL", f: () => { m.cur[side] = m.cur[side].filter(x => x !== 9); refresh(); } }
             ]);
@@ -242,7 +232,12 @@
 
     function eRack(idx) {
         const m = matches[idx];
-        for(let i=1; i<=8; i++) { if(!m.cur.h.includes(i) && !m.cur.a.includes(i) && !m.dead.includes(i)) m.dead.push(i); }
+        // Auto-calculate balls left on table as Dead Balls
+        for(let i=1; i<=8; i++) {
+            if(!m.cur.h.includes(i) && !m.cur.a.includes(i) && !m.dead.includes(i)) {
+                m.dead.push(i);
+            }
+        }
         m.h.b = Math.min(races[m.h.sl], m.h.b + m.cur.h.reduce((a, n) => a + (n === 9 ? 2 : 1), 0));
         m.a.b = Math.min(races[m.a.sl], m.a.b + m.cur.a.reduce((a, n) => a + (n === 9 ? 2 : 1), 0));
         m.deadTotal += m.dead.length;
@@ -258,7 +253,7 @@
     }
 
     function resetM(i) {
-        showM("RESET MATCH", "Wipe Match " + (i+1) + "?", [
+        showM("RESET MATCH", "Wipe M" + (i+1) + "?", [
             { text: "WIPE", color: "red", f: () => { 
                 matches[i] = { done:false, lag:null, dead:[], deadTotal:0, inn:0, h:{n:'',sl:3,b:0,d:0,toCur:0,toTotal:0}, a:{n:'',sl:3,b:0,d:0,toCur:0,toTotal:0}, cur:{h:[],a:[]} }; 
                 refresh(); 
@@ -278,7 +273,7 @@
         let txt = `MVP TV BILLIARDS - ${document.getElementById('team-h').value} vs ${document.getElementById('team-a').value}\n`;
         txt += `==========================================\n`;
         matches.forEach((m, i) => {
-            txt += `MATCH ${i+1}: ${m.h.n||'H'} (SL${m.h.sl}) vs ${m.a.n||'A'} (SL${m.a.sl})\n`;
+            txt += `MATCH M${i+1}: ${m.h.n||'H'} (SL${m.h.sl}) vs ${m.a.n||'A'} (SL${m.a.sl})\n`;
             txt += `SCORE: ${getPts('h',i)}-${getPts('a',i)} | INNINGS: ${m.inn} | TOTAL DEAD: ${m.deadTotal}\n`;
             txt += `------------------------------------------\n`;
         });
