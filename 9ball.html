@@ -53,9 +53,7 @@
 </div>
 
 <div class="branding">
-    <div class="logo-box">
-        <span class="logo-mvp">MVP</span><span class="logo-tv">TV</span>
-    </div>
+    <div class="logo-box"><span class="logo-mvp">MVP</span><span class="logo-tv">TV</span></div>
     <span class="sub-logo">Billiard Offline Scorekeeper</span>
 </div>
 
@@ -80,16 +78,18 @@
 
 <script>
     const races = { 1:14, 2:19, 3:25, 4:31, 5:38, 6:46, 7:55, 8:65, 9:75 };
-    const chart = {
-        1: [{m:2,p:20},{m:3,p:19},{m:4,p:18},{m:6,p:17},{m:7,p:16},{m:8,p:15},{m:10,p:14},{m:11,p:13},{m:13,p:12}],
-        2: [{m:3,p:20},{m:5,p:19},{m:7,p:18},{m:8,p:17},{m:10,p:16},{m:12,p:15},{m:14,p:14},{m:16,p:13},{m:18,p:12}],
-        3: [{m:4,p:20},{m:6,p:19},{m:9,p:18},{m:11,p:17},{m:14,p:16},{m:16,p:15},{m:19,p:14},{m:21,p:13},{m:24,p:12}],
-        4: [{m:5,p:20},{m:8,p:19},{m:11,p:18},{m:14,p:17},{m:18,p:16},{m:21,p:15},{m:24,p:14},{m:27,p:13},{m:30,p:12}],
-        5: [{m:6,p:20},{m:10,p:19},{m:14,p:18},{m:18,p:17},{m:22,p:16},{m:26,p:15},{m:29,p:14},{m:33,p:13},{m:37,p:12}],
-        6: [{m:8,p:20},{m:12,p:19},{m:17,p:18},{m:22,p:17},{m:27,p:16},{m:31,p:15},{m:36,p:14},{m:40,p:13},{m:45,p:12}],
-        7: [{m:10,p:20},{m:15,p:19},{m:21,p:18},{m:26,p:17},{m:32,p:16},{m:37,p:15},{m:43,p:14},{m:49,p:13},{m:54,p:12}],
-        8: [{m:13,p:20},{m:19,p:19},{m:26,p:18},{m:32,p:17},{m:39,p:16},{m:45,p:15},{m:52,p:14},{m:58,p:13},{m:64,p:12}],
-        9: [{m:17,p:20},{m:24,p:19},{m:31,p:18},{m:38,p:17},{m:46,p:16},{m:53,p:15},{m:60,p:14},{m:67,p:13},{m:74,p:12}]
+    
+    // Updated points logic per your provided "Score of Match" chart image
+    const scoreChart = {
+        1: [2, 3, 4, 6, 7, 8, 10, 11, 13], // Max values for points 20 down to 12
+        2: [3, 5, 7, 8, 10, 12, 14, 16, 18],
+        3: [4, 6, 9, 11, 14, 16, 19, 21, 24],
+        4: [5, 8, 11, 14, 18, 21, 24, 27, 30],
+        5: [6, 10, 14, 18, 22, 26, 29, 33, 37],
+        6: [8, 12, 17, 22, 27, 31, 36, 40, 45],
+        7: [10, 15, 21, 26, 32, 37, 43, 49, 54],
+        8: [13, 19, 26, 32, 39, 45, 52, 58, 64],
+        9: [17, 24, 31, 38, 46, 53, 60, 67, 74]
     };
 
     let matches = JSON.parse(localStorage.getItem('billiard_vFinal_MVP_vFix')) || [];
@@ -108,7 +108,6 @@
         document.getElementById('custom-modal').style.display = 'block';
     }
 
-    // UPDATED: Team name sync without re-rendering everything
     function saveG() {
         const hVal = document.getElementById('team-h').value;
         const aVal = document.getElementById('team-a').value;
@@ -118,10 +117,31 @@
         document.getElementById('disp-a').innerText = aVal || "AWAY";
     }
 
-    // UPDATED: Sync player name to data array without refreshing UI
     function updatePlayerName(matchIdx, side, name) {
         matches[matchIdx][side].n = name;
         localStorage.setItem('billiard_vFinal_MVP_vFix', JSON.stringify(matches));
+    }
+
+    function getPts(side, idx) {
+        const m = matches[idx];
+        const player = m[side];
+        const opponent = side === 'h' ? m.a : m.h;
+        
+        // Match only ends when one player hits their race goal (Need = 0)
+        const playerWon = player.b >= races[player.sl];
+        const oppWon = opponent.b >= races[opponent.sl];
+
+        if (playerWon) return 20;
+        if (!oppWon) return 0; // Match still in progress
+
+        // Opponent won, calculate this player's points based on chart
+        const thresholds = scoreChart[player.sl];
+        const pointsAvailable = [20, 19, 18, 17, 16, 15, 14, 13, 12];
+        
+        for (let i = 0; i < thresholds.length; i++) {
+            if (player.b <= thresholds[i]) return 20 - pointsAvailable[i];
+        }
+        return 0;
     }
 
     function refresh() {
@@ -146,8 +166,8 @@
                 </div>
                 <div style="padding:15px;display:grid;grid-template-columns:1fr 1fr;gap:20px;background:white;position:relative;">
                     <div style="position:absolute; top:5px; left:50%; transform:translateX(-50%); font-weight:900; color:var(--purple); font-size:0.75rem;">INN: ${m.inn}</div>
-                    <div><b>${m.h.n||'Player'}</b> (SL${m.h.sl})<br>Lag: ${m.lag==='h'?'WON':'—'}<br>Balls: ${m.h.b}/${races[m.h.sl]}<br>Def: ${m.h.d}</div>
-                    <div><b>${m.a.n||'Player'}</b> (SL${m.a.sl})<br>Lag: ${m.lag==='a'?'WON':'—'}<br>Balls: ${m.a.b}/${races[m.a.sl]}<br>Def: ${m.a.d}</div>
+                    <div><b>${m.h.n||'Player'}</b> (SL${m.h.sl})<br>Balls: ${m.h.b}/${races[m.h.sl]}<br>Def: ${m.h.d}</div>
+                    <div><b>${m.a.n||'Player'}</b> (SL${m.a.sl})<br>Balls: ${m.a.b}/${races[m.a.sl]}<br>Def: ${m.a.d}</div>
                 </div>`;
             } else {
                 card.innerHTML = `<div class="head-active"><span>MATCH ${i+1}</span>
@@ -165,7 +185,7 @@
                         <div style="margin:5px 0;">${renderTO(i,'h')}</div>
                         <div class="ball-container">${renderB(i,'h')}</div>
                         <div style="font-size:0.7rem;">DEF: <b>${m.h.d}</b> <button onclick="adj(${i},'h','d',1)">+</button><button onclick="adj(${i},'h','d',-1)">-</button></div>
-                        <div class="need-val">NEED: ${Math.max(0, races[m.h.sl] - m.h.b)}</div>
+                        <div class="need-val" id="need-h-${i}">NEED: ${Math.max(0, races[m.h.sl] - m.h.b)}</div>
                     </div>
                     <div style="text-align:center;">
                         <input value="${m.a.n}" oninput="updatePlayerName(${i},'a',this.value)" placeholder="Name">
@@ -174,7 +194,7 @@
                         <div style="margin:5px 0;">${renderTO(i,'a')}</div>
                         <div class="ball-container">${renderB(i,'a')}</div>
                         <div style="font-size:0.7rem;">DEF: <b>${m.a.d}</b> <button onclick="adj(${i},'a','d',1)">+</button><button onclick="adj(${i},'a','d',-1)">-</button></div>
-                        <div class="need-val">NEED: ${Math.max(0, races[m.a.sl] - m.a.b)}</div>
+                        <div class="need-val" id="need-a-${i}">NEED: ${Math.max(0, races[m.a.sl] - m.a.b)}</div>
                     </div>
                 </div>`;
             }
@@ -187,13 +207,6 @@
     function setLag(i, s) { matches[i].lag = s; refresh(); }
     function setSL(i, s, v) { matches[i][s].sl = parseInt(v); refresh(); }
     function adj(i, s, k, v) { if(s) matches[i][s][k] = Math.max(0, matches[i][s][k] + v); else matches[i][k] = Math.max(0, matches[i][k] + v); refresh(); }
-
-    function getPts(side, idx) {
-        const m = matches[idx]; const p = m[side]; const o = (side === 'h' ? m.a : m.h);
-        if (p.b >= races[p.sl]) return 20; if (o.b < races[o.sl]) return 0;
-        const t = chart[p.sl]; for (let entry of t) { if (p.b <= entry.m) return 20 - entry.p; }
-        return 0;
-    }
 
     function renderTO(idx, side) {
         const m = matches[idx][side]; const limit = m.sl <= 3 ? 2 : 1; let h = '';
@@ -241,18 +254,19 @@
         m.a.b = Math.min(races[m.a.sl], m.a.b + m.cur.a.reduce((a, n) => a + (n === 9 ? 2 : 1), 0));
         m.cur = { h: [], a: [] }; m.dead = []; m.h.toCur = 0; m.a.toCur = 0; 
         
+        // Auto-Win detection: Need reaches 0
         if(m.h.b >= races[m.h.sl] || m.a.b >= races[m.a.sl]) {
             const winner = m.h.b >= races[m.h.sl] ? (m.h.n || "Home") : (m.a.n || "Away");
-            showM("MATCH POINT!", winner + " reached goal. Finalize match?", [
+            showM("MATCH OVER!", winner + " reached their goal. Finalize match?", [
                 { text: "FINISH", color: "var(--purple)", f: () => { m.done = true; refresh(); } },
-                { text: "KEEP PLAYING", f: () => refresh() }
+                { text: "CANCEL", f: () => refresh() }
             ]);
         }
         refresh();
     }
 
     function resetM(i) {
-        showM("RESET MATCH", "Wipe Match " + (i+1) + " data?", [
+        showM("RESET MATCH", "Wipe Match " + (i+1) + "?", [
             { text: "WIPE", color: "red", f: () => { 
                 matches[i] = { done:false, lag:null, dead:[], inn:0, h:{n:'',sl:3,b:0,d:0,toCur:0,toTotal:0}, a:{n:'',sl:3,b:0,d:0,toCur:0,toTotal:0}, cur:{h:[],a:[]} }; 
                 refresh(); 
@@ -283,7 +297,6 @@
 
     function finM(i) { showM("FINISH", "Finalize Scorecard?", [{ text: "YES", color: "#6a0dad", f: () => { matches[i].done=true; refresh(); } }, { text: "NO", f: () => {} }]); }
     function editM(i) { matches[i].done = false; refresh(); }
-    
     function addMatch() {
         if(matches.length < 5) {
             matches.push({ done:false, lag:null, dead:[], inn:0, h:{n:'',sl:3,b:0,d:0,toCur:0,toTotal:0}, a:{n:'',sl:3,b:0,d:0,toCur:0,toTotal:0}, cur:{h:[],a:[]} });
@@ -297,12 +310,9 @@
         });
     }
 
-    // Load initial values
     document.getElementById('team-h').value = localStorage.getItem('team_h') || "";
     document.getElementById('team-a').value = localStorage.getItem('team_a') || "";
-    saveG(); 
-    if(matches.length === 0) addMatch(); 
-    refresh();
+    saveG(); if(matches.length === 0) addMatch(); refresh();
 </script>
 </body>
 </html>
