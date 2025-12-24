@@ -104,10 +104,18 @@
     }
 
     function saveG() {
-        localStorage.setItem('team_h', document.getElementById('team-h').value);
-        localStorage.setItem('team_a', document.getElementById('team-a').value);
-        document.getElementById('disp-h').innerText = document.getElementById('team-h').value || "HOME";
-        document.getElementById('disp-a').innerText = document.getElementById('team-a').value || "AWAY";
+        const h = document.getElementById('team-h').value;
+        const a = document.getElementById('team-a').value;
+        localStorage.setItem('team_h', h);
+        localStorage.setItem('team_a', a);
+        document.getElementById('disp-h').innerText = h || "HOME";
+        document.getElementById('disp-a').innerText = a || "AWAY";
+    }
+
+    function updatePlayerName(idx, side, name) {
+        matches[idx][side].n = name;
+        localStorage.setItem('billiard_vFinal_MVP_vFix', JSON.stringify(matches));
+        // We don't call refresh() here to prevent losing input focus
     }
 
     function calculateSplit(idx) {
@@ -115,24 +123,13 @@
         const h = m.h; const a = m.a;
         const hWin = h.b >= races[h.sl];
         const aWin = a.b >= races[a.sl];
-
         if (!hWin && !aWin) return { h: 0, a: 0 };
-
-        const winner = hWin ? h : a;
         const loser = hWin ? a : h;
         const thresholds = scoreChart[loser.sl];
-        const loserPointsOptions = [0, 1, 2, 3, 4, 5, 6, 7, 8]; // Points awarded to loser based on thresholds
-        
         let loserScore = 0;
-        // Check thresholds from highest to lowest to find loser's points
         for (let i = thresholds.length - 1; i >= 0; i--) {
-            if (loser.b > thresholds[i]) {
-                loserScore = loserPointsOptions[i + 1] || 8;
-                break;
-            }
-            if (i === 0 && loser.b <= thresholds[0]) loserScore = 0;
+            if (loser.b > thresholds[i]) { loserScore = i + 1; break; }
         }
-
         const winnerScore = 20 - loserScore;
         return hWin ? { h: winnerScore, a: loserScore } : { h: loserScore, a: winnerScore };
     }
@@ -151,42 +148,33 @@
             if (m.done) {
                 card.innerHTML = `<div style="background:#222;color:#fff;padding:12px;font-weight:900;display:flex;justify-content:space-between;align-items:center;">
                     <span>M${i+1} | ${scores.h}-${scores.a}</span>
-                    <div>
-                        <button onclick="resetM(${i})" style="font-size:0.7rem; background:red; color:white; border:none; padding:4px 8px; border-radius:4px; margin-right:5px;">RESET</button>
-                        <button onclick="editM(${i})" style="font-size:0.7rem;">EDIT</button>
-                    </div>
+                    <div><button onclick="resetM(${i})" style="background:red;color:white;padding:4px 8px;border-radius:4px;margin-right:5px;border:none;font-size:0.7rem;">RESET</button><button onclick="editM(${i})" style="font-size:0.7rem;">EDIT</button></div>
                 </div>
-                <div style="padding:15px;display:grid;grid-template-columns:1fr 1fr;gap:20px;background:white;position:relative;">
+                <div style="padding:15px;display:grid;grid-template-columns:1fr 1fr;gap:20px;background:white;position:relative;color:#333;">
                     <div style="position:absolute; top:5px; left:50%; transform:translateX(-50%); font-weight:900; color:var(--purple); font-size:0.7rem;">INN: ${m.inn} | DB: ${m.deadTotal}</div>
-                    <div><b>${m.h.n||'Player'}</b> (SL${m.h.sl})<br>Balls: ${m.h.b}/${races[m.h.sl]}<br>TOs: ${m.h.toTotal} | Def: ${m.h.d}</div>
-                    <div><b>${m.a.n||'Player'}</b> (SL${m.a.sl})<br>Balls: ${m.a.b}/${races[m.a.sl]}<br>TOs: ${m.a.toTotal} | Def: ${m.a.d}</div>
+                    <div><b>${m.h.n||'Player'}</b> (SL${m.h.sl})<br>Balls: ${m.h.b}/${races[m.h.sl]}<br>TOs: ${m.h.toTotal}</div>
+                    <div><b>${m.a.n||'Player'}</b> (SL${m.a.sl})<br>Balls: ${m.a.b}/${races[m.a.sl]}<br>TOs: ${m.a.toTotal}</div>
                 </div>`;
             } else {
                 card.innerHTML = `<div class="head-active"><span>M${i+1}</span>
-                    <div>
-                        <span style="margin-right:10px;">INN: <button onclick="adj(${i},null,'inn',-1)">-</button> <b>${m.inn}</b> <button onclick="adj(${i},null,'inn',1)">+</button></span>
-                        <span style="margin-right:15px; color:#333; font-size:0.8rem;">DB: <b>${m.deadTotal + m.dead.length}</b></span>
-                        <button onclick="resetM(${i})" style="background:red;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:0.7rem;font-weight:900; margin-right:5px;">RESET</button>
-                        <button onclick="finM(${i})" style="background:black;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:0.7rem;font-weight:900;">FINISH</button>
-                    </div>
+                    <div><span style="margin-right:10px;">INN: <button onclick="adj(${i},null,'inn',-1)">-</button> <b>${m.inn}</b> <button onclick="adj(${i},null,'inn',1)">+</button></span>
+                    <span style="margin-right:15px; font-size:0.8rem; color:#000;">DB: <b>${m.deadTotal + m.dead.length}</b></span>
+                    <button onclick="resetM(${i})" style="background:red;color:white;border:none;padding:4px 8px;font-size:0.7rem;margin-right:5px;">RESET</button>
+                    <button onclick="finM(${i})" style="background:black;color:white;border:none;padding:4px 8px;font-size:0.7rem;">FINISH</button></div>
                 </div>
                 <div style="padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                    <div style="text-align:center;">
-                        <input value="${m.h.n}" oninput="updatePlayerName(${i},'h',this.value)" placeholder="Name">
-                        <button class="lag-btn ${m.lag==='h'?'lag-won':''}" onclick="setLag(${i},'h')">LAG WINNER</button>
+                    <div style="text-align:center;"><input value="${m.h.n}" oninput="updatePlayerName(${i},'h',this.value)" placeholder="Home Player">
+                        <button class="lag-btn ${m.lag==='h'?'lag-won':''}" onclick="setLag(${i},'h')">LAG WIN</button>
                         <select onchange="setSL(${i},'h',this.value)">${Object.keys(races).map(s=>`<option value="${s}" ${m.h.sl==s?'selected':''}>SL ${s}</option>`)}</select>
-                        <div style="margin:5px 0;">${renderTO(i,'h')}</div>
-                        <div class="ball-container">${renderB(i,'h')}</div>
-                        <div style="font-size:0.7rem;">DEF: <b>${m.h.d}</b> <button onclick="adj(${i},'h','d',1)">+</button> <button onclick="adj(${i},'h','d',-1)">-</button></div>
+                        <div style="margin:5px 0;">${renderTO(i,'h')}</div><div class="ball-container">${renderB(i,'h')}</div>
+                        <div style="font-size:0.7rem;color:#333;">DEF: <b>${m.h.d}</b> <button onclick="adj(${i},'h','d',1)">+</button></div>
                         <div class="need-val">NEED: ${Math.max(0, races[m.h.sl] - m.h.b)}</div>
                     </div>
-                    <div style="text-align:center;">
-                        <input value="${m.a.n}" oninput="updatePlayerName(${i},'a',this.value)" placeholder="Name">
-                        <button class="lag-btn ${m.lag==='a'?'lag-won':''}" onclick="setLag(${i},'a')">LAG WINNER</button>
+                    <div style="text-align:center;"><input value="${m.a.n}" oninput="updatePlayerName(${i},'a',this.value)" placeholder="Away Player">
+                        <button class="lag-btn ${m.lag==='a'?'lag-won':''}" onclick="setLag(${i},'a')">LAG WIN</button>
                         <select onchange="setSL(${i},'a',this.value)">${Object.keys(races).map(s=>`<option value="${s}" ${m.a.sl==s?'selected':''}>SL ${s}</option>`)}</select>
-                        <div style="margin:5px 0;">${renderTO(i,'a')}</div>
-                        <div class="ball-container">${renderB(i,'a')}</div>
-                        <div style="font-size:0.7rem;">DEF: <b>${m.a.d}</b> <button onclick="adj(${i},'a','d',1)">+</button> <button onclick="adj(${i},'a','d',-1)">-</button></div>
+                        <div style="margin:5px 0;">${renderTO(i,'a')}</div><div class="ball-container">${renderB(i,'a')}</div>
+                        <div style="font-size:0.7rem;color:#333;">DEF: <b>${m.a.d}</b> <button onclick="adj(${i},'a','d',1)">+</button></div>
                         <div class="need-val">NEED: ${Math.max(0, races[m.a.sl] - m.a.b)}</div>
                     </div>
                 </div>`;
@@ -203,7 +191,7 @@
     function renderTO(idx, side) {
         const m = matches[idx][side]; const limit = m.sl <= 3 ? 2 : 1; let h = '';
         for(let j=1; j<=limit; j++) { h += `<button class="to-btn ${m.toCur>=j?'to-used':''}" onclick="useTO(${idx},'${side}',${j})">TO</button> `; }
-        return h + `<div style="font-size:0.6rem; margin-top:2px;">Total TO: ${m.toTotal}</div>`;
+        return h + `<div style="font-size:0.6rem; margin-top:2px; color:#333;">TO Total: ${m.toTotal}</div>`;
     }
 
     function useTO(idx, side, n) {
@@ -230,7 +218,7 @@
         const opp = side === 'h' ? 'a' : 'h'; m.dead = m.dead.filter(x => x !== n); m.cur[opp] = m.cur[opp].filter(x => x !== n);
         if (m.cur[side].includes(n)) m.cur[side] = m.cur[side].filter(x => x !== n); else m.cur[side].push(n);
         if (n === 9 && m.cur[side].includes(9)) {
-            showM("END RACK", "Ball 9 Made", [
+            showM("END RACK", "9-Ball Pocketed", [
                 { text: "SNAP", color: "#2ecc71", f: () => eRack(idx) },
                 { text: "B&R", color: "#3498db", f: () => eRack(idx) },
                 { text: "REGULAR", color: "#f1c40f", f: () => eRack(idx) },
@@ -247,14 +235,9 @@
         m.a.b = Math.min(races[m.a.sl], m.a.b + m.cur.a.reduce((a, n) => a + (n === 9 ? 2 : 1), 0));
         m.deadTotal += m.dead.length;
         m.cur = { h: [], a: [] }; m.dead = []; m.h.toCur = 0; m.a.toCur = 0; 
-        
         if(m.h.b >= races[m.h.sl] || m.a.b >= races[m.a.sl]) {
             const s = calculateSplit(idx);
-            const winner = m.h.b >= races[m.h.sl] ? (m.h.n || "Home") : (m.a.n || "Away");
-            showM("MATCH OVER!", `${winner} won. Split: ${s.h}-${s.a}`, [
-                { text: "FINISH", color: "var(--purple)", f: () => { m.done = true; refresh(); } },
-                { text: "CANCEL", f: () => refresh() }
-            ]);
+            showM("MATCH OVER!", `Split: ${s.h}-${s.a}`, [{ text: "FINISH", color: "var(--purple)", f: () => { m.done = true; refresh(); } }, { text: "CANCEL", f: () => refresh() }]);
         }
         refresh();
     }
@@ -271,32 +254,22 @@
     }
 
     function buildSummaryText() {
-        let txt = `🏆 MVP TV BILLIARDS SUMMARY\n`;
-        txt += `${document.getElementById('team-h').value} vs ${document.getElementById('team-a').value}\n`;
-        txt += `==========================================\n`;
+        let txt = `🏆 MVP TV BILLIARDS\n${document.getElementById('team-h').value} vs ${document.getElementById('team-a').value}\n==========================\n`;
         matches.forEach((m, i) => {
             const s = calculateSplit(i);
-            txt += `M${i+1}: ${m.h.n||'H'} (SL${m.h.sl}) vs ${m.a.n||'A'} (SL${m.a.sl})\n`;
-            txt += `POINTS: ${s.h} - ${s.a}\n`;
-            txt += `INNINGS: ${m.inn} | DEAD BALLS: ${m.deadTotal}\n`;
-            txt += `TOs: [H] ${m.h.toTotal} | [A] ${m.a.toTotal}\n`;
-            txt += `------------------------------------------\n`;
+            txt += `M${i+1}: ${m.h.n||'H'} vs ${m.a.n||'A'}\nSCORE: ${s.h}-${s.a} | INN: ${m.inn} | TO: ${m.h.toTotal}/${m.a.toTotal}\n--------------------------\n`;
         });
-        txt += `FINAL SCORE: ${document.getElementById('h-total').innerText} - ${document.getElementById('a-total').innerText}`;
+        txt += `TOTAL: ${document.getElementById('h-total').innerText} - ${document.getElementById('a-total').innerText}`;
         return txt;
     }
 
-    function copyClipboard() {
-        navigator.clipboard.writeText(buildSummaryText()).then(() => alert("Summary copied!"));
-    }
-
+    function copyClipboard() { navigator.clipboard.writeText(buildSummaryText()).then(() => alert("Copied!")); }
     function exportTXT() {
-        const blob = new Blob([buildSummaryText()], {type: "text/plain"});
-        const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
-        a.download = "MVP_TV_Score.txt"; a.click();
+        const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([buildSummaryText()], {type: "text/plain"}));
+        a.download = "MVP_Score.txt"; a.click();
     }
 
-    function finM(i) { showM("FINISH", "Finalize Scorecard?", [{ text: "YES", color: "#6a0dad", f: () => { matches[i].done=true; refresh(); } }, { text: "NO", f: () => {} }]); }
+    function finM(i) { showM("FINISH", "Finalize?", [{ text: "YES", color: "#6a0dad", f: () => { matches[i].done=true; refresh(); } }, { text: "NO", f: () => {} }]); }
     function editM(i) { matches[i].done = false; refresh(); }
     function addMatch() {
         if(matches.length < 5) {
@@ -311,6 +284,7 @@
         });
     }
 
+    // Initialize Team Names from Storage
     document.getElementById('team-h').value = localStorage.getItem('team_h') || "";
     document.getElementById('team-a').value = localStorage.getItem('team_a') || "";
     saveG(); if(matches.length === 0) addMatch(); refresh();
