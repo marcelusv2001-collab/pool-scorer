@@ -3,149 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>8-Ball Offline Scorer</title>
+    <title>8-Ball Pro Scorer</title>
     <link rel="manifest" href="manifest.json">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        :root { --apa-blue: #0056b3; --border: #333; }
-        body { font-family: "Courier New", Courier, monospace; background: #999; margin: 0; padding: 10px; }
-        .paper { background: #fff; border: 1px solid var(--border); max-width: 600px; margin: auto; padding: 20px; box-shadow: 10px 10px 0px rgba(0,0,0,0.2); }
-        .header-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 2px solid var(--border); }
-        .header-table td { border: 1px solid var(--border); padding: 5px; font-size: 0.8rem; }
+        :root { --border: #000; --header-bg: #f2f2f2; }
+        body { font-family: 'Courier New', Courier, monospace; background: #777; margin: 0; padding: 10px; color: #000; }
+        .sheet { background: #fff; border: 2px solid var(--border); max-width: 650px; margin: auto; padding: 15px; box-shadow: 10px 10px 0px #333; }
+        .match-card { border: 2px solid var(--border); margin-bottom: 20px; overflow: hidden; }
+        .match-header { background: #000; color: #fff; padding: 5px 10px; font-weight: bold; display: flex; justify-content: space-between; }
         
-        .match-section { border: 2px solid var(--border); margin-bottom: 10px; }
-        .player-row { display: flex; background: #eee; border-bottom: 2px solid var(--border); }
-        .player-info { flex: 2; padding: 10px; border-right: 2px solid var(--border); }
-        .score-box { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fff; }
+        .grid-main { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--border); }
+        .side { padding: 10px; border-right: 1px solid var(--border); }
+        .side:last-child { border-right: none; background: #fdfdfd; }
+        .side-label { font-size: 0.7rem; font-weight: bold; text-decoration: underline; margin-bottom: 5px; display: block; }
         
-        .grid-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; padding: 10px; background: #fff; }
-        .stat-btn-group { display: flex; align-items: center; justify-content: space-between; border: 1px solid #ccc; padding: 5px; border-radius: 4px; }
+        input[type="text"], input[type="number"] { border: none; border-bottom: 1px solid #ccc; width: 100%; margin-bottom: 8px; font-size: 0.9rem; }
         
-        .btn { width: 35px; height: 35px; border: 1px solid var(--border); background: #f0f0f0; font-weight: bold; cursor: pointer; }
-        .btn:active { background: #ccc; }
-        .val { font-size: 1.2rem; font-weight: bold; width: 30px; text-align: center; }
+        .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; text-align: center; margin-top: 10px; }
+        .stat-box { display: flex; flex-direction: column; align-items: center; }
+        .stat-label { font-size: 0.6rem; font-weight: bold; margin-bottom: 2px; height: 15px; }
+        
+        .stepper { display: flex; align-items: center; gap: 4px; }
+        .btn { width: 30px; height: 30px; border: 1px solid #000; background: #eee; cursor: pointer; font-weight: bold; }
+        .val { font-size: 1.1rem; font-weight: bold; min-width: 20px; }
 
-        .action-menu { position: sticky; bottom: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; padding: 10px; background: #999; }
-        button.main { padding: 15px; border: 2px solid #000; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+        .timeout-area { margin-top: 8px; display: flex; gap: 5px; align-items: center; }
+        .t-btn { width: 35px; height: 25px; font-size: 0.7rem; border: 1px solid #000; background: #fff; cursor: pointer; }
+        .t-btn.used { background: #ff4757; color: #fff; border-color: #ff4757; }
+
+        .match-footer { background: var(--header-bg); padding: 8px; display: flex; justify-content: space-around; font-weight: bold; border-top: 1px solid var(--border); }
+        .points-entry { display: flex; align-items: center; gap: 10px; }
+        .points-entry input { width: 40px; text-align: center; border: 1px solid #000; background: #fff; font-weight: bold; }
+
+        .actions { position: sticky; bottom: 0; background: #777; padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        button.action-btn { padding: 12px; border: 2px solid #000; font-weight: bold; cursor: pointer; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
-<div id="capture-area" class="paper">
-    <table class="header-table">
-        <tr>
-            <td colspan="2"><strong>8-BALL SCORESHEET</strong></td>
-            <td>WEEK: <input type="text" style="width:40px; border:none; border-bottom:1px solid #000;"></td>
-        </tr>
-    </table>
+<div id="capture-area" class="sheet">
+    <div style="text-align:center; border-bottom: 2px solid #000; margin-bottom: 10px;">
+        <h2 style="margin: 5px;">LEAGUE MATCH BACKUP</h2>
+    </div>
 
-    <div id="match-list"></div>
+    <div id="match-container"></div>
 
-    <div style="margin-top:10px; font-weight:bold; border-top:2px solid #000; padding-top:10px;">
-        TOTAL TEAM POINTS: <span id="grand-total">0</span>
+    <div style="border-top: 2px solid #000; padding: 10px; display: flex; justify-content: space-between; font-weight: bold;">
+        <span>TEAM MATCHES: <span id="m-count">0</span>/5</span>
+        <span>TOTAL POINTS: <span id="p-count">0</span></span>
     </div>
 </div>
 
-<div class="action-menu">
-    <button class="main" style="grid-column: span 2; background: #27ae60; color: white;" onclick="addNewMatch()">+ Add New Match</button>
-    <button class="main" style="background: #2980b9; color: white;" onclick="exportJPG()">Export JPG</button>
-    <button class="main" style="background: #f1c40f;" onclick="copyText()">Copy Text</button>
-    <button class="main" style="grid-column: span 2; background: #e74c3c; color: white;" onclick="resetSheet()">Reset Entire Night</button>
+<div class="actions">
+    <button class="action-btn" style="grid-column: span 2; background: #2ed573;" onclick="addMatch()">+ Add New Match</button>
+    <button class="action-btn" style="background: #1e90ff; color: #fff;" onclick="exportJPG()">Export JPG</button>
+    <button class="action-btn" style="background: #ffa502;" onclick="exportText()">Copy Text</button>
+    <button class="action-btn" style="grid-column: span 2; background: #ff4757; color: white;" onclick="clearAll()">Reset Night</button>
 </div>
 
 <script>
-    let matches = JSON.parse(localStorage.getItem('offlineMatches')) || [];
+    let matches = JSON.parse(localStorage.getItem('billiardProSession')) || [];
 
-    function updateStorage() {
-        localStorage.setItem('offlineMatches', JSON.stringify(matches));
-        render();
-    }
-
-    function addNewMatch() {
-        if(matches.length >= 5) return alert("Limit 5 matches.");
-        matches.push({ name: '', sl: 3, games: 0, innings: 0, def: 0 });
-        updateStorage();
-    }
-
-    function editMatch(index, field, value) {
-        matches[index][field] = value;
-        updateStorage();
-    }
-
-    function step(index, field, delta) {
-        matches[index][field] = Math.max(0, matches[index][field] + delta);
-        updateStorage();
-    }
-
-    function render() {
-        const list = document.getElementById('match-list');
-        list.innerHTML = '';
-        let totalGames = 0;
+    function refresh() {
+        localStorage.setItem('billiardProSession', JSON.stringify(matches));
+        const container = document.getElementById('match-container');
+        container.innerHTML = '';
+        let totalPoints = 0;
 
         matches.forEach((m, i) => {
-            totalGames += parseInt(m.games);
-            list.innerHTML += `
-                <div class="match-section">
-                    <div class="player-row">
-                        <div class="player-info">
-                            <input type="text" placeholder="PLAYER NAME" value="${m.name}" onchange="editMatch(${i}, 'name', this.value)" style="width:100%; margin-bottom:5px; border:none; border-bottom:1px solid #000;">
-                            <div style="display:flex; gap:10px; font-size:0.7rem;">
-                                SL: <input type="number" value="${m.sl}" onchange="editMatch(${i}, 'sl', this.value)" style="width:30px;">
-                            </div>
-                        </div>
-                        <div class="score-box">
-                            <div style="font-size:0.6rem;">GAMES WON</div>
-                            <div class="stat-btn-group" style="border:none;">
-                                <button class="btn" onclick="step(${i}, 'games', -1)">-</button>
-                                <span class="val">${m.games}</span>
-                                <button class="btn" onclick="step(${i}, 'games', 1)">+</button>
-                            </div>
+            totalPoints += (Number(m.homePoints) + Number(m.awayPoints));
+            container.innerHTML += `
+                <div class="match-card">
+                    <div class="match-header"><span>MATCH ${i+1}</span> <span>INN: ${m.innings}</span></div>
+                    <div class="grid-main">
+                        ${renderSide(i, 'home', m.home)}
+                        ${renderSide(i, 'away', m.away)}
+                    </div>
+                    <div style="padding: 10px; display: flex; align-items: center; justify-content: center; border-top: 1px solid #000;">
+                        <span style="font-size: 0.7rem; font-weight: bold; margin-right: 10px;">MATCH INNINGS:</span>
+                        <div class="stepper">
+                            <button class="btn" onclick="stepMatch(${i}, 'innings', -1)">-</button>
+                            <span class="val">${m.innings}</span>
+                            <button class="btn" onclick="stepMatch(${i}, 'innings', 1)">+</button>
                         </div>
                     </div>
-                    <div class="grid-container">
-                        <div class="stat-btn-group">
-                            <span style="font-size:0.7rem;">INNINGS</span>
-                            <button class="btn" onclick="step(${i}, 'innings', -1)">-</button>
-                            <span class="val">${m.innings}</span>
-                            <button class="btn" onclick="step(${i}, 'innings', 1)">+</button>
-                        </div>
-                        <div class="stat-btn-group">
-                            <span style="font-size:0.7rem;">DEFENSIVE</span>
-                            <button class="btn" onclick="step(${i}, 'def', -1)">-</button>
-                            <span class="val">${m.def}</span>
-                            <button class="btn" onclick="step(${i}, 'def', 1)">+</button>
-                        </div>
+                    <div class="match-footer">
+                        <div class="points-entry">HOME PTS: <input type="number" value="${m.homePoints}" oninput="updatePoints(${i}, 'homePoints', this.value)"></div>
+                        <div class="points-entry">AWAY PTS: <input type="number" value="${m.awayPoints}" oninput="updatePoints(${i}, 'awayPoints', this.value)"></div>
                     </div>
                 </div>
             `;
         });
-        document.getElementById('grand-total').innerText = totalGames;
+        document.getElementById('m-count').innerText = matches.length;
+        document.getElementById('p-count').innerText = totalPoints;
+    }
+
+    function renderSide(idx, side, data) {
+        return `
+            <div class="side">
+                <span class="side-label">${side.toUpperCase()} PLAYER</span>
+                <input type="text" placeholder="Name" value="${data.name}" oninput="update(${idx}, '${side}', 'name', this.value)">
+                <input type="number" placeholder="SL" value="${data.sl}" oninput="update(${idx}, '${side}', 'sl', this.value)">
+                
+                <div class="stat-row">
+                    ${counter(idx, side, 'Games Won', 'games')}
+                    ${counter(idx, side, 'Defensive', 'def')}
+                </div>
+
+                <div class="timeout-area">
+                    <span class="stat-label">T.O.</span>
+                    <button class="t-btn ${data.t1 ? 'used' : ''}" onclick="toggleT(${idx}, '${side}', 't1')">T1</button>
+                    <button class="t-btn ${data.t2 ? 'used' : ''}" onclick="toggleT(${idx}, '${side}', 't2')">T2</button>
+                </div>
+            </div>
+        `;
+    }
+
+    function counter(idx, side, label, key) {
+        return `
+            <div class="stat-box">
+                <span class="stat-label">${label}</span>
+                <div class="stepper">
+                    <button class="btn" style="width:25px;height:25px;" onclick="step(${idx}, '${side}', '${key}', -1)">-</button>
+                    <span class="val" style="font-size:0.9rem;">${matches[idx][side][key]}</span>
+                    <button class="btn" style="width:25px;height:25px;" onclick="step(${idx}, '${side}', '${key}', 1)">+</button>
+                </div>
+            </div>
+        `;
+    }
+
+    function addMatch() {
+        if (matches.length < 5) {
+            matches.push({
+                innings: 0, homePoints: 0, awayPoints: 0,
+                home: { name: '', sl: '', games: 0, def: 0, t1: false, t2: false },
+                away: { name: '', sl: '', games: 0, def: 0, t1: false, t2: false }
+            });
+            refresh();
+        }
+    }
+
+    function update(idx, side, field, val) { matches[idx][side][field] = val; localStorage.setItem('billiardProSession', JSON.stringify(matches)); }
+    function updatePoints(idx, field, val) { matches[idx][field] = val; refresh(); }
+    function stepMatch(idx, field, d) { matches[idx][field] = Math.max(0, matches[idx][field] + d); refresh(); }
+    function step(idx, side, field, d) { matches[idx][side][field] = Math.max(0, matches[idx][side][field] + d); refresh(); }
+    function toggleT(idx, side, tKey) { matches[idx][side][tKey] = !matches[idx][side][tKey]; refresh(); }
+
+    function exportText() {
+        let log = "MATCH SUMMARY\\n";
+        matches.forEach((m, i) => {
+            log += `M${i+1}: ${m.home.name} vs ${m.away.name} | Inn: ${m.innings} | Score: ${m.homePoints}-${m.awayPoints}\\n`;
+        });
+        navigator.clipboard.writeText(log); alert("Copied!");
     }
 
     function exportJPG() {
         html2canvas(document.getElementById('capture-area')).then(canvas => {
             const link = document.createElement('a');
-            link.download = '8ball_scoresheet.jpg';
+            link.download = 'league_night.jpg';
             link.href = canvas.toDataURL();
             link.click();
         });
     }
 
-    function copyText() {
-        let txt = "OFFLINE SCORESHEET\\n";
-        matches.forEach((m, i) => txt += `M${i+1}: ${m.name}(SL${m.sl}) G:${m.games} I:${m.innings} D:${m.def}\\n`);
-        navigator.clipboard.writeText(txt);
-        alert("Scores copied!");
-    }
-
-    function resetSheet() {
-        if(confirm("Start new night?")) {
-            matches = [];
-            updateStorage();
-        }
-    }
-
-    render();
+    function clearAll() { if(confirm("Reset all?")) { matches = []; refresh(); } }
+    refresh();
 </script>
 </body>
 </html>
