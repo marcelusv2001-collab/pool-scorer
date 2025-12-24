@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MVP 9-Ball Pro Tracker</title>
+    <title>Billiards Scorekeeper</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { 
@@ -17,6 +17,7 @@
         .logo-box { background: white; padding: 8px 15px; border-radius: 12px; border: 3px solid var(--gold); display: inline-block; }
         .logo-mvp { color:#00FF00; font-size: 24px; font-weight: 900; }
         .logo-tv { color:#FF0000; font-size: 32px; font-style: italic; font-weight: 900; font-family: 'Brush Script MT', cursive; margin-left: -5px; }
+        .sub-header { color: var(--gold); font-size: 0.9rem; font-weight: 700; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; }
         
         .team-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
         .match-card { border-radius: 15px; margin-bottom: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); color: #333; background: white; }
@@ -50,6 +51,7 @@
 
 <div class="branding">
     <div class="logo-box"><span class="logo-mvp">MVP</span><span class="logo-tv">TV</span></div>
+    <div class="sub-header">Offline Billiard Scorekeeper</div>
 </div>
 
 <div class="team-inputs">
@@ -59,10 +61,9 @@
 
 <div id="capture-area" style="padding:5px;">
     <div id="match-container"></div>
-
     <div class="total-score-bar">
         <div><small id="disp-team-h">HOME</small><div id="h-total" style="font-size:2.5rem;font-weight:900;">0</div></div>
-        <div style="font-size:0.7rem; font-weight:900; padding: 0 15px; border-left: 1px solid #333; border-right: 1px solid #333;">TOTAL<br>POINTS</div>
+        <div style="font-size:0.7rem; font-weight:900; padding: 0 15px; border-left: 1px solid #333; border-right: 1px solid #333;">MATCH<br>TOTALS</div>
         <div><small id="disp-team-a">AWAY</small><div id="a-total" style="font-size:2.5rem;font-weight:900;">0</div></div>
     </div>
 </div>
@@ -74,8 +75,23 @@
 </div>
 
 <script>
+    const APP_NAME = "Billiards Scorekeeper";
     const raceReq = { 1:14, 2:19, 3:25, 4:31, 5:38, 6:46, 7:55, 8:65, 9:75 };
-    const STORE_KEY = 'mvp_9ball_v7_stable';
+    
+    // Points Chart Data mapped from provided image
+    const pointsChart = {
+        1: [ {max:2, pts:20}, {max:3, pts:19}, {max:4, pts:18}, {max:6, pts:17}, {max:7, pts:16}, {max:8, pts:15}, {max:10, pts:14}, {max:11, pts:13}, {max:13, pts:12} ],
+        2: [ {max:3, pts:20}, {max:5, pts:19}, {max:7, pts:18}, {max:8, pts:17}, {max:10, pts:16}, {max:12, pts:15}, {max:14, pts:14}, {max:16, pts:13}, {max:18, pts:12} ],
+        3: [ {max:4, pts:20}, {max:6, pts:19}, {max:9, pts:18}, {max:11, pts:17}, {max:14, pts:16}, {max:16, pts:15}, {max:19, pts:14}, {max:21, pts:13}, {max:24, pts:12} ],
+        4: [ {max:5, pts:20}, {max:8, pts:19}, {max:11, pts:18}, {max:14, pts:17}, {max:18, pts:16}, {max:21, pts:15}, {max:24, pts:14}, {max:27, pts:13}, {max:30, pts:12} ],
+        5: [ {max:6, pts:20}, {max:10, pts:19}, {max:14, pts:18}, {max:18, pts:17}, {max:22, pts:16}, {max:26, pts:15}, {max:29, pts:14}, {max:33, pts:13}, {max:37, pts:12} ],
+        6: [ {max:8, pts:20}, {max:12, pts:19}, {max:17, pts:18}, {max:22, pts:17}, {max:27, pts:16}, {max:31, pts:15}, {max:36, pts:14}, {max:40, pts:13}, {max:45, pts:12} ],
+        7: [ {max:10, pts:20}, {max:15, pts:19}, {max:21, pts:18}, {max:26, pts:17}, {max:32, pts:16}, {max:37, pts:15}, {max:43, pts:14}, {max:49, pts:13}, {max:54, pts:12} ],
+        8: [ {max:13, pts:20}, {max:19, pts:19}, {max:26, pts:18}, {max:32, pts:17}, {max:39, pts:16}, {max:45, pts:15}, {max:52, pts:14}, {max:58, pts:13}, {max:64, pts:12} ],
+        9: [ {max:17, pts:20}, {max:24, pts:19}, {max:31, pts:18}, {max:38, pts:17}, {max:46, pts:16}, {max:53, pts:15}, {max:60, pts:14}, {max:67, pts:13}, {max:74, pts:12} ]
+    };
+
+    const STORE_KEY = 'billiards_scorekeeper_v9_offline';
     let matches = JSON.parse(localStorage.getItem(STORE_KEY)) || [];
 
     function saveTeams() {
@@ -94,7 +110,6 @@
     function updatePlayer(idx, side, field, val) {
         matches[idx][side][field] = val;
         localStorage.setItem(STORE_KEY, JSON.stringify(matches));
-        // We don't call refresh() on every keystroke to prevent losing focus
     }
 
     function refresh() {
@@ -105,23 +120,21 @@
 
         matches.forEach((m, i) => {
             const hR = raceReq[m.h.sl], aR = raceReq[m.a.sl];
-            const hPts = calc9Pts(m.h.balls, hR, m.a.balls, aR);
-            const aPts = calc9Pts(m.a.balls, aR, m.h.balls, hR);
+            const hPts = getMatchPoints(m.h.balls, m.h.sl, m.a.balls, aR);
+            const aPts = getMatchPoints(m.a.balls, m.a.sl, m.h.balls, hR);
             tH += hPts; tA += aPts;
 
             const card = document.createElement('div');
             card.className = `match-card ${m.done ? 'card-done' : 'card-active'}`;
             
             if (m.done) {
-                card.innerHTML = `
-                    <div class="head-done">M${i+1} FINAL | ${hPts} - ${aPts} <button onclick="toggleEdit(${i})" style="margin-left:auto; font-size:0.6rem;">EDIT</button></div>
+                card.innerHTML = `<div class="head-done">M${i+1} FINAL | ${hPts} - ${aPts} <button onclick="toggleEdit(${i})" style="margin-left:auto; font-size:0.6rem;">RE-OPEN</button></div>
                     <div style="display:grid; grid-template-columns:1fr 1fr; padding:15px; text-align:center;">
-                        <div><b>${m.h.name || 'Player'}</b><br>SL:${m.h.sl} | ${m.h.balls}/${hR}<br><small>TOs Used: ${m.h.toTotal}</small></div>
-                        <div><b>${m.a.name || 'Player'}</b><br>SL:${m.a.sl} | ${m.a.balls}/${aR}<br><small>TOs Used: ${m.a.toTotal}</small></div>
+                        <div><b>${m.h.name || 'Player'}</b><br>SL:${m.h.sl} | ${m.h.balls}/${hR}<br><small>TOs: ${m.h.toTotal}</small></div>
+                        <div><b>${m.a.name || 'Player'}</b><br>SL:${m.a.sl} | ${m.a.balls}/${aR}<br><small>TOs: ${m.a.toTotal}</small></div>
                     </div>`;
             } else {
-                card.innerHTML = `
-                    <div class="head-active">M${i+1} ACTIVE | RACE ${hR}-${aR} <button onclick="finish(${i})" style="font-weight:900; background:#000; color:#fff; border:none; padding:5px 10px; border-radius:6px;">FINISH</button></div>
+                card.innerHTML = `<div class="head-active">M${i+1} LIVE | RACE ${hR}-${aR} <button onclick="finish(${i})" style="font-weight:900; background:#000; color:#fff; border:none; padding:5px 10px; border-radius:6px;">FINISH</button></div>
                     <div style="display:grid; grid-template-columns:1fr 1fr; padding:10px; gap:10px;">
                         <div style="text-align:center;">
                             <button class="lag-btn ${m.h.lag?'lag-won':''}" onclick="toggleLag(${i},'h')">LAG WINNER</button>
@@ -150,22 +163,25 @@
         document.getElementById('a-total').innerText = tA;
     }
 
+    function getMatchPoints(pBalls, pSL, oBalls, oRace) {
+        if (pBalls >= raceReq[pSL]) return 20;
+        if (oBalls < oRace) return 0;
+        const tiers = pointsChart[pSL];
+        for (let t of tiers) { if (pBalls <= t.max) return 20 - t.pts; }
+        return 0;
+    }
+
     function renderTOs(mIdx, side) {
         const m = matches[mIdx];
-        const sl = m[side].sl;
-        const max = sl <= 3 ? 2 : 1;
+        const max = m[side].sl <= 3 ? 2 : 1;
         let h = '';
-        for(let j=1; j<=max; j++) {
-            const used = m[side].toCur >= j;
-            h += `<button class="to-btn ${used?'to-used':''}" onclick="useTO(${mIdx},'${side}',${j})">TO ${j}</button> `;
-        }
+        for(let j=1; j<=max; j++) { h += `<button class="to-btn ${m[side].toCur >= j?'to-used':''}" onclick="useTO(${mIdx},'${side}',${j})">TO ${j}</button> `; }
         return h;
     }
 
     function useTO(mIdx, side, num) {
-        const m = matches[mIdx];
-        if (m[side].toCur === num) { m[side].toCur--; m[side].toTotal--; }
-        else { m[side].toCur = num; m[side].toTotal++; }
+        if (matches[mIdx][side].toCur === num) { matches[mIdx][side].toCur--; matches[mIdx][side].toTotal--; }
+        else { matches[mIdx][side].toCur = num; matches[mIdx][side].toTotal++; }
         refresh();
     }
 
@@ -177,10 +193,7 @@
 
     function renderBalls(mIdx, side) {
         let h = '';
-        for(let n=1; n<=9; n++) {
-            const sel = matches[mIdx].cur[side].includes(n);
-            h += `<div class="ball b${n} ${sel?'ball-selected':''}" onclick="tapBall(${mIdx},'${side}',${n})">${n}</div>`;
-        }
+        for(let n=1; n<=9; n++) { h += `<div class="ball b${n} ${matches[mIdx].cur[side].includes(n)?'ball-selected':''}" onclick="tapBall(${mIdx},'${side}',${n})">${n}</div>`; }
         return h;
     }
 
@@ -191,39 +204,23 @@
         else m.cur[side].push(num);
         const hp = m.cur.h.reduce((acc, n) => acc + (n === 9 ? 2 : 1), 0);
         const ap = m.cur.a.reduce((acc, n) => acc + (n === 9 ? 2 : 1), 0);
-        if (num === 9 || (hp + ap + m.dbCur) >= 10) {
-            setTimeout(() => { if(confirm("End current rack?")) recordRack(mIdx); refresh(); }, 30);
-        }
+        if (num === 9 || (hp + ap + m.dbCur) >= 10) { setTimeout(() => { if(confirm(APP_NAME + "\nEnd current rack?")) recordRack(mIdx); refresh(); }, 30); }
         refresh();
     }
 
     function recordRack(mIdx) {
         const m = matches[mIdx];
-        const hAdd = m.cur.h.reduce((acc, n) => acc + (n === 9 ? 2 : 1), 0);
-        const aAdd = m.cur.a.reduce((acc, n) => acc + (n === 9 ? 2 : 1), 0);
-        m.h.balls = Math.min(raceReq[m.h.sl], m.h.balls + hAdd);
-        m.a.balls = Math.min(raceReq[m.a.sl], m.a.balls + aAdd);
-        m.dbCur = 0; m.cur = { h: [], a: [] };
-        m.h.toCur = 0; m.a.toCur = 0;
-    }
-
-    function calc9Pts(p, t, op, ot) {
-        if (p >= t) return 20;
-        if (op >= ot) {
-            const pct = (p / t) * 100;
-            if (pct >= 90) return 8; if (pct >= 80) return 7; if (pct >= 70) return 6;
-            if (pct >= 60) return 5; if (pct >= 50) return 4; if (pct >= 40) return 3;
-            if (pct >= 30) return 2; if (pct >= 20) return 1;
-        }
-        return 0;
+        m.h.balls = Math.min(raceReq[m.h.sl], m.h.balls + m.cur.h.reduce((acc, n) => acc + (n === 9 ? 2 : 1), 0));
+        m.a.balls = Math.min(raceReq[m.a.sl], m.a.balls + m.cur.a.reduce((acc, n) => acc + (n === 9 ? 2 : 1), 0));
+        m.dbCur = 0; m.cur = { h: [], a: [] }; m.h.toCur = 0; m.a.toCur = 0;
     }
 
     function adjDB(i, v) { matches[i].dbCur = Math.max(0, matches[i].dbCur + v); refresh(); }
-    function finish(i) { if(confirm("Mark as Final?")) { matches[i].done = true; refresh(); } }
+    function finish(i) { if(confirm(APP_NAME + "\nMark as Final?")) { matches[i].done = true; refresh(); } }
     function toggleEdit(i) { matches[i].done = false; refresh(); }
     function addMatch() { if(matches.length < 5) { matches.push({done:false, dbCur:0, h:{name:'',sl:3,balls:0,toCur:0,toTotal:0,lag:false}, a:{name:'',sl:3,balls:0,toCur:0,toTotal:0,lag:false}, cur:{h:[],a:[]}}); refresh(); } }
-    function resetAll() { if(confirm("Reset all data?")) { matches=[]; localStorage.clear(); addMatch(); loadTeams(); } }
-    function exportJPG() { html2canvas(document.getElementById('capture-area'), {backgroundColor:'#1a1a1a', scale: 2}).then(c => { const l=document.createElement('a'); l.download='MVP_Results.jpg'; l.href=c.toDataURL('image/jpeg', 1.0); l.click(); }); }
+    function resetAll() { if(confirm(APP_NAME + "\nReset all data?")) { matches=[]; localStorage.clear(); addMatch(); loadTeams(); } }
+    function exportJPG() { html2canvas(document.getElementById('capture-area'), {backgroundColor:'#1a1a1a', scale: 2}).then(c => { const l=document.createElement('a'); l.download='Billiards_Score.jpg'; l.href=c.toDataURL('image/jpeg', 1.0); l.click(); }); }
 
     loadTeams();
     if(matches.length === 0) addMatch();
