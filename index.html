@@ -93,28 +93,165 @@
         const count = sessionHistory.length;
         const avg = count > 0 ? (totalInnings / count).toFixed(1) : 0;
         document.getElementById('match-summary').innerText = Matches Tracked: ${count} | Avg Innings: ${avg};
+   <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Billiard Pro Backup</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root { --bg: #f4f7f6; --text: #2c3e50; --accent: #27ae60; --table-border: #bdc3c7; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text); padding: 10px; margin: 0; }
+        .scoresheet { background: white; border: 2px solid var(--text); padding: 15px; max-width: 600px; margin: auto; }
+        h2 { text-transform: uppercase; border-bottom: 2px solid var(--text); padding-bottom: 5px; margin-top: 0; font-size: 1.2rem; }
+        
+        .grid-row { display: flex; border-bottom: 1px solid var(--table-border); padding: 12px 0; align-items: center; }
+        .label { flex: 2; font-weight: bold; font-size: 0.9rem; }
+        .controls { flex: 1.5; display: flex; justify-content: space-between; align-items: center; }
+        
+        .btn-step { background: #eee; border: 1px solid #ccc; width: 45px; height: 45px; border-radius: 8px; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-step:active { background: #ddd; }
+        .val { font-size: 1.6rem; font-weight: bold; min-width: 45px; text-align: center; }
+        
+        select { padding: 8px; font-size: 1.1rem; border-radius: 5px; border: 1px solid #ccc; width: 100%; }
+        
+        .totals-box { background: #ecf0f1; padding: 15px; margin-top: 20px; border-radius: 8px; border: 1px solid #bdc3c7; }
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px auto; max-width: 600px; }
+        button { padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; }
+        .primary { background: var(--accent); color: white; }
+        .secondary { background: #2980b9; color: white; }
+        .danger { background: #e74c3c; color: white; grid-column: span 2; font-size: 1.2rem; }
+        
+        #history-log { margin-top: 10px; font-size: 0.9rem; max-height: 180px; overflow-y: auto; background: #fff; padding: 8px; border: 1px solid #ccc; color: #333; text-align: left; line-height: 1.4; }
+    </style>
+</head>
+<body>
+
+<div id="capture-area" class="scoresheet">
+    <h2>Match Scorer (Backup)</h2>
+    
+    <div class="grid-row">
+        <div class="label">Player SL</div>
+        <div class="controls">
+            <select id="sl">
+                <option value="1">SL 1</option><option value="2">SL 2</option>
+                <option value="3" selected>SL 3</option><option value="4">SL 4</option>
+                <option value="5">SL 5</option><option value="6">SL 6</option>
+                <option value="7">SL 7</option><option value="8">SL 8</option>
+                <option value="9">SL 9</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="grid-row">
+        <div class="label">Innings</div>
+        <div class="controls">
+            <button class="btn-step" onclick="changeVal('innings', -1)">-</button>
+            <span id="innings-display" class="val">0</span>
+            <button class="btn-step" onclick="changeVal('innings', 1)">+</button>
+        </div>
+    </div>
+
+    <div class="grid-row">
+        <div class="label">Defensive</div>
+        <div class="controls">
+            <button class="btn-step" onclick="changeVal('defensive', -1)">-</button>
+            <span id="defensive-display" class="val">0</span>
+            <button class="btn-step" onclick="changeVal('defensive', 1)">+</button>
+        </div>
+    </div>
+
+    <div class="grid-row">
+        <div class="label">Dead Balls</div>
+        <div class="controls">
+            <button class="btn-step" onclick="changeVal('dead', -1)">-</button>
+            <span id="dead-display" class="val">0</span>
+            <button class="btn-step" onclick="changeVal('dead', 1)">+</button>
+        </div>
+    </div>
+
+    <div class="totals-box">
+        <strong>Session History:</strong>
+        <div id="history-log">No matches saved yet.</div>
+        <hr>
+        <p id="session-stats" style="font-weight:bold;">Matches: 0 | Innings: 0</p>
+    </div>
+</div>
+
+<div class="action-grid">
+    <button class="danger" onclick="saveMatch()">FINISH & SAVE MATCH</button>
+    <button class="primary" onclick="exportJPG()">SAVE JPG</button>
+    <button class="secondary" onclick="exportText()">COPY TEXT</button>
+    <button style="grid-column: span 2; background: #7f8c8d; color: white;" onclick="clearSession()">RESET NIGHT</button>
+</div>
+
+<script>
+    let matchData = { innings: 0, defensive: 0, dead: 0 };
+    let sessionHistory = JSON.parse(localStorage.getItem('billiardHistory')) || [];
+
+    function updateUI() {
+        document.getElementById('innings-display').innerText = matchData.innings;
+        document.getElementById('defensive-display').innerText = matchData.defensive;
+        document.getElementById('dead-display').innerText = matchData.dead;
+        
+        const log = document.getElementById('history-log');
+        if (sessionHistory.length === 0) {
+            log.innerHTML = "No matches saved yet.";
+        } else {
+            log.innerHTML = sessionHistory.map((m, i) => 
+                `<strong>Match ${i+1}:</strong> (SL${m.sl}) - Inn: ${m.innings}, Def: ${m.defensive}, Dead: ${m.dead}`
+            ).join('<br>');
+        }
+        
+        const totalInnings = sessionHistory.reduce((s, m) => s + m.innings, 0);
+        document.getElementById('session-stats').innerText = `Matches: ${sessionHistory.length} | Total Innings: ${totalInnings}`;
+    }
+
+    function changeVal(field, delta) {
+        matchData[field] = Math.max(0, matchData[field] + delta);
+        updateUI();
+    }
+
+    function saveMatch() {
+        const finishedMatch = { ...matchData, sl: document.getElementById('sl').value };
+        sessionHistory.push(finishedMatch);
+        localStorage.setItem('billiardHistory', JSON.stringify(sessionHistory));
+        matchData = { innings: 0, defensive: 0, dead: 0 };
+        updateUI();
+        alert("Match saved! Counters are now reset for your next match.");
     }
 
     function exportText() {
-        let summary = "POOL SESSION BACKUP\n------------------\n";
+        if (sessionHistory.length === 0) return alert("No matches to copy!");
+        let text = "POOL SESSION SUMMARY\n==================\n";
         sessionHistory.forEach((m, i) => {
-            summary += Match ${i+1}: Innings: ${m.innings}, Def: ${m.defensive}, Dead: ${m.dead}\n;
+            text += `Match ${i+1} [SL${m.sl}]: ${m.innings} Inn, ${m.defensive} Def, ${m.dead} Dead\n`;
         });
-        navigator.clipboard.writeText(summary);
-        alert("Full session text copied to clipboard!");
+        navigator.clipboard.writeText(text);
+        alert("Full history copied to clipboard!");
     }
 
     function exportJPG() {
-        const area = document.getElementById('capture-area');
-        html2canvas(area).then(canvas => {
+        html2canvas(document.getElementById('capture-area')).then(canvas => {
             const link = document.createElement('a');
-            link.download = 'scoresheet_backup.jpg';
-            link.href = canvas.toDataURL("image/jpeg", 0.9);
+            link.download = 'league_report.jpg';
+            link.href = canvas.toDataURL("image/jpeg");
             link.click();
         });
     }
 
-    window.onload = updateTotals;
+    function clearSession() {
+        if (confirm("Clear all matches and start a new night?")) {
+            sessionHistory = [];
+            localStorage.removeItem('billiardHistory');
+            matchData = { innings: 0, defensive: 0, dead: 0 };
+            updateUI();
+        }
+    }
+
+    updateUI();
 </script>
 
 </body>
