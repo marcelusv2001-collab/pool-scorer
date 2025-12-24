@@ -3,181 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>8-Ball Master Pro</title>
+    <title>8-Ball Pro Scorer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        :root { --border: #000; --accent: #2c3e50; --highlight: #fffae6; --tag-bg: #ffeaa7; }
-        body { font-family: -apple-system, sans-serif; background: #333; margin: 0; padding: 5px; color: #000; }
-        .sheet { background: white; border: 2px solid var(--border); max-width: 500px; margin: auto; padding: 10px; min-height: 95vh; display: flex; flex-direction: column; }
+        :root { --border: #000; --accent: #2c3e50; --hl-yellow: #fff9c4; --hl-green: #d1f2eb; --hl-blue: #d6eaf8; }
+        body { font-family: -apple-system, sans-serif; background: #222; margin: 0; padding: 5px; color: #000; font-size: 13px; }
+        .sheet { background: white; border: 2px solid var(--border); max-width: 480px; margin: auto; padding: 8px; min-height: 98vh; display: flex; flex-direction: column; }
         
-        .team-header { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 10px; border-bottom: 2px solid #000; padding-bottom: 5px; }
-        .team-header input { font-weight: bold; text-align: center; background: #eee; border: 1px solid #000; font-size: 0.8rem; padding: 4px; }
+        .team-header { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 5px; border-bottom: 2px solid #000; padding-bottom: 5px; }
+        .team-header input { font-weight: bold; text-align: center; background: #f0f0f0; border: 1px solid #000; font-size: 0.75rem; padding: 3px; }
 
-        .match-card { border: 1px solid #000; margin-bottom: 8px; border-radius: 4px; overflow: hidden; }
-        .match-header { background: var(--accent); color: white; padding: 4px 10px; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center; }
+        .match-card { border: 1px solid #000; margin-bottom: 5px; border-radius: 4px; overflow: hidden; }
+        .match-header { background: var(--accent); color: white; padding: 3px 8px; font-size: 0.7rem; display: flex; justify-content: space-between; align-items: center; }
         
-        .summary-view { padding: 8px; background: var(--highlight); font-size: 0.8rem; border-top: 1px solid #000; }
-        .summary-line { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px dotted #ccc; }
-        .total-pill { background: #000; color: #fff; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 0.9rem; margin-left: 5px; }
-        .stat-tag { background: var(--tag-bg); padding: 1px 4px; border-radius: 3px; font-weight: bold; border: 1px solid #d1ccc0; }
+        /* Summary Styling */
+        .summary-view { padding: 6px; background: #fdfefe; font-size: 0.75rem; border-top: 1px solid #000; }
+        .sum-row { display: flex; justify-content: space-between; align-items: center; padding: 2px 0; }
+        .pill { background: #000; color: #fff; padding: 1px 6px; border-radius: 10px; font-weight: bold; }
+        .hl-stat { padding: 1px 4px; border-radius: 3px; font-weight: bold; border: 1px solid rgba(0,0,0,0.1); }
+        .hl-def { background: var(--hl-green); }
+        .hl-to { background: var(--hl-blue); }
+        .hl-inn { background: var(--hl-yellow); }
 
-        .grid-main { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid #000; }
-        .side { padding: 6px; border-right: 1px solid #ddd; position: relative; }
+        /* Active Styling */
+        .lag-prompt { background: #eee; text-align: center; font-size: 0.65rem; font-weight: bold; padding: 2px; border-bottom: 1px solid #ccc; }
+        .lag-radios { display: flex; justify-content: space-around; padding: 4px; background: #f9f9f9; border-bottom: 1px solid #000; }
+        .grid-main { display: grid; grid-template-columns: 1fr 1fr; }
+        .side { padding: 4px; border-right: 1px solid #ddd; }
         .side:last-child { border-right: none; }
         
-        .lag-box { display: flex; align-items: center; gap: 3px; font-size: 0.65rem; font-weight: bold; margin-bottom: 4px; }
-        .lag-check { transform: scale(1.1); }
+        input, select { width: 100%; border: 1px solid #ccc; border-radius: 2px; padding: 2px; font-size: 0.8rem; box-sizing: border-box; }
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2px; margin-top: 3px; }
+        .stat-box { border: 1px solid #eee; padding: 1px; text-align: center; }
+        .stat-label { font-size: 0.5rem; font-weight: bold; display: block; }
         
-        input, select { width: 100%; border: 1px solid #ccc; border-radius: 3px; padding: 3px; font-size: 0.85rem; box-sizing: border-box; }
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 3px; margin-top: 5px; }
-        .stat-box { border: 1px solid #eee; padding: 2px; text-align: center; }
-        .stat-label { font-size: 0.55rem; font-weight: bold; display: block; }
-        
-        .stepper { display: flex; align-items: center; justify-content: center; gap: 2px; }
-        .btn { width: 24px; height: 24px; border: 1px solid #000; background: #eee; cursor: pointer; font-size: 0.9rem; border-radius: 3px; }
-        .val { font-size: 0.85rem; font-weight: bold; min-width: 15px; }
+        .stepper { display: flex; align-items: center; justify-content: center; }
+        .btn { width: 22px; height: 22px; border: 1px solid #000; background: #eee; cursor: pointer; font-size: 0.8rem; }
+        .val { font-size: 0.8rem; font-weight: bold; min-width: 14px; }
 
-        .pts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; padding: 6px; background: #eee; border-top: 1px solid #000; align-items: center; }
-        .pts-cell { display: flex; flex-direction: column; gap: 2px; font-size: 0.65rem; font-weight: bold; }
-        .pts-cell select { height: 28px; border: 1px solid #000; }
+        .pts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; background: #eee; border-top: 1px solid #000; }
+        .pts-cell { font-size: 0.6rem; font-weight: bold; }
 
-        #modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 2000; }
-        .modal { background: white; padding: 15px; border-radius: 8px; width: 260px; text-align: center; }
-        .modal button { display: block; width: 100%; margin: 8px 0; padding: 10px; font-weight: bold; cursor: pointer; border: 1px solid #333; }
+        /* Modal */
+        #modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 2000; }
+        .modal { background: white; padding: 10px; border-radius: 8px; width: 240px; text-align: center; }
+        .modal button { display: block; width: 100%; margin: 5px 0; padding: 8px; font-weight: bold; cursor: pointer; }
 
-        .footer { margin-top: auto; padding: 8px; border-top: 2px solid #000; display: flex; justify-content: space-between; font-weight: bold; font-size: 0.85rem; }
-        .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
-        .action-btn { padding: 8px; border: 1px solid #000; font-weight: bold; font-size: 0.7rem; text-transform: uppercase; border-radius: 4px; }
+        .footer { margin-top: auto; padding: 5px; border-top: 2px solid #000; display: flex; justify-content: space-between; font-weight: bold; font-size: 0.8rem; }
+        .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin-top: 3px; }
+        .action-btn { padding: 6px; border: 1px solid #000; font-weight: bold; font-size: 0.65rem; text-transform: uppercase; border-radius: 3px; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div id="modal-overlay">
     <div class="modal">
-        <h3 style="margin-top:0;">Game Win Type</h3>
-        <button onclick="recordWin('8BB')">8-Ball Break (8BB)</button>
-        <button onclick="recordWin('B&R')">Break & Run (B&R)</button>
-        <button onclick="recordWin('S8')" style="background:#fff2f2;">Scratch on 8 (S8)</button>
-        <button onclick="recordWin('E8')">Early 8-Ball (E8)</button>
-        <button onclick="recordWin('Normal')">Normal Win</button>
+        <h4 style="margin:0 0 10px 0;">Win Type</h4>
+        <button onclick="recordWin('8BB')">8BB</button>
+        <button onclick="recordWin('B&R')">B&R</button>
+        <button onclick="recordWin('S8')" style="background:#ffdada;">S8 (Scratch 8)</button>
+        <button onclick="recordWin('E8')">E8</button>
+        <button onclick="recordWin('Normal')">Normal</button>
     </div>
 </div>
 
 <div id="capture-area" class="sheet">
     <div class="team-header">
-        <div><label style="font-size:0.5rem;">HOME TEAM</label><input type="text" id="h-team" oninput="saveT()" placeholder="HOME TEAM"></div>
-        <div><label style="font-size:0.5rem;">AWAY TEAM</label><input type="text" id="a-team" oninput="saveT()" placeholder="AWAY TEAM"></div>
+        <input type="text" id="h-team" oninput="saveT()" placeholder="HOME TEAM">
+        <input type="text" id="a-team" oninput="saveT()" placeholder="AWAY TEAM">
     </div>
 
     <div id="match-container" style="flex-grow:1;"></div>
 
     <div class="footer">
-        <div><span class="h-name-lbl">HOME</span>: <span id="team-h-total" class="total-pill">0</span></div>
-        <div><span class="a-name-lbl">AWAY</span>: <span id="team-a-total" class="total-pill">0</span></div>
+        <div><span class="h-lbl">H</span>: <span id="team-h-total" class="pill">0</span></div>
+        <div><span class="a-lbl">A</span>: <span id="team-a-total" class="pill">0</span></div>
     </div>
 </div>
 
 <div class="actions">
     <button class="action-btn" style="grid-column: span 2; background: #27ae60; color: white;" onclick="addMatch()">+ New Match</button>
-    <button class="action-btn" style="background: #2980b9; color: white;" onclick="exportJPG()">Export JPG</button>
-    <button class="action-btn" style="background: #f1c40f;" onclick="exportText()">Copy Text</button>
+    <button class="action-btn" style="background: #2980b9; color: white;" onclick="exportJPG()">JPG</button>
+    <button class="action-btn" style="background: #f1c40f;" onclick="exportText()">Copy</button>
     <button class="action-btn" style="grid-column: span 2; background: #e74c3c; color: white;" onclick="clearAll()">Reset All</button>
 </div>
 
 <script>
-    let matches = JSON.parse(localStorage.getItem('billiardProV4')) || [];
+    let matches = JSON.parse(localStorage.getItem('billiardOneScreenV5')) || [];
     let activeWin = { i: null, s: null };
 
     function refresh() {
-        localStorage.setItem('billiardProV4', JSON.stringify(matches));
+        localStorage.setItem('billiardOneScreenV5', JSON.stringify(matches));
         const container = document.getElementById('match-container');
         container.innerHTML = '';
-        let hTotal = 0, aTotal = 0;
-        const hName = document.getElementById('h-team').value || 'HOME';
-        const aName = document.getElementById('a-team').value || 'AWAY';
+        let hTot = 0, aTot = 0;
+        const hN = document.getElementById('h-team').value || 'HOME';
+        const aN = document.getElementById('a-team').value || 'AWAY';
 
-        document.querySelectorAll('.h-name-lbl').forEach(el => el.innerText = hName);
-        document.querySelectorAll('.a-name-lbl').forEach(el => el.innerText = aName);
+        document.querySelectorAll('.h-lbl').forEach(el => el.innerText = hN);
+        document.querySelectorAll('.a-lbl').forEach(el => el.innerText = aN);
 
         matches.forEach((m, i) => {
-            hTotal += Number(m.hPts); aTotal += Number(m.aPts);
+            hTot += Number(m.hPts); aTot += Number(m.aPts);
             const card = document.createElement('div');
             card.className = 'match-card';
             
             if (m.isDone) {
+                const lagName = m.lag === 'h' ? hN : aN;
                 card.innerHTML = `
-                    <div class="match-header">MATCH ${i+1} COMPLETED <span style="text-decoration:underline;cursor:pointer" onclick="toggleEdit(${i})">Edit</span></div>
+                    <div class="match-header">M${i+1} DONE <span style="text-decoration:underline" onclick="toggleEdit(${i})">Edit</span></div>
                     <div class="summary-view">
-                        <div class="summary-line">
-                            <span><b>${m.h.name} (SL${m.h.sl})</b></span>
-                            <span class="total-pill">${m.hPts} Pts</span>
-                        </div>
-                        <div style="font-size:0.7rem; margin-bottom:8px;">
-                            <span class="stat-tag">${m.h.games} Wins</span> W=${m.h.gameList.length?m.h.gameList.join(','):'None'} | Def:${m.h.def} | TO:${m.h.to}
-                        </div>
-                        <div class="summary-line">
-                            <span><b>${m.a.name} (SL${m.a.sl})</b></span>
-                            <span class="total-pill">${m.aPts} Pts</span>
-                        </div>
-                        <div style="font-size:0.7rem;">
-                            <span class="stat-tag">${m.a.games} Wins</span> W=${m.a.gameList.length?m.a.gameList.join(','):'None'} | Def:${m.a.def} | TO:${m.a.to}
-                        </div>
-                        <div style="font-size:0.6rem; color:#666; margin-top:6px; font-weight:bold;">
-                            Lag Winner: ${m.lag.toUpperCase()} | Match Innings: ${m.inn}
+                        <div class="sum-row"><b>${m.h.name}</b> <span class="pill">${m.hPts}</span></div>
+                        <div style="margin-bottom:4px;">W=${m.h.gameList.join(',') || 'None'} | <span class="hl-stat hl-def">DEF:${m.h.def}</span> | <span class="hl-stat hl-to">TO:${m.h.to}</span></div>
+                        <div class="sum-row"><b>${m.a.name}</b> <span class="pill">${m.aPts}</span></div>
+                        <div style="margin-bottom:4px;">W=${m.a.gameList.join(',') || 'None'} | <span class="hl-stat hl-def">DEF:${m.a.def}</span> | <span class="hl-stat hl-to">TO:${m.a.to}</span></div>
+                        <div style="font-size:0.65rem; border-top:1px solid #eee; padding-top:2px;">
+                            Lag Winner: <b>${lagName}</b> | <span class="hl-stat hl-inn">Match Innings: ${m.inn}</span>
                         </div>
                     </div>`;
             } else {
                 card.innerHTML = `
-                    <div class="match-header">MATCH ${i+1} ACTIVE <button onclick="setDone(${i})" style="font-size:0.5rem; background:#27ae60; color:white; border:none; padding:2px 5px; border-radius:3px;">FINISH</button></div>
+                    <div class="match-header">MATCH ${i+1} <button onclick="setDone(${i})" style="font-size:0.5rem;">DONE</button></div>
+                    <div class="lag-prompt">Who won the lag?</div>
+                    <div class="lag-radios">
+                        <label><input type="radio" name="lag${i}" onclick="setLag(${i},'h')" ${m.lag==='h'?'checked':''}> ${hN}</label>
+                        <label><input type="radio" name="lag${i}" onclick="setLag(${i},'a')" ${m.lag==='a'?'checked':''}> ${aN}</label>
+                    </div>
                     <div class="grid-main">
-                        ${renderSide(i, 'h', m.h, m.lag === 'h')}
-                        ${renderSide(i, 'a', m.a, m.lag === 'a')}
+                        ${renderSide(i, 'h', m.h)}
+                        ${renderSide(i, 'a', m.a)}
                     </div>
                     <div class="pts-row">
-                        <div class="pts-cell"><span>${hName} Pts:</span> 
-                            <select onchange="upPts(${i}, 'hPts', this.value)">${[0,1,2,3].map(n=>`<option ${m.hPts==n?'selected':''}>${n}</option>`)}</select>
-                        </div>
-                        <div class="pts-cell"><span>${aName} Pts:</span> 
-                            <select onchange="upPts(${i}, 'aPts', this.value)">${[0,1,2,3].map(n=>`<option ${m.aPts==n?'selected':''}>${n}</option>`)}</select>
-                        </div>
+                        <div class="pts-cell">${hN} Pts:<select onchange="upPts(${i},'hPts',this.value)">${[0,1,2,3].map(n=>`<option ${m.hPts==n?'selected':''}>${n}</option>`)}</select></div>
+                        <div class="pts-cell">${aN} Pts:<select onchange="upPts(${i},'aPts',this.value)">${[0,1,2,3].map(n=>`<option ${m.aPts==n?'selected':''}>${n}</option>`)}</select></div>
                     </div>
-                    <div style="text-align:center; padding:4px; font-size:0.7rem; background:#f9f9f9;">
-                        MATCH INNINGS: <button class="btn" onclick="stepM(${i},'inn',-1)">-</button> <b>${m.inn}</b> <button class="btn" onclick="stepM(${i},'inn',1)">+</button>
+                    <div style="text-align:center; padding:2px; font-size:0.65rem;">
+                        INN: <button class="btn" onclick="stepM(${i},'inn',-1)">-</button> <b>${m.inn}</b> <button class="btn" onclick="stepM(${i},'inn',1)">+</button>
                     </div>`;
             }
             container.appendChild(card);
         });
-        document.getElementById('team-h-total').innerText = hTotal;
-        document.getElementById('team-a-total').innerText = aTotal;
+        document.getElementById('team-h-total').innerText = hTot;
+        document.getElementById('team-a-total').innerText = aTot;
     }
 
-    function renderSide(i, s, d, isLag) {
-        return `
-            <div class="side">
-                <div class="lag-box">
-                    <input type="radio" name="lag${i}" class="lag-check" onclick="setLag(${i},'${s}')" ${isLag?'checked':''}> <span>LAG</span>
-                </div>
-                <input type="text" placeholder="Player Name" value="${d.name}" oninput="up(${i},'${s}','name',this.value)">
-                <select onchange="up(${i},'${s}','sl',this.value)">${[2,3,4,5,6,7].map(n=>`<option ${d.sl==n?'selected':''}>SL ${n}</option>`)}</select>
-                <div class="stat-grid">
-                    ${box(i,s,'WON','games',true)} ${box(i,s,'T.O','to')} ${box(i,s,'DEF','def')}
-                </div>
-                <div style="font-size:0.55rem;color:#666;margin-top:4px; font-style:italic;">Log: ${d.gameList.join(',') || '...'}</div>
-            </div>`;
+    function renderSide(i, s, d) {
+        return `<div class="side">
+            <input type="text" placeholder="Name" value="${d.name}" oninput="up(${i},'${s}','name',this.value)">
+            <select onchange="up(${i},'${s}','sl',this.value)">${[2,3,4,5,6,7].map(n=>`<option ${d.sl==n?'selected':''}>SL ${n}</option>`)}</select>
+            <div class="stat-grid">
+                ${box(i,s,'W','games',true)} ${box(i,s,'TO','to')} ${box(i,s,'D','def')}
+            </div>
+        </div>`;
     }
 
-    function box(i, s, lbl, k, pop=false) {
+    function box(i, s, lbl, k, p=false) {
         return `<div class="stat-box"><span class="stat-label">${lbl}</span><div class="stepper">
             <button class="btn" onclick="step(${i},'${s}','${k}',-1)">-</button>
             <span class="val">${matches[i][s][k]}</span>
-            <button class="btn" onclick="${pop?`pop(${i},'${s}')`:`step(${i},'${s}','${k}',1)`}">+</button>
+            <button class="btn" onclick="${p?`pop(${i},'${s}')`:`step(${i},'${s}','${k}',1)`}">+</button>
         </div></div>`;
     }
 
-    function addMatch() { if(matches.length < 5) { matches.push({ inn:0, hPts:0, aPts:0, lag:'', isDone:false, h:emptySide(), a:emptySide() }); refresh(); } }
-    function emptySide() { return { name:'', sl:3, games:0, def:0, to:0, gameList:[] }; }
+    function addMatch() { if(matches.length < 5) { matches.push({ inn:0, hPts:0, aPts:0, lag:'', isDone:false, h:emptyS(), a:emptyS() }); refresh(); } }
+    function emptyS() { return { name:'', sl:3, games:0, def:0, to:0, gameList:[] }; }
     function setLag(i, w) { matches[i].lag = w; refresh(); }
-    function up(i, s, f, v) { matches[i][s][f] = v; localStorage.setItem('billiardProV4', JSON.stringify(matches)); }
+    function up(i, s, f, v) { matches[i][s][f] = v; localStorage.setItem('billiardOneScreenV5', JSON.stringify(matches)); }
     function upPts(i, f, v) { matches[i][f] = v; refresh(); }
     function step(i, s, f, d) { 
         if(f==='games' && d < 0) matches[i][s].gameList.pop();
@@ -194,12 +185,12 @@
     function setDone(i) { matches[i].isDone = true; refresh(); }
     function toggleEdit(i) { matches[i].isDone = false; refresh(); }
     function saveT() { localStorage.setItem('hTeam', document.getElementById('h-team').value); localStorage.setItem('aTeam', document.getElementById('a-team').value); refresh(); }
-    function clearAll() { if(confirm("Reset entire session?")) { matches=[]; localStorage.clear(); refresh(); } }
+    function clearAll() { if(confirm("Reset?")) { matches=[]; localStorage.clear(); refresh(); } }
     function exportJPG() { html2canvas(document.getElementById('capture-area')).then(c => { const l=document.createElement('a'); l.download='score.jpg'; l.href=c.toDataURL(); l.click(); }); }
-    function exportText() { let t=""; matches.forEach((m,i)=>t+=`M${i+1}: ${m.h.name} vs ${m.a.name} (${m.hPts}-${m.aPts})\\n`); navigator.clipboard.writeText(t); alert("Summary copied!"); }
+    function exportText() { let t=""; matches.forEach((m,i)=>t+=`M${i+1}: ${m.h.name} vs ${m.a.name} (${m.hPts}-${m.aPts})\\n`); navigator.clipboard.writeText(t); alert("Copied!"); }
     
     document.getElementById('h-team').value = localStorage.getItem('hTeam') || '';
-    document.getElementById('a-team').value = localStorage.getItem('awayTeam') || '';
+    document.getElementById('a-team').value = localStorage.getItem('aTeam') || '';
     refresh();
 </script>
 </body>
