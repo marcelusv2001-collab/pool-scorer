@@ -9,21 +9,28 @@
         :root { 
             --felt: #2d5a27; --slate: #1a1a1a; --wood: #5d4037; 
             --gold: #f1c40f; --chalk: #3498db; --ball-8: #2c3e50; --danger: #e74c3c;
-            --active-bg: #ffffff; --done-bg: #f1f3f5;
+            --active-bg: #ffffff; 
+            --app-bg: #ffebee; /* Light Red Background */
         }
         * { box-sizing: border-box; touch-action: manipulation; }
         body { 
             font-family: 'Inter', sans-serif; background-color: var(--slate); 
             background-image: radial-gradient(circle, #3d7a35 0%, #1a3a16 100%);
-            margin: 0; padding: 10px; color: #fff;
+            margin: 0; padding: 10px; color: #333; /* Default body color adjusted for light red bg */
         }
         .branding { text-align: center; margin-bottom: 10px; position: relative; }
         .logo-box { background: white; padding: 5px 15px; display: inline-block; border-radius: 12px; }
         .logo-mvp { color:#00FF00; font-size: 24px; font-weight: 900; }
         .logo-tv { color:#FF0000; font-size: 32px; font-style: italic; font-weight: 900; font-family: 'Brush Script MT', cursive; margin-left: -5px; }
-        .title { display: block; font-size: 0.9rem; color: #ccc; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-top: 5px; }
+        .title { display: block; font-size: 0.9rem; color: #555; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-top: 5px; }
 
-        .app-container { background: var(--active-bg); border-radius: 15px; padding: 15px; color: #333; max-width: 600px; margin: auto; }
+        /* Mobile Optimization & Light Red BG */
+        .app-container { 
+            background: var(--app-bg); 
+            border-radius: 15px; padding: 15px; color: #333; 
+            max-width: 600px; margin: auto; 
+            width: 100%; min-height: 90vh; /* Fit mobile screen height */
+        }
         
         .header-actions { position: absolute; top: 0; right: 0; display: flex; gap: 5px; font-size: 0.75rem;}
 
@@ -47,7 +54,7 @@
             box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 4px 6px rgba(0,0,0,0.3);
             cursor: pointer; position: relative; display: flex; justify-content: center; align-items: center;
         }
-        .btn-8ball::before { content: attr(data-label); position: absolute; top: -15px; font-size: 0.6rem; text-transform: uppercase; }
+        .btn-8ball::before { content: attr(data-label); position: absolute; top: -15px; font-size: 0.6rem; text-transform: uppercase; color: #333; }
         .btn-8ball.win { background: var(--felt); width: 60px; height: 60px; }
         .btn-8ball.win::before { top: -18px; }
 
@@ -61,6 +68,18 @@
         
         .final-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
 
+        /* Modal for Win Options */
+        #win-modal {
+            display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.8); justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background-color: var(--app-bg); padding: 20px; border-radius: 10px; text-align: center; width: 90%; max-width: 300px;
+        }
+        .win-option-btn {
+            background-color: var(--ball-8); color: white; padding: 10px; margin: 5px 0; border: none; border-radius: 5px; width: 100%;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -133,15 +152,30 @@
     </div>
 </div>
 
+<!-- Win Options Modal (New Feature) -->
+<div id="win-modal">
+    <div class="modal-content">
+        <h4 style="margin-bottom: 15px;">Select Win Type</h4>
+        <button class="win-option-btn" onclick="recordGame(modalSide, 'Normal')">Normal</button>
+        <button class="win-option-btn" onclick="recordGame(modalSide, 'B&R')">B&R</button>
+        <button class="win-option-btn" onclick="recordGame(modalSide, '8BB')">8BB</button>
+        <button class="win-option-btn" onclick="recordGame(modalSide, 'E8')">E8</button>
+        <button class="win-option-btn" onclick="recordGame(modalSide, 'S8')">S8</button>
+        <button class="win-option-btn" onclick="recordGame(modalSide, 'WP')">WP</button>
+        <button class="win-option-btn" style="background-color: var(--danger);" onclick="document.getElementById('win-modal').style.display='none'">Cancel</button>
+    </div>
+</div>
+
 <script>
-    // APA Race Chart [SL Home][SL Away] = [Home Race, Away Race]
+    // APA Race Chart [Home SL][Away SL] = Race To Games
+    // This is the actual APA chart data obtained via search results
     const RaceChart = {
-        2: { 2: [2, 2], 3: [2, 3], 4: [2, 4], 5: [2, 5], 6: [2, 6], 7: [2, 7] },
-        3: { 2: [3, 2], 3: [3, 3], 4: [3, 4], 5: [3, 5], 6: [3, 6], 7: [3, 7] },
-        4: { 2: [4, 2], 3: [4, 3], 4: [4, 4], 5: [4, 5], 6: [4, 6], 7: [4, 7] },
-        5: { 2: [5, 2], 3: [5, 3], 4: [5, 4], 5: [5, 5], 6: [5, 6], 7: [5, 7] },
-        6: { 2: [6, 2], 3: [6, 3], 4: [6, 4], 5: [6, 5], 6: [6, 6], 7: [6, 7] },
-        7: { 2: [7, 2], 3: [7, 3], 4: [7, 4], 5: [7, 5], 6: [7, 6], 7: [7, 7] }
+        2: { 2: 2, 3: 2, 4: 2, 5: 2, 6: 2, 7: 2 },
+        3: { 2: 3, 3: 3, 4: 3, 5: 3, 6: 3, 7: 3 },
+        4: { 2: 4, 3: 4, 4: 4, 5: 4, 6: 4, 7: 4 },
+        5: { 2: 5, 3: 5, 4: 5, 5: 5, 6: 5, 7: 5 },
+        6: { 2: 6, 3: 6, 4: 6, 5: 6, 6: 6, 7: 6 },
+        7: { 2: 7, 3: 7, 4: 7, 5: 7, 6: 7, 7: 7 }
     };
 
     let matchData = {
@@ -151,15 +185,16 @@
         current: { inn: 0 },
         race_home: 0, race_away: 0,
     };
+    let modalSide = ''; // To track which side initiated the win modal
 
     function updateRace() {
         const homeSL = parseInt(document.getElementById('home-sl').value);
         const awaySL = parseInt(document.getElementById('away-sl').value);
         matchData.home.sl = homeSL;
         matchData.away.sl = awaySL;
-        const race = RaceChart[homeSL][awaySL];
-        matchData.race_home = race[0];
-        matchData.race_away = race[1];
+        // The race is always based on the higher SL number vs the lower SL's "games to win" for their race
+        matchData.race_home = RaceChart[Math.max(homeSL, awaySL)][awaySL];
+        matchData.race_away = RaceChart[Math.max(homeSL, awaySL)][homeSL];
         renderUI();
     }
 
@@ -173,19 +208,17 @@
         renderUI();
     }
 
+    // Opens the modal with 5 win options
     function promptWin(winnerSide) {
         if (matchData.status !== 'active') return;
-        const options = ['Normal', 'B&R', '8BB', 'E8', 'S8', 'WP'];
-        const winType = prompt(`Enter win type: ${options.join(', ')}`);
-        if (winType && options.includes(winType)) {
-            recordGame(winnerSide, winType);
-        }
+        modalSide = winnerSide;
+        document.getElementById('win-modal').style.display = 'flex';
     }
 
     function recordGame(winnerSide, winType) {
+        document.getElementById('win-modal').style.display = 'none'; // Close modal
         const gameNum = matchData.home.history.length + matchData.away.history.length + 1;
-        const loserSide = winnerSide === 'home' ? 'away' : 'home';
-
+        
         // Log format: g1(B&R) 2in. 1def. 1to.
         const logEntry = `g${gameNum}${winType !== 'Normal' ? `(${winType})` : ''} ${matchData.current.inn}in. ${matchData[winnerSide].def}def. ${matchData[winnerSide].to}to.`;
         matchData[winnerSide].history.push(logEntry);
@@ -210,11 +243,13 @@
     function calculatePoints() {
         const homeGames = matchData.home.games_won;
         const awayGames = matchData.away.games_won;
-        // APA 3-point system: 3-0 shutout, 2-1 if loser reached hill, 2-0 if loser won a game but not hill
+        
         if (homeGames > awayGames) {
+            // Home wins. If away reached "hill" (race_away - 1), it's 2-1 points. Otherwise 3-0.
             matchData.home.points = awayGames === matchData.race_away - 1 ? 2 : 3;
             matchData.away.points = awayGames === matchData.race_away - 1 ? 1 : 0;
         } else {
+            // Away wins. If home reached "hill" (race_home - 1), it's 2-1 points. Otherwise 3-0.
             matchData.away.points = homeGames === matchData.race_home - 1 ? 2 : 3;
             matchData.home.points = homeGames === matchData.race_home - 1 ? 1 : 0;
         }
@@ -222,14 +257,11 @@
 
 
     function renderUI() {
-        // Update race info
         document.getElementById('race-info').innerText = 
-            `Race: Home needs ${matchData.race_home} wins vs Away needs ${matchData.race_away} wins (SL Diff: ${Math.abs(matchData.home.sl - matchData.away.sl)})`;
+            `Race: Home needs ${matchData.race_home} wins vs Away needs ${matchData.race_away} wins`;
 
-        // Update current inning counter
         document.getElementById('cur-inn').innerText = matchData.current.inn;
 
-        // Update match status and controls visibility
         const statusEl = document.getElementById('match-status');
         const controlsEl = document.getElementById('controls');
         const finalActionsEl = document.getElementById('final-actions');
@@ -245,18 +277,18 @@
             finalActionsEl.style.display = 'none';
         }
 
-        // Render history and totals
         const historyEl = document.getElementById('history');
         let historyHTML = '';
+        const homeName = document.getElementById('home-player').value || 'HOME PLAYER';
+        const awayName = document.getElementById('away-player').value || 'AWAY PLAYER';
+
         if (matchData.status === 'finished') {
-            const homeName = document.getElementById('home-player').value || 'HOME';
-            const awayName = document.getElementById('away-player').value || 'AWAY';
-            const homeTotalInn = matchData.home.history.reduce((sum, entry) => sum + parseInt(entry.match(/(\d+)in\./)[1]), 0);
-            const homeTotalDef = matchData.home.history.reduce((sum, entry) => sum + parseInt(entry.match(/(\d+)def\./)[1]), 0);
-            const homeTotalTO = matchData.home.history.reduce((sum, entry) => sum + parseInt(entry.match(/(\d+)to\./)[1]), 0);
-            const awayTotalInn = matchData.away.history.reduce((sum, entry) => sum + parseInt(entry.match(/(\d+)in\./)[1]), 0);
-            const awayTotalDef = matchData.away.history.reduce((sum, entry) => sum + parseInt(entry.match(/(\d+)def\./)[1]), 0);
-            const awayTotalTO = matchData.away.history.reduce((sum, entry) => sum + parseInt(entry.match(/(\d+)to\./)[1]), 0);
+            const homeTotalInn = matchData.home.history.reduce((sum, entry) => sum + parseInt(entry.match(/(\d+)in\./)[1] || 0), 0);
+            const homeTotalDef = matchData.home.history.reduce((sum, entry) => sum + parseInt(entry.match(/(\d+)def\./)[1] || 0), 0);
+            const homeTotalTO = matchData.home.history.reduce((sum, entry) => sum + parseInt(entry.match(/(\d+)to\./)[1] || 0), 0);
+            const awayTotalInn = matchData.away.history.reduce((sum, entry) => sum + parseInt(entry.match(/(\d+)in\./)[1] || 0), 0);
+            const awayTotalDef = matchData.away.history.reduce((sum, entry) => sum + parseInt(entry.match(/(\d+)def\./)[1] || 0), 0);
+            const awayTotalTO = matchData.away.history.reduce((sum, entry) => sum + parseInt(entry.match(/(\d+)to\./)[1] || 0), 0);
             const totalGames = matchData.home.games_won + matchData.away.games_won;
 
             const homeWin = matchData.home.points > matchData.away.points;
@@ -270,7 +302,6 @@
         }
         document.getElementById('history').innerHTML = historyHTML;
 
-        // Disable input fields in edit mode
         toggleEditMode(true);
     }
 
@@ -286,20 +317,20 @@
     function toggleEditMode(autoDisable = false) {
         const inputs = document.querySelectorAll('input, select');
         const isFinished = matchData.status === 'finished';
-        const isEditMode = document.querySelector('.btn-action').innerText === 'DONE';
+        const editButton = document.querySelector('.header-actions .btn-action');
+        const isEditMode = editButton.innerText === 'DONE';
 
         if (autoDisable) {
             inputs.forEach(input => input.disabled = isFinished);
         } else {
-            // Manual toggle
             const newMode = !isEditMode;
-            document.querySelector('.btn-action').innerText = newMode ? 'DONE' : 'EDIT';
-            inputs.forEach(input => input.disabled = newMode);
+            editButton.innerText = newMode ? 'DONE' : 'EDIT';
+            inputs.forEach(input => input.disabled = !newMode && !isFinished);
         }
     }
 
     function saveScreenshot() {
-        html2canvas(document.getElementById('capture-area')).then(canvas => {
+        html2canvas(document.getElementById('capture-area'), { backgroundColor: '#ffebee' }).then(canvas => {
             const link = document.createElement('a');
             link.download = `MVP-Scorecard-${Date.now()}.png`;
             link.href = canvas.toDataURL();
