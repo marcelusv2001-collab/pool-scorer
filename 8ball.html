@@ -14,16 +14,18 @@
         .logo-mvp { color:#00FF00; font-size: 24px; font-weight: 900; }
         .logo-tv { color:#FF0000; font-size: 32px; font-style: italic; font-weight: 900; font-family: 'Brush Script MT', cursive; margin-left: -5px; }
         .app-subtitle { display: block; color: #fff; font-weight: 700; font-size: 0.8rem; margin-top: 5px; text-transform: uppercase; }
-        .app-container { background: var(--app-bg); border-radius: 15px; padding: 15px; max-width: 600px; margin: auto; width: 100%; min-height: 85vh; position: relative; }
+        .app-container { background: var(--app-bg); border-radius: 15px; padding: 15px; max-width: 600px; margin: auto; min-height: 85vh; position: relative; }
         .team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
         .team-box { background: rgba(0,0,0,0.05); padding: 8px; border-radius: 8px; }
         .team-input { width:100%; border:none; border-bottom:2px solid var(--gold); background:transparent; font-weight:900; color:var(--ball-8); text-align:center; margin-bottom:5px; }
-        .btn-8ball { background: var(--ball-8); color: white; border: none; border-radius: 50%; width: 55px; height: 55px; font-weight: 900; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .btn-8ball { background: var(--ball-8); color: white; border: none; border-radius: 50%; width: 55px; height: 55px; font-weight: 900; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; }
         .btn-8ball.win { background: var(--felt); width: 70px; height: 70px; border: 3px solid #fff; }
         .controls-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 15px; margin: 10px 0; align-items: center; }
         .modal { display: none; position: fixed; z-index: 200; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; }
         .modal-content { background: var(--app-bg); padding: 20px; border-radius: 15px; width: 90%; max-width: 350px; text-align: center; max-height: 80vh; overflow-y: auto; }
-        .win-opt { background: var(--ball-8); color: white; padding: 10px; border: none; border-radius: 8px; font-weight: bold; width: 100%; margin: 4px 0; cursor: pointer; }
+        .win-opt { background: var(--ball-8); color: white; padding: 10px; border: none; border-radius: 8px; font-weight: bold; width: 100%; margin: 4px 0; }
+        .view-all-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--slate); z-index: 1000; padding: 15px; overflow-y: auto; }
+        .match-card { background: white; border-radius: 10px; padding: 12px; margin-bottom: 10px; font-size: 0.8rem; border-left: 5px solid var(--gold); }
     </style>
 </head>
 <body>
@@ -36,22 +38,23 @@
 <div class="app-container" id="capture-area">
     <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-weight:900; font-size:0.8rem;">
         <span>MATCH <span id="match-num">1</span>/5 — <span id="race-display">RACE 0-0</span></span>
+        <button onclick="showViewAll()" style="background:var(--ball-8); color:white; border:none; padding:2px 8px; border-radius:4px;">VIEW ALL</button>
     </div>
 
     <div class="team-grid">
         <div class="team-box">
             <input type="text" id="h-team" class="team-input" placeholder="HOME TEAM">
-            <input type="text" id="h-player" placeholder="Player Name" style="width:100%; border:none; background:transparent; font-weight:bold;">
+            <input type="text" id="h-player" placeholder="Player" style="width:100%; border:none; background:transparent; font-weight:bold;">
             <select id="h-sl" onchange="updateRace()"><option value="2">SL2</option><option value="3">SL3</option><option value="4" selected>SL4</option><option value="5">SL5</option><option value="6">SL6</option><option value="7">SL7</option></select>
         </div>
         <div class="team-box">
             <input type="text" id="a-team" class="team-input" placeholder="AWAY TEAM">
-            <input type="text" id="a-player" placeholder="Player Name" style="width:100%; border:none; background:transparent; font-weight:bold;">
+            <input type="text" id="a-player" placeholder="Player" style="width:100%; border:none; background:transparent; font-weight:bold;">
             <select id="a-sl" onchange="updateRace()"><option value="2">SL2</option><option value="3">SL3</option><option value="4" selected>SL4</option><option value="5">SL5</option><option value="6">SL6</option><option value="7">SL7</option></select>
         </div>
     </div>
 
-    <div class="controls-grid">
+    <div class="controls-grid" id="game-controls">
         <div style="display:flex; flex-direction:column; gap:12px; align-items:center;">
             <button class="btn-8ball touch-btn" data-side="h" data-type="def">DEF<span id="h-def-cur">0</span></button>
             <button class="btn-8ball touch-btn" data-side="h" data-type="to">T.O.<span id="h-to-cur">0</span></button>
@@ -68,22 +71,26 @@
         </div>
     </div>
 
-    <div id="log" style="background:white; padding:10px; border-radius:8px; font-family:monospace; font-size:0.75rem; min-height:80px; border:1px solid #ddd;"></div>
+    <div id="log" style="background:white; padding:10px; border-radius:8px; font-family:monospace; font-size:0.7rem; min-height:100px; border:1px solid #ddd;"></div>
 </div>
 
-<div id="win-modal" class="modal"><div class="modal-content"><h3>WIN TYPE</h3><div id="win-opts"></div><button onclick="document.getElementById('win-modal').style.display='none'" style="margin-top:10px; color:var(--danger); border:none; background:none;">CANCEL</button></div></div>
+<div id="win-modal" class="modal"><div class="modal-content"><h3>WIN TYPE</h3><div id="win-opts"></div><button onclick="closeModal('win-modal')" style="margin-top:10px; color:var(--danger); border:none; background:none;">CANCEL</button></div></div>
+
+<div id="finish-modal" class="modal"><div class="modal-content"><h3>MATCH COMPLETE!</h3><p id="finish-msg"></p><button class="win-opt" onclick="saveMatch()">FINISH & SAVE</button><button class="win-opt" style="background:#555;" onclick="closeModal('finish-modal')">EDIT RACKS</button></div></div>
+
+<div id="edit-modal" class="modal"><div class="modal-content"><h3>EDIT GAME</h3><div id="edit-fields"></div><button class="win-opt" onclick="saveGameEdit()">SAVE CHANGES</button><button class="win-opt" style="background:var(--danger);" onclick="closeModal('edit-modal')">CANCEL</button></div></div>
+
+<div id="view-all-screen" class="view-all-screen">
+    <h2 style="color:white; text-align:center; font-size:1.2rem;">SESSION OVERVIEW</h2>
+    <div id="session-list"></div>
+    <button class="win-opt" onclick="startNewMatchFromView()">+ START NEW MATCH</button>
+    <button class="win-opt" style="background:#555;" onclick="hideViewAll()">BACK</button>
+</div>
 
 <script>
-    // Official APA Race Chart [Home SL][Away SL]
-    const raceChart = {
-        2: { 2: 2, 3: 2, 4: 2, 5: 2, 6: 2, 7: 2 },
-        3: { 2: 3, 3: 2, 4: 2, 5: 2, 6: 2, 7: 2 },
-        4: { 2: 4, 3: 3, 4: 3, 5: 3, 6: 3, 7: 2 },
-        5: { 2: 5, 3: 4, 4: 4, 5: 4, 6: 4, 7: 3 },
-        6: { 2: 6, 3: 5, 4: 5, 5: 5, 6: 5, 7: 4 },
-        7: { 2: 7, 3: 6, 4: 5, 5: 5, 6: 5, 7: 5 }
-    };
-
+    // APA Race Chart [Home SL][Away SL]
+    const raceChart = { 2:{2:2,3:2,4:2,5:2,6:2,7:2}, 3:{2:3,3:2,4:2,5:2,6:2,7:2}, 4:{2:4,3:3,4:3,5:3,6:3,7:2}, 5:{2:5,3:4,4:4,5:4,6:4,7:3}, 6:{2:6,3:5,4:5,5:5,6:5,7:4}, 7:{2:7,3:6,4:5,5:5,6:5,7:5} };
+    let session = [], editingMatchIdx = -1, editingGameIdx = -1;
     let match = { h: { wins: 0, def: 0, to: 0, sl: 4 }, a: { wins: 0, def: 0, to: 0, sl: 4 }, inn: 0, hist: [] };
 
     function updateRace() {
@@ -92,6 +99,7 @@
         document.getElementById('race-display').innerText = `RACE ${match.h.goal}-${match.a.goal}`;
     }
 
+    // Touch logic: Single Tap (+1), Double Tap (-1), Hold (Reset)
     document.querySelectorAll('.touch-btn').forEach(btn => {
         let lastTap = 0, timer;
         btn.addEventListener('touchstart', (e) => {
@@ -119,12 +127,14 @@
     function confirmWin(type) {
         if ((type === 'B&R' || type === '8BB') && match.inn > 0) return alert("B&R/8BB must be 0 innings!");
         if (type === 'Normal' && match.inn === 0) return alert("Normal win requires >0 innings!");
-        
         const side = match.activeSide;
-        match.hist.push(`g${match.h.wins+match.a.wins+1}(${type}) ${match.inn}in ${match[side].def}def ${match[side].to}to`);
+        match.hist.push({ type, inn: match.inn, def: match[side].def, to: match[side].to, winner: side });
         match[side].wins++;
         match.inn = 0; match.h.def = 0; match.h.to = 0; match.a.def = 0; match.a.to = 0;
-        document.getElementById('win-modal').style.display = 'none';
+        closeModal('win-modal');
+        if (match.h.wins >= match.h.goal || match.a.wins >= match.a.goal) {
+            document.getElementById('finish-modal').style.display = 'flex';
+        }
         render();
     }
 
@@ -134,9 +144,49 @@
         document.getElementById('a-def-cur').innerText = match.a.def;
         document.getElementById('a-to-cur').innerText = match.a.to;
         document.getElementById('inn-cur').innerText = match.inn;
-        document.getElementById('log').innerHTML = match.hist.join('<br>');
+        document.getElementById('log').innerHTML = match.hist.map((g, i) => `G${i+1}: ${g.type} | ${g.inn}i ${g.def}d ${g.to}t | Win: ${g.winner.toUpperCase()}`).join('<br>');
     }
 
+    function saveMatch() {
+        const hW = match.h.wins, aW = match.a.wins, hG = match.h.goal, aG = match.a.goal;
+        let hP = 0, aP = 0; // 3-Point System
+        if (hW > aW) { hP = aW === aG-1 ? 2 : 3; aP = aW === aG-1 ? 1 : 0; }
+        else { aP = hW === hG-1 ? 2 : 3; hP = hW === hG-1 ? 1 : 0; }
+        session.push({ ...JSON.parse(JSON.stringify(match)), hTeam: document.getElementById('h-team').value, aTeam: document.getElementById('a-team').value, hName: document.getElementById('h-player').value, aName: document.getElementById('a-player').value, hPts: hP, aPts: aP });
+        closeModal('finish-modal'); showViewAll();
+    }
+
+    function showViewAll() {
+        const list = document.getElementById('session-list');
+        list.innerHTML = session.map((m, i) => `<div class="match-card"><b>Match ${i+1}: ${m.hTeam} vs ${m.aTeam}</b><br>Winner: ${m.h.wins > m.a.wins ? m.hName : m.aName} (${m.h.wins > m.a.wins ? m.hPts : m.aPts} pts)<br><button onclick="editOldMatch(${i})">EDIT MATCH</button></div>`).join('');
+        document.getElementById('view-all-screen').style.display = 'block';
+    }
+
+    function editOldMatch(idx) {
+        editingMatchIdx = idx;
+        document.getElementById('edit-fields').innerHTML = session[idx].hist.map((g, gi) => `<button class="win-opt" onclick="prepGameEdit(${idx},${gi})">Edit Game ${gi+1}</button>`).join('');
+        document.getElementById('edit-modal').style.display = 'flex';
+    }
+
+    function prepGameEdit(mi, gi) {
+        editingGameIdx = gi; const g = session[mi].hist[gi];
+        document.getElementById('edit-fields').innerHTML = `Win: <select id="edit-win"><option value="h" ${g.winner==='h'?'selected':''}>Home</option><option value="a" ${g.winner==='a'?'selected':''}>Away</option></select><br>Inn: <input type="number" id="edit-inn" value="${g.inn}"><br>Def: <input type="number" id="edit-def" value="${g.def}"><br>T.O: <input type="number" id="edit-to" value="${g.to}">`;
+    }
+
+    function saveGameEdit() {
+        const g = session[editingMatchIdx].hist[editingGameIdx];
+        g.inn = parseInt(document.getElementById('edit-inn').value); g.def = parseInt(document.getElementById('edit-def').value); g.to = parseInt(document.getElementById('edit-to').value); g.winner = document.getElementById('edit-win').value;
+        closeModal('edit-modal'); showViewAll();
+    }
+
+    function startNewMatchFromView() {
+        match = { h: { wins: 0, def: 0, to: 0, sl: 4 }, a: { wins: 0, def: 0, to: 0, sl: 4 }, inn: 0, hist: [] };
+        document.getElementById('match-num').innerText = session.length + 1;
+        document.getElementById('h-player').value = ''; document.getElementById('a-player').value = ''; render(); updateRace(); hideViewAll();
+    }
+
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    function hideViewAll() { document.getElementById('view-all-screen').style.display = 'none'; }
     updateRace();
 </script>
 </body>
