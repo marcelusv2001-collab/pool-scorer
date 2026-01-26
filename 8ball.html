@@ -29,8 +29,6 @@
         .win-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 15px 0; }
         .btn-win-opt { background: var(--slate); color: white; padding: 14px; border: 1px solid var(--border); border-radius: 12px; font-weight: 700; cursor: pointer; }
         .btn-action { width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; margin-top: 10px; font-size: 0.95rem; }
-        #normal-actions { display: block; }
-        #edit-actions { display: none; }
     </style>
 </head>
 <body>
@@ -65,164 +63,151 @@
             <button class="btn-inning" id="innings-btn"><span id="innings-val">0</span></button>
             <div style="display:flex; flex-direction:column; gap:12px; align-items:center;">
                 <button class="btn-pro" id="btn-aDef">Def <span id="aDef-val">0</span></button>
-                <button class="btn-pro" id="btn-aTO">T.O. <span id="aTO-val">0</span></button>
+                <button class="btn-pro" id="btn-aTO">T.O. <span id="aTO-val">2</span></button>
                 <button class="btn-pro win" onclick="openWin('a')">RACK</button>
             </div>
         </div>
         <div class="session-overview">
-            <div style="text-align:center; font-size:0.85rem; font-weight:800; color:var(--gold); margin-bottom:10px;">SESSION SUMMARY (MATCH PTS)</div>
             <div id="results-list"></div>
         </div>
-        <!-- Normal Session Actions -->
-        <div id="normal-actions">
-            <button class="btn-action" onclick="exportSession()" style="background:var(--felt); color:var(--slate);">EXPORT SESSION</button>
-            <button class="btn-action" onclick="clearSession()" style="background:var(--danger); color:white;">RESET ALL DATA</button>
-        </div>
-        <!-- Editing Mode Actions -->
-        <div id="edit-actions">
-            <button class="btn-action" onclick="saveEditedMatch()" style="background:var(--felt); color:var(--slate);">SAVE EDITS TO MATCH</button>
-            <button class="btn-action" onclick="location.reload()" style="background:var(--danger); color:white;">CANCEL EDITING</button>
-        </div>
+        <button class="btn-action" onclick="exportSession()" style="background:var(--felt); color:var(--slate);">EXPORT SESSION</button>
+        <button class="btn-action" onclick="clearSession()" style="background:var(--danger); color:white;">RESET ALL DATA</button>
     </div>
 
     <!-- Modals -->
-    <div id="winModal" class="modal"><div class="modal-box"><h3>Game Outcome</h3><div class="win-grid"><button class="btn-win-opt" onclick="confirmRack('Normal')">Normal</button><button class="btn-win-opt" onclick="confirmRack('8BB')">8BB</button><button class="btn-win-opt" onclick="confirmRack('B&R')">B&R</button><button class="btn-win-opt" onclick="confirmRack('S8')">S8</button><button class="btn-win-opt" onclick="confirmRack('E8')">E8</button><button class="btn-win-opt" onclick="confirmRack('WP')">WP</button></div><button class="btn-action" style="background:var(--danger); color:white;" onclick="closeM('winModal')">Cancel</button></div></div>
-    <div id="detailsModal" class="modal"><div class="modal-box"><h3 id="det-title" style="color:var(--gold)">Match Details</h3><div id="det-content" style="text-align:left; margin-bottom: 15px;"></div><button class="btn-action" style="background:var(--felt); color:var(--slate);" onclick="initEdit()">Edit This Match</button><button class="btn-action" onclick="closeM('detailsModal')">Close</button></div></div>
+    <div id="winModal" class="modal">
+        <div class="modal-box">
+            <h3>Game Outcome</h3>
+            <div class="win-grid">
+                <button class="btn-win-opt" onclick="confirmRack('Normal')">Normal</button>
+                <button class="btn-win-opt" onclick="confirmRack('8BB')">8BB</button>
+                <button class="btn-win-opt" onclick="confirmRack('B&R')">B&R</button>
+                <button class="btn-win-opt" onclick="confirmRack('S8')">S8</button>
+            </div>
+        </div>
+    </div>
 
-<script>
-    const CHART = { 
-        2: {2:2, 3:2, 4:2, 5:2, 6:2, 7:2}, 
-        3: {2:3, 3:2, 4:2, 5:2, 6:2, 7:2}, 
-        4: {2:4, 3:3, 4:3, 5:3, 6:3, 7:2}, 
-        5: {2:5, 3:4, 4:4, 5:4, 6:4, 7:3}, 
-        6: {2:6, 3:5, 4:5, 5:5, 6:5, 7:4}, 
-        7: {2:7, 3:6, 4:6, 5:6, 6:6, 7:5} 
-    };
-    let session = JSON.parse(localStorage.getItem('mvp_session')) || [];
-    let cur = { hDef: 0, aDef: 0, hTO: 0, aTO: 0, innings: 0, winnerSide: '', hGames: 0, aGames: 0, rackHistory: [], lag: 'Home', editingIdx: -1 };
-    let holdTimer;
+    <script>
+        let currentMatch = { h: 0, a: 0, hDef: 0, aDef: 0, hTO: 2, aTO: 2, innings: 0 };
+        let session = JSON.parse(localStorage.getItem('poolSession')) || [];
+        let activePlayer = null;
 
-    function toggleLag() { cur.lag = (cur.lag === 'Home' ? 'Away' : 'Home'); document.getElementById('lag-display').innerText = `LAG: ${cur.lag.toUpperCase()}`; }
-    
-    function updateRace() {
-        const h = document.getElementById('h-sl').value, a = document.getElementById('a-sl').value;
-        const rH = CHART[h][a], rA = CHART[a][h];
-        document.getElementById('race-display').innerText = `RACE ${rH} - ${rA}`;
-        if (cur.editingIdx === -1) checkMatchEnd(rH, rA);
-    }
-
-    document.querySelectorAll('.btn-pro, .btn-inning').forEach(btn => {
-        const stat = btn.id.replace('btn-', '');
-        btn.onmousedown = btn.ontouchstart = (e) => {
-            e.preventDefault();
-            holdTimer = setTimeout(() => {
-                cur[stat] = 0; document.getElementById(stat + '-val').innerText = 0;
-                btn.classList.add('reset-flash'); setTimeout(() => btn.classList.remove('reset-flash'), 400);
-                holdTimer = null;
-            }, 800);
+        // Official 8-Ball Race Matrix
+        const raceTable = {
+            2: { 2: "2/2", 3: "2/3", 4: "2/4", 5: "2/5", 6: "2/6", 7: "2/7" },
+            3: { 2: "3/2", 3: "2/2", 4: "2/3", 5: "2/4", 6: "2/5", 7: "2/6" },
+            4: { 2: "4/2", 3: "3/2", 4: "3/3", 5: "3/4", 6: "3/5", 7: "3/6" },
+            5: { 2: "5/2", 3: "4/2", 4: "4/3", 5: "4/4", 6: "4/5", 7: "4/6" },
+            6: { 2: "6/2", 3: "5/2", 4: "5/3", 5: "5/4", 6: "5/5", 7: "4/6" },
+            7: { 2: "7/2", 3: "6/2", 4: "6/3", 5: "6/4", 6: "6/4", 7: "5/5" }
         };
-        btn.onmouseup = btn.ontouchend = () => {
-            if (holdTimer) { clearTimeout(holdTimer); cur[stat]++; document.getElementById(stat + '-val').innerText = cur[stat]; holdTimer = null; }
-            if (cur.editingIdx > -1) updateRace(); // Update race on every stat change while editing
-        };
-    });
 
-    function checkMatchEnd(rH, rA) {
-        if (cur.hGames >= rH || cur.aGames >= rA) {
-            setTimeout(() => { if (confirm("Match Complete. Save results to session?")) saveMatch(rH, rA); }, 200);
+        function updateRace() {
+            const hSL = document.getElementById('h-sl').value;
+            const aSL = document.getElementById('a-sl').value;
+            document.getElementById('race-display').innerText = `RACE ${raceTable[hSL][aSL]}`;
         }
-    }
 
-    function saveEditedMatch() {
-        const h = document.getElementById('h-sl').value, a = document.getElementById('a-sl').value;
-        saveMatch(CHART[h][a], CHART[a][h]);
-    }
+        function toggleLag() {
+            const lag = document.getElementById('lag-display');
+            lag.innerText = lag.innerText === "LAG: HOME" ? "LAG: AWAY" : "LAG: HOME";
+        }
 
-    function saveMatch(rH, rA) {
-        const hWin = cur.hGames >= rH;
-        const loserGames = hWin ? cur.aGames : cur.hGames;
-        const loserRace = hWin ? rA : rH;
-        const loserHill = loserRace - 1;
-
-        let pW = 2, pL = 0;
-        if (loserGames === 0) { pW = 3; pL = 0; }
-        else if (loserGames === loserHill) { pW = 2; pL = 1; }
-        else { pW = 2; pL = 0; }
-        
-        const data = {
-            num: cur.editingIdx > -1 ? session[cur.editingIdx].num : session.length + 1,
-            hName: document.getElementById('h-name').value, aName: document.getElementById('a-name').value,
-            hSl: document.getElementById('h-sl').value, aSl: document.getElementById('a-sl').value,
-            hPts: hWin ? pW : pL, aPts: hWin ? pL : pW,
-            score: `${cur.hGames}-${cur.aGames}`, lag: cur.lag, racks: [...cur.rackHistory]
+        // Increment logic
+        document.getElementById('innings-btn').onclick = () => {
+            currentMatch.innings++;
+            document.getElementById('innings-val').innerText = currentMatch.innings;
         };
 
-        if (cur.editingIdx > -1) session[cur.editingIdx] = data;
-        else session.push(data);
-        
-        localStorage.setItem('mvp_session', JSON.stringify(session)); location.reload();
-    }
+        document.getElementById('btn-hDef').onclick = () => {
+            currentMatch.hDef++;
+            document.getElementById('hDef-val').innerText = currentMatch.hDef;
+        };
 
-    function confirmRack(type) {
-        cur.rackHistory.push({ winner: cur.winnerSide, type, hDef: cur.hDef, aDef: cur.aDef, hTO: cur.hTO, aTO: cur.aTO, innings: cur.innings });
-        cur[cur.winnerSide + 'Games']++;
-        document.getElementById(cur.winnerSide + '-games').innerText = cur[cur.winnerSide + 'Games'];
-        cur.hDef = cur.aDef = cur.hTO = cur.aTO = cur.innings = 0;
-        ['hDef','aDef','hTO','aTO','innings'].forEach(id => document.getElementById(id + '-val').innerText = 0);
-        closeM('winModal');
-        updateRace();
-    }
+        document.getElementById('btn-aDef').onclick = () => {
+            currentMatch.aDef++;
+            document.getElementById('aDef-val').innerText = currentMatch.aDef;
+        };
 
-    function initEdit() {
-        const m = session[cur.editingIdx];
-        document.getElementById('h-name').value = m.hName; document.getElementById('a-name').value = m.aName;
-        document.getElementById('h-sl').value = m.hSl; document.getElementById('a-sl').value = m.aSl;
-        const scores = m.score.split('-');
-        cur.hGames = parseInt(scores[0]); cur.aGames = parseInt(scores[1]);
-        cur.rackHistory = m.racks; cur.lag = m.lag;
-        document.getElementById('h-games').innerText = cur.hGames; document.getElementById('a-games').innerText = cur.aGames;
-        document.getElementById('lag-display').innerText = `LAG: ${cur.lag.toUpperCase()}`;
-        document.getElementById('match-num').innerText = m.num + " (EDITING)";
-        
-        // Hide normal buttons, show edit buttons
-        document.getElementById('normal-actions').style.display = 'none';
-        document.getElementById('edit-actions').style.display = 'block';
-
-        closeM('detailsModal');
-        updateRace();
-    }
-
-    function showDet(i) {
-        cur.editingIdx = i; const m = session[i];
-        let html = `<div class="detail-row"><span>Lag Winner</span><span>${m.lag.toUpperCase()}</span></div>`;
-        html += `<div class="detail-row" style="font-weight:bold; color:var(--felt)"><span>Final Score</span><span>${m.score} (${m.hPts}-${m.aPts})</span></div>`;
-        m.racks.forEach((r, ri) => { html += `<div class="detail-row" style="font-size:0.8rem"><span>G${ri+1}: ${r.winner.toUpperCase()} (${r.type})</span><span>Inn: ${r.innings} | D: ${r.hDef}/${r.aDef}</span></div>`; });
-        document.getElementById('det-content').innerHTML = html;
-        document.getElementById('detailsModal').style.display = 'flex';
-    }
-
-    function render() {
-        const list = document.getElementById('results-list'); list.innerHTML = '';
-        session.forEach((m, i) => {
-            const row = document.createElement('div'); row.className = 'table-row';
-            row.innerHTML = `<span style="color:var(--gold);text-decoration:underline;cursor:pointer" onclick="showDet(${i})">#${m.num}</span><span>${m.hName} vs ${m.aName}</span><span>${m.score}</span><span style="color:var(--felt);font-weight:900">${m.hPts}-${m.aPts}</span>`;
-            list.appendChild(row);
-        });
-        document.getElementById('match-num').innerText = Math.min(session.length + 1, 5);
-    }
-
-    function exportSession() { 
-        let t = "MVP TV 2026 SESSION REPORT\n\n"; 
-        session.forEach(m => t += `Match ${m.num}: ${m.hName} vs ${m.aName} | Score: ${m.score} | Pts: ${m.hPts}-${m.aPts}\n`); 
-        if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(t).then(() => alert("Copied to clipboard!")); 
-        } else {
-            window.location.href = `mailto:?subject=APA Session Stats&body=${encodeURIComponent(t)}`;
+        function openWin(player) {
+            activePlayer = player;
+            document.getElementById('winModal').style.display = 'flex';
         }
-    }
-    function clearSession() { if (confirm("Delete all session data? This cannot be undone.")) { localStorage.clear(); location.reload(); } }
-    window.onload = () => { updateRace(); render(); };
-</script>
+
+        function confirmRack(type) {
+            if (activePlayer === 'h') currentMatch.h++;
+            else currentMatch.a++;
+            
+            document.getElementById('h-games').innerText = currentMatch.h;
+            document.getElementById('a-games').innerText = currentMatch.a;
+            document.getElementById('winModal').style.display = 'none';
+            checkMatchOver();
+        }
+
+        function checkMatchOver() {
+            const raceStr = document.getElementById('race-display').innerText.replace('RACE ', '');
+            const parts = raceStr.split('/');
+            const hTarget = parseInt(parts[0]);
+            const aTarget = parseInt(parts[1]);
+
+            if (currentMatch.h >= hTarget || currentMatch.a >= aTarget) {
+                if (confirm("Match Over. Save results?")) saveMatch();
+            }
+        }
+
+        function saveMatch() {
+            const matchData = {
+                hName: document.getElementById('h-name').value,
+                aName: document.getElementById('a-name').value,
+                score: `${currentMatch.h}-${currentMatch.a}`,
+                innings: currentMatch.innings,
+                def: `${currentMatch.hDef}/${currentMatch.aDef}`
+            };
+            session.push(matchData);
+            localStorage.setItem('poolSession', JSON.stringify(session));
+            renderSession();
+            resetMatch();
+        }
+
+        function renderSession() {
+            const list = document.getElementById('results-list');
+            list.innerHTML = session.map((m, i) => `
+                <div class="table-row">
+                    <span>#${i+1}</span>
+                    <span>${m.hName} vs ${m.aName}</span>
+                    <span>${m.score}</span>
+                    <span>${m.innings}i / ${m.def}D</span>
+                </div>
+            `).join('');
+            document.getElementById('match-num').innerText = session.length + 1;
+        }
+
+        function resetMatch() {
+            currentMatch = { h: 0, a: 0, hDef: 0, aDef: 0, hTO: 2, aTO: 2, innings: 0 };
+            ['h-games', 'a-games', 'innings-val', 'hDef-val', 'aDef-val'].forEach(id => {
+                document.getElementById(id).innerText = '0';
+            });
+        }
+
+        function clearSession() {
+            if(confirm("Erase all match data?")) {
+                localStorage.removeItem('poolSession');
+                location.reload();
+            }
+        }
+
+        function exportSession() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(session));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "pool_session_2026.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+        updateRace();
+        renderSession();
+    </script>
 </body>
 </html>
-
