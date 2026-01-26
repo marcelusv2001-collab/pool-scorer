@@ -6,7 +6,6 @@
     <title>MVP TV - Pro Scorekeeper</title>
     <script src="https://cdnjs.cloudflare.com"></script>
     <style>
-        /* Modern 2026 Color Palette */
         :root { 
             --slate: #0f172a; --surface: #1e293b; --felt: #10b981; 
             --gold: #f59e0b; --danger: #ef4444; --text: #f8fafc;
@@ -17,38 +16,26 @@
             font-family: 'Inter', system-ui, sans-serif; background-color: var(--slate); 
             margin: 0; padding: 12px; color: var(--text); line-height: 1.5;
         }
-
-        /* Branding: Refined & Modern */
         .branding { text-align: center; margin-bottom: 20px; }
         .logo-box { background: white; padding: 6px 18px; display: inline-block; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
         .logo-mvp { color:#22c55e; font-size: 26px; font-weight: 900; letter-spacing: -1px; }
         .logo-tv { color:#dc2626; font-size: 34px; font-style: italic; font-weight: 900; font-family: serif; margin-left: -4px; }
         .app-subtitle { display: block; color: var(--text-muted); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; margin-top: 8px; letter-spacing: 2px; }
-
-        /* Main Pro Interface */
         .app-container { 
             background: var(--surface); border: 1px solid var(--border); border-radius: 20px; 
             padding: 20px; max-width: 500px; margin: auto; min-height: 80vh;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
         }
-
-        /* Responsive Header */
         .match-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
         .match-badge { background: var(--slate); padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; color: var(--gold); border: 1px solid var(--gold); }
-
-        /* Player Profile Cards */
         .player-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
         .player-card { background: var(--slate); border: 1px solid var(--border); padding: 12px; border-radius: 16px; }
         .player-label { font-size: 0.6rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase; margin-bottom: 4px; display: block; }
         .player-input { width: 100%; background: transparent; border: none; color: white; font-weight: 700; font-size: 0.95rem; border-bottom: 1.5px solid var(--border); padding: 4px 0; margin-bottom: 8px; outline: none; }
         .player-input:focus { border-color: var(--felt); }
         .sl-select { width: 100%; background: var(--surface); color: white; border: 1px solid var(--border); border-radius: 8px; padding: 4px; font-size: 0.8rem; font-weight: 600; }
-
-        /* Scoring Controls: Fluid & Reactive */
         .scoring-arena { display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: center; margin-bottom: 24px; }
         .stat-stack { display: flex; flex-direction: column; gap: 14px; align-items: center; }
-        
-        /* Pro Billiard Buttons */
         .btn-pro { 
             background: linear-gradient(145deg, #1e293b, #0f172a); border: 1px solid var(--border);
             color: white; border-radius: 50%; width: 56px; height: 56px; font-weight: 800; 
@@ -59,24 +46,17 @@
         .btn-pro:active { transform: scale(0.95); box-shadow: 2px 2px 5px rgba(0,0,0,0.3); }
         .btn-pro.win { background: var(--felt); width: 72px; height: 72px; border-color: #34d399; }
         .btn-pro span:first-child { font-size: 0.55rem; opacity: 0.7; text-transform: uppercase; }
-
-        /* Inning Center Counter */
         .inning-wrap { text-align: center; }
         .btn-inning { 
             width: 64px; height: 64px; border-radius: 14px; border: 2.5px solid var(--gold);
             background: var(--slate); color: var(--gold); font-size: 1.6rem; font-weight: 900;
         }
-
-        /* Log & Progress */
         .match-log { background: var(--slate); border-radius: 12px; padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; border: 1px solid var(--border); max-height: 120px; overflow-y: auto; color: var(--text-muted); }
         .log-entry { margin-bottom: 4px; border-bottom: 1px solid var(--surface); padding-bottom: 2px; }
-
-        /* Modals: Minimalist Blur */
         .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(4px); justify-content: center; align-items: center; }
         .modal-box { background: var(--surface); padding: 24px; border-radius: 24px; width: 90%; max-width: 340px; text-align: center; border: 1px solid var(--border); }
         .win-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
-        .btn-win-opt { background: var(--slate); color: white; padding: 12px; border: 1px solid var(--border); border-radius: 12px; font-weight: 700; cursor: pointer; }
-        .btn-win-opt:hover { background: var(--surface); border-color: var(--gold); }
+        .btn-win-opt { background: var(--slate); color: white; padding: 12px; border: 1px solid var(--border); border-radius: 12px; font-weight: 700; cursor: pointer; width: 100%; }
     </style>
 </head>
 <body>
@@ -94,11 +74,13 @@
 
     <div class="player-grid">
         <div class="player-card">
+            <input type="text" id="h-team" class="player-input" style="border-bottom-color: var(--gold)" placeholder="HOME TEAM">
             <span class="player-label">Home Player</span>
             <input type="text" id="h-name" class="player-input" placeholder="Enter Name">
             <select id="h-sl" class="sl-select" onchange="updateRace()"><option value="2">SL2</option><option value="3">SL3</option><option value="4" selected>SL4</option><option value="5">SL5</option><option value="6">SL6</option><option value="7">SL7</option></select>
         </div>
         <div class="player-card">
+            <input type="text" id="a-team" class="player-input" style="border-bottom-color: var(--gold)" placeholder="AWAY TEAM">
             <span class="player-label">Away Player</span>
             <input type="text" id="a-name" class="player-input" placeholder="Enter Name">
             <select id="a-sl" class="sl-select" onchange="updateRace()"><option value="2">SL2</option><option value="3">SL3</option><option value="4" selected>SL4</option><option value="5">SL5</option><option value="6">SL6</option><option value="7">SL7</option></select>
@@ -111,12 +93,10 @@
             <button class="btn-pro touch-btn" data-side="h" data-type="to"><span>T.O.</span><span id="h-to-cur">0</span></button>
             <button class="btn-pro win" onclick="showWinModal('h')"><span>Win</span></button>
         </div>
-
         <div class="inning-wrap">
             <span class="player-label">Inning</span>
             <button class="btn-inning touch-btn" data-side="both" data-type="inn" id="inn-cur">0</button>
         </div>
-
         <div class="stat-stack">
             <button class="btn-pro touch-btn" data-side="a" data-type="def"><span>Def</span><span id="a-def-cur">0</span></button>
             <button class="btn-pro touch-btn" data-side="a" data-type="to"><span>T.O.</span><span id="a-to-cur">0</span></button>
@@ -127,7 +107,6 @@
     <div class="match-log" id="log">No games recorded...</div>
 </div>
 
-<!-- Modal Logic remains similar but with new styling -->
 <div id="win-modal" class="modal">
     <div class="modal-box">
         <h3 style="margin-top:0;">Rack Win Type</h3>
@@ -137,17 +116,16 @@
 </div>
 
 <script>
-    // Modern logic includes APA Race Chart [SL Home][SL Away]
     const raceChart = { 2:{2:2,3:2,4:2,5:2,6:2,7:2}, 3:{2:3,3:2,4:2,5:2,6:2,7:2}, 4:{2:4,3:3,4:3,5:3,6:3,7:2}, 5:{2:5,3:4,4:4,5:4,6:4,7:3}, 6:{2:6,3:5,4:5,5:5,6:5,7:4}, 7:{2:7,3:6,4:5,5:5,6:5,7:5} };
     let match = { h: { wins: 0, def: 0, to: 0, sl: 4 }, a: { wins: 0, def: 0, to: 0, sl: 4 }, inn: 0, hist: [] };
 
     function updateRace() {
         const hSL = parseInt(document.getElementById('h-sl').value), aSL = parseInt(document.getElementById('a-sl').value);
+        match.h.sl = hSL; match.a.sl = aSL;
         match.h.goal = raceChart[hSL][aSL]; match.a.goal = raceChart[aSL][hSL];
         document.getElementById('race-display').innerText = `RACE ${match.h.goal} - ${match.a.goal}`;
     }
 
-    // Touch Handling for Scoring
     document.querySelectorAll('.touch-btn').forEach(btn => {
         let lastTap = 0, timer;
         btn.addEventListener('touchstart', (e) => {
@@ -161,6 +139,10 @@
 
     function mod(s, t, v) { 
         const obj = s === 'both' ? match : match[s];
+        if (t === 'to' && v === 1) {
+            const limit = obj.sl >= 4 ? 1 : 2;
+            if (obj.to >= limit) return alert(`Timeout limit reached for SL ${obj.sl}`);
+        }
         if (v === 'reset') obj[t] = 0; else obj[t] = Math.max(0, obj[t] + v);
         document.getElementById(`${s==='both'?'inn':s+'-'+t}-cur`).innerText = obj[t];
     }
@@ -173,11 +155,20 @@
     }
 
     function recordWin(type) {
-        if ((type === 'B&R' || type === '8BB') && match.inn > 0) return alert("B&R/8BB must be 0 innings!");
+        if (type === 'Normal' && match.inn < 1) return alert("Normal win requires minimum 1 inning!");
+        if ((type === 'B&R' || type === '8BB') && match.inn > 0) return alert(`${type} must be recorded with 0 innings. Long-press inning button to reset.`);
+        
         const side = match.activeSide;
         const logEntry = `G${match.h.wins+match.a.wins+1}(${type}) ${match.inn}i ${match[side].def}d [${side.toUpperCase()}]`;
-        match.hist.unshift(logEntry); // Modern log adds latest to top
+        match.hist.unshift(logEntry);
         match[side].wins++;
+
+        if (match[side].wins >= match[side].goal) {
+            const winnerName = document.getElementById(side + '-name').value || side.toUpperCase();
+            alert(`${winnerName} wins the match!`);
+            document.querySelectorAll('.btn-pro').forEach(b => b.disabled = true);
+        }
+
         match.inn = 0; match.h.def = 0; match.h.to = 0; match.a.def = 0; match.a.to = 0;
         document.getElementById('win-modal').style.display = 'none';
         document.getElementById('log').innerHTML = match.hist.map(e => `<div class="log-entry">${e}</div>`).join('');
