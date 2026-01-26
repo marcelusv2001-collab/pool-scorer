@@ -7,31 +7,30 @@
     <style>
         :root { --slate: #0f172a; --surface: #1e293b; --felt: #10b981; --gold: #f59e0b; --danger: #ef4444; --text: #f8fafc; --border: #334155; }
         * { box-sizing: border-box; touch-action: manipulation; -webkit-user-select: none; }
-        body { font-family: system-ui, -apple-system, sans-serif; background-color: var(--slate); color: var(--text); padding: 12px; margin: 0; }
-        .app-container { background: var(--surface); border-radius: 20px; padding: 20px; max-width: 500px; margin: auto; min-height: 85vh; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .match-header { display: flex; justify-content: space-between; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border); align-items: center; }
+        body { font-family: 'Inter', system-ui, sans-serif; background-color: var(--slate); margin: 0; padding: 12px; color: var(--text); line-height: 1.5; }
+        .app-container { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 20px; max-width: 500px; margin: auto; min-height: 85vh; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .match-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
         .match-badge { background: var(--slate); padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; color: var(--gold); border: 1px solid var(--gold); font-weight: 800; }
         .lag-badge { background: var(--gold); color: var(--slate); padding: 6px 14px; border-radius: 12px; font-size: 0.7rem; font-weight: 900; cursor: pointer; }
         .player-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .player-card { background: var(--slate); padding: 12px; border-radius: 15px; border: 1px solid var(--border); position: relative; }
+        .player-card { background: var(--slate); border: 1px solid var(--border); padding: 12px; border-radius: 16px; position: relative; }
         .score-bubble { position: absolute; top: -10px; right: -10px; background: var(--felt); color: white; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; border: 2px solid var(--slate); box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
         .player-input { width: 100%; background: transparent; border: none; color: white; font-weight: 700; border-bottom: 1px solid var(--border); margin-bottom: 8px; outline: none; padding: 6px 0; font-size: 1rem; }
-        .sl-select { width: 100%; background: var(--surface); color: white; border: 1px solid var(--border); border-radius: 8px; padding: 8px; font-size: 0.9rem; font-weight: bold; }
+        .sl-select { width: 100%; background: var(--surface); color: white; border: 1px solid var(--border); border-radius: 8px; padding: 8px; font-weight: bold; }
         .scoring-arena { display: grid; grid-template-columns: 1fr auto 1fr; gap: 15px; align-items: center; margin-bottom: 20px; }
         .btn-pro { background: var(--slate); border: 1px solid var(--border); color: white; border-radius: 50%; width: 60px; height: 60px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.8rem; transition: transform 0.1s; }
         .btn-pro.win { background: var(--felt); width: 80px; height: 80px; font-weight: 900; font-size: 1.1rem; border: none; }
         .btn-inning { width: 68px; height: 68px; border-radius: 15px; border: 3px solid var(--gold); background: var(--slate); color: var(--gold); font-size: 1.8rem; font-weight: 900; cursor: pointer; }
         .btn-pro:active, .btn-inning:active { transform: scale(0.9); }
-        .session-overview { background: var(--slate); border-radius: 15px; padding: 15px; border: 1px solid var(--border); }
+        .session-overview { margin-top: 24px; background: var(--slate); border-radius: 16px; padding: 15px; border: 1px solid var(--border); }
         .table-row { display: grid; grid-template-columns: 0.8fr 2.5fr 1fr 1fr; gap: 8px; font-size: 0.9rem; border-bottom: 1px solid var(--surface); padding: 10px 0; align-items: center; }
         .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); justify-content: center; align-items: center; }
         .modal-box { background: var(--surface); padding: 25px; border-radius: 25px; width: 90%; max-width: 380px; text-align: center; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.6); }
         .win-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 15px 0; }
         .btn-win-opt { background: var(--slate); color: white; padding: 14px; border: 1px solid var(--border); border-radius: 12px; font-weight: 700; cursor: pointer; }
         .btn-action { width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; margin-top: 10px; font-size: 0.95rem; }
-        .detail-row { display: flex; justify-content: space-between; font-size: 0.9rem; border-bottom: 1px solid var(--border); padding: 10px 0; }
-        .reset-flash { animation: flash 0.4s ease; }
-        @keyframes flash { 0% { background: var(--danger); transform: scale(1.05); } 100% { background: var(--slate); transform: scale(1); } }
+        #normal-actions { display: block; }
+        #edit-actions { display: none; }
     </style>
 </head>
 <body>
@@ -59,14 +58,14 @@
         </div>
         <div class="scoring-arena">
             <div style="display:flex; flex-direction:column; gap:12px; align-items:center;">
-                <button class="btn-pro hold-reset" data-stat="hDef">Def <span id="hDef-val">0</span></button>
-                <button class="btn-pro hold-reset" data-stat="hTO">T.O. <span id="hTO-val">0</span></button>
+                <button class="btn-pro" id="btn-hDef">Def <span id="hDef-val">0</span></button>
+                <button class="btn-pro" id="btn-hTO">T.O. <span id="hTO-val">0</span></button>
                 <button class="btn-pro win" onclick="openWin('h')">RACK</button>
             </div>
-            <button class="btn-inning hold-reset" data-stat="innings" id="innings-btn"><span id="innings-val">0</span></button>
+            <button class="btn-inning" id="innings-btn"><span id="innings-val">0</span></button>
             <div style="display:flex; flex-direction:column; gap:12px; align-items:center;">
-                <button class="btn-pro hold-reset" data-stat="aDef">Def <span id="aDef-val">0</span></button>
-                <button class="btn-pro hold-reset" data-stat="aTO">T.O. <span id="aTO-val">0</span></button>
+                <button class="btn-pro" id="btn-aDef">Def <span id="aDef-val">0</span></button>
+                <button class="btn-pro" id="btn-aTO">T.O. <span id="aTO-val">0</span></button>
                 <button class="btn-pro win" onclick="openWin('a')">RACK</button>
             </div>
         </div>
@@ -74,9 +73,15 @@
             <div style="text-align:center; font-size:0.85rem; font-weight:800; color:var(--gold); margin-bottom:10px;">SESSION SUMMARY (MATCH PTS)</div>
             <div id="results-list"></div>
         </div>
-        <div style="margin-top:20px;">
+        <!-- Normal Session Actions -->
+        <div id="normal-actions">
             <button class="btn-action" onclick="exportSession()" style="background:var(--felt); color:var(--slate);">EXPORT SESSION</button>
             <button class="btn-action" onclick="clearSession()" style="background:var(--danger); color:white;">RESET ALL DATA</button>
+        </div>
+        <!-- Editing Mode Actions -->
+        <div id="edit-actions">
+            <button class="btn-action" onclick="saveEditedMatch()" style="background:var(--felt); color:var(--slate);">SAVE EDITS TO MATCH</button>
+            <button class="btn-action" onclick="location.reload()" style="background:var(--danger); color:white;">CANCEL EDITING</button>
         </div>
     </div>
 
@@ -97,19 +102,40 @@
     let cur = { hDef: 0, aDef: 0, hTO: 0, aTO: 0, innings: 0, winnerSide: '', hGames: 0, aGames: 0, rackHistory: [], lag: 'Home', editingIdx: -1 };
     let holdTimer;
 
-    function toggleLag() { cur.lag = (cur.lag === 'Home') ? 'Away' : 'Home'; document.getElementById('lag-display').innerText = `LAG: ${cur.lag.toUpperCase()}`; }
+    function toggleLag() { cur.lag = (cur.lag === 'Home' ? 'Away' : 'Home'); document.getElementById('lag-display').innerText = `LAG: ${cur.lag.toUpperCase()}`; }
     
     function updateRace() {
         const h = document.getElementById('h-sl').value, a = document.getElementById('a-sl').value;
         const rH = CHART[h][a], rA = CHART[a][h];
         document.getElementById('race-display').innerText = `RACE ${rH} - ${rA}`;
-        if (cur.editingIdx === -1) checkEnd(rH, rA);
+        if (cur.editingIdx === -1) checkMatchEnd(rH, rA);
     }
 
-    function checkEnd(rH, rA) {
+    document.querySelectorAll('.btn-pro, .btn-inning').forEach(btn => {
+        const stat = btn.id.replace('btn-', '');
+        btn.onmousedown = btn.ontouchstart = (e) => {
+            e.preventDefault();
+            holdTimer = setTimeout(() => {
+                cur[stat] = 0; document.getElementById(stat + '-val').innerText = 0;
+                btn.classList.add('reset-flash'); setTimeout(() => btn.classList.remove('reset-flash'), 400);
+                holdTimer = null;
+            }, 800);
+        };
+        btn.onmouseup = btn.ontouchend = () => {
+            if (holdTimer) { clearTimeout(holdTimer); cur[stat]++; document.getElementById(stat + '-val').innerText = cur[stat]; holdTimer = null; }
+            if (cur.editingIdx > -1) updateRace(); // Update race on every stat change while editing
+        };
+    });
+
+    function checkMatchEnd(rH, rA) {
         if (cur.hGames >= rH || cur.aGames >= rA) {
             setTimeout(() => { if (confirm("Match Complete. Save results to session?")) saveMatch(rH, rA); }, 200);
         }
+    }
+
+    function saveEditedMatch() {
+        const h = document.getElementById('h-sl').value, a = document.getElementById('a-sl').value;
+        saveMatch(CHART[h][a], CHART[a][h]);
     }
 
     function saveMatch(rH, rA) {
@@ -134,8 +160,7 @@
         if (cur.editingIdx > -1) session[cur.editingIdx] = data;
         else session.push(data);
         
-        localStorage.setItem('mvp_session', JSON.stringify(session));
-        location.reload();
+        localStorage.setItem('mvp_session', JSON.stringify(session)); location.reload();
     }
 
     function confirmRack(type) {
@@ -158,6 +183,11 @@
         document.getElementById('h-games').innerText = cur.hGames; document.getElementById('a-games').innerText = cur.aGames;
         document.getElementById('lag-display').innerText = `LAG: ${cur.lag.toUpperCase()}`;
         document.getElementById('match-num').innerText = m.num + " (EDITING)";
+        
+        // Hide normal buttons, show edit buttons
+        document.getElementById('normal-actions').style.display = 'none';
+        document.getElementById('edit-actions').style.display = 'block';
+
         closeM('detailsModal');
         updateRace();
     }
@@ -166,27 +196,10 @@
         cur.editingIdx = i; const m = session[i];
         let html = `<div class="detail-row"><span>Lag Winner</span><span>${m.lag.toUpperCase()}</span></div>`;
         html += `<div class="detail-row" style="font-weight:bold; color:var(--felt)"><span>Final Score</span><span>${m.score} (${m.hPts}-${m.aPts})</span></div>`;
-        m.racks.forEach((r, ri) => { 
-            html += `<div class="detail-row" style="font-size:0.8rem"><span>G${ri+1}: ${r.winner.toUpperCase()} (${r.type})</span><span>Inn: ${r.innings} | D: ${r.hDef}/${r.aDef}</span></div>`; 
-        });
+        m.racks.forEach((r, ri) => { html += `<div class="detail-row" style="font-size:0.8rem"><span>G${ri+1}: ${r.winner.toUpperCase()} (${r.type})</span><span>Inn: ${r.innings} | D: ${r.hDef}/${r.aDef}</span></div>`; });
         document.getElementById('det-content').innerHTML = html;
         document.getElementById('detailsModal').style.display = 'flex';
     }
-
-    document.querySelectorAll('.hold-reset').forEach(btn => {
-        const stat = btn.dataset.stat;
-        btn.onmousedown = btn.ontouchstart = (e) => {
-            e.preventDefault();
-            holdTimer = setTimeout(() => {
-                cur[stat] = 0; document.getElementById(stat + '-val').innerText = 0;
-                btn.classList.add('reset-flash'); setTimeout(() => btn.classList.remove('reset-flash'), 400);
-                holdTimer = null;
-            }, 800);
-        };
-        btn.onmouseup = btn.ontouchend = () => {
-            if (holdTimer) { clearTimeout(holdTimer); cur[stat]++; document.getElementById(stat + '-val').innerText = cur[stat]; holdTimer = null; }
-        };
-    });
 
     function render() {
         const list = document.getElementById('results-list'); list.innerHTML = '';
@@ -198,9 +211,6 @@
         document.getElementById('match-num').innerText = Math.min(session.length + 1, 5);
     }
 
-    function openWin(s) { cur.winnerSide = s; document.getElementById('winModal').style.display = 'flex'; }
-    function closeM(id) { document.getElementById(id).style.display = 'none'; }
-    
     function exportSession() { 
         let t = "MVP TV 2026 SESSION REPORT\n\n"; 
         session.forEach(m => t += `Match ${m.num}: ${m.hName} vs ${m.aName} | Score: ${m.score} | Pts: ${m.hPts}-${m.aPts}\n`); 
@@ -210,8 +220,9 @@
             window.location.href = `mailto:?subject=APA Session Stats&body=${encodeURIComponent(t)}`;
         }
     }
-    function clearSession() { if (confirm("Clear all session data? This cannot be undone.")) { localStorage.clear(); location.reload(); } }
+    function clearSession() { if (confirm("Delete all session data? This cannot be undone.")) { localStorage.clear(); location.reload(); } }
     window.onload = () => { updateRace(); render(); };
 </script>
 </body>
 </html>
+
