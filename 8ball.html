@@ -65,7 +65,7 @@
 
 <div class="branding">
     <div class="logo-box"><span class="logo-mvp">MVP</span><span class="logo-tv">TV</span></div>
-    <span class="app-subtitle">8 Ball 3 Pt. Pro Offline</span>
+    <span class="app-subtitle">8 Ball 3 Pt. Pro Offline Scorekeeper</span>
 </div>
 
 <div class="app-container" id="capture-area">
@@ -177,14 +177,24 @@
         match[side].wins++;
 
         if (match[side].wins >= match[side].goal) {
-            const winnerName = document.getElementById(side + '-name').value || side.toUpperCase();
-            alert(`${winnerName} wins the match! Performance points calculated by APA system.`);
+            calculatePoints(side);
         }
 
         match.inn = 0; match.h.def = 0; match.h.to = 0; match.a.def = 0; match.a.to = 0;
         document.getElementById('win-modal').style.display = 'none';
         document.getElementById('log').innerHTML = match.hist.map(e => `<div class="log-entry">${e}</div>`).join('');
         ['h-def','h-to','a-def','a-to','inn'].forEach(id => document.getElementById(id+'-cur').innerText = 0);
+    }
+
+    function calculatePoints(winnerSide) {
+        const loserSide = winnerSide === 'h' ? 'a' : 'h';
+        let winPts = 2, losePts = 0;
+        if (match[loserSide].wins === 0) winPts = 3;
+        else if (match[loserSide].wins === match[loserSide].goal - 1) { winPts = 2; losePts = 1; }
+        
+        const winnerName = document.getElementById(winnerSide + '-name').value || winnerSide.toUpperCase();
+        alert(`${winnerName} wins the match!\nPoints Earned: ${winPts} to ${losePts}`);
+        document.querySelectorAll('.btn-pro').forEach(b => b.disabled = true);
     }
 
     function saveImage() {
