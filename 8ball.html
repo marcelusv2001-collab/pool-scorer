@@ -3,101 +3,151 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>8 Ball 3 Pt. Offline Scorekeeper</title>
+    <title>MVP TV - Pro Scorekeeper</title>
     <script src="https://cdnjs.cloudflare.com"></script>
     <style>
-        :root { --felt: #2d5a27; --slate: #1a1a1a; --gold: #f1c40f; --ball-8: #2c3e50; --danger: #e74c3c; --app-bg: #ffebee; }
+        /* Modern 2026 Color Palette */
+        :root { 
+            --slate: #0f172a; --surface: #1e293b; --felt: #10b981; 
+            --gold: #f59e0b; --danger: #ef4444; --text: #f8fafc;
+            --text-muted: #94a3b8; --border: #334155;
+        }
         * { box-sizing: border-box; touch-action: manipulation; -webkit-user-select: none; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--slate); margin: 0; padding: 10px; color: #333; }
-        .branding { text-align: center; margin-bottom: 5px; }
-        .logo-box { background: white; padding: 5px 15px; display: inline-block; border-radius: 12px; }
-        .logo-mvp { color:#00FF00; font-size: 24px; font-weight: 900; }
-        .logo-tv { color:#FF0000; font-size: 32px; font-style: italic; font-weight: 900; font-family: 'Brush Script MT', cursive; margin-left: -5px; }
-        .app-subtitle { display: block; color: #fff; font-weight: 700; font-size: 0.8rem; margin-top: 5px; text-transform: uppercase; }
-        .app-container { background: var(--app-bg); border-radius: 15px; padding: 15px; max-width: 600px; margin: auto; min-height: 85vh; position: relative; }
-        .team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-        .team-box { background: rgba(0,0,0,0.05); padding: 8px; border-radius: 8px; }
-        .team-input { width:100%; border:none; border-bottom:2px solid var(--gold); background:transparent; font-weight:900; color:var(--ball-8); text-align:center; margin-bottom:5px; }
-        .btn-8ball { background: var(--ball-8); color: white; border: none; border-radius: 50%; width: 55px; height: 55px; font-weight: 900; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
-        .btn-8ball.win { background: var(--felt); width: 70px; height: 70px; border: 3px solid #fff; }
-        .controls-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 15px; margin: 10px 0; align-items: center; }
-        .modal { display: none; position: fixed; z-index: 200; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; }
-        .modal-content { background: var(--app-bg); padding: 20px; border-radius: 15px; width: 90%; max-width: 350px; text-align: center; }
-        .win-opt { background: var(--ball-8); color: white; padding: 10px; border: none; border-radius: 8px; font-weight: bold; width: 100%; margin: 4px 0; cursor: pointer; }
-        .view-all-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--slate); z-index: 1000; padding: 15px; overflow-y: auto; }
-        .match-card { background: white; border-radius: 10px; padding: 12px; margin-bottom: 10px; font-size: 0.8rem; border-left: 5px solid var(--gold); }
+        body { 
+            font-family: 'Inter', system-ui, sans-serif; background-color: var(--slate); 
+            margin: 0; padding: 12px; color: var(--text); line-height: 1.5;
+        }
+
+        /* Branding: Refined & Modern */
+        .branding { text-align: center; margin-bottom: 20px; }
+        .logo-box { background: white; padding: 6px 18px; display: inline-block; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+        .logo-mvp { color:#22c55e; font-size: 26px; font-weight: 900; letter-spacing: -1px; }
+        .logo-tv { color:#dc2626; font-size: 34px; font-style: italic; font-weight: 900; font-family: serif; margin-left: -4px; }
+        .app-subtitle { display: block; color: var(--text-muted); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; margin-top: 8px; letter-spacing: 2px; }
+
+        /* Main Pro Interface */
+        .app-container { 
+            background: var(--surface); border: 1px solid var(--border); border-radius: 20px; 
+            padding: 20px; max-width: 500px; margin: auto; min-height: 80vh;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Responsive Header */
+        .match-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+        .match-badge { background: var(--slate); padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; color: var(--gold); border: 1px solid var(--gold); }
+
+        /* Player Profile Cards */
+        .player-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+        .player-card { background: var(--slate); border: 1px solid var(--border); padding: 12px; border-radius: 16px; }
+        .player-label { font-size: 0.6rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase; margin-bottom: 4px; display: block; }
+        .player-input { width: 100%; background: transparent; border: none; color: white; font-weight: 700; font-size: 0.95rem; border-bottom: 1.5px solid var(--border); padding: 4px 0; margin-bottom: 8px; outline: none; }
+        .player-input:focus { border-color: var(--felt); }
+        .sl-select { width: 100%; background: var(--surface); color: white; border: 1px solid var(--border); border-radius: 8px; padding: 4px; font-size: 0.8rem; font-weight: 600; }
+
+        /* Scoring Controls: Fluid & Reactive */
+        .scoring-arena { display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: center; margin-bottom: 24px; }
+        .stat-stack { display: flex; flex-direction: column; gap: 14px; align-items: center; }
+        
+        /* Pro Billiard Buttons */
+        .btn-pro { 
+            background: linear-gradient(145deg, #1e293b, #0f172a); border: 1px solid var(--border);
+            color: white; border-radius: 50%; width: 56px; height: 56px; font-weight: 800; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            cursor: pointer; transition: transform 0.1s, box-shadow 0.1s;
+            box-shadow: 4px 4px 10px rgba(0,0,0,0.3);
+        }
+        .btn-pro:active { transform: scale(0.95); box-shadow: 2px 2px 5px rgba(0,0,0,0.3); }
+        .btn-pro.win { background: var(--felt); width: 72px; height: 72px; border-color: #34d399; }
+        .btn-pro span:first-child { font-size: 0.55rem; opacity: 0.7; text-transform: uppercase; }
+
+        /* Inning Center Counter */
+        .inning-wrap { text-align: center; }
+        .btn-inning { 
+            width: 64px; height: 64px; border-radius: 14px; border: 2.5px solid var(--gold);
+            background: var(--slate); color: var(--gold); font-size: 1.6rem; font-weight: 900;
+        }
+
+        /* Log & Progress */
+        .match-log { background: var(--slate); border-radius: 12px; padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; border: 1px solid var(--border); max-height: 120px; overflow-y: auto; color: var(--text-muted); }
+        .log-entry { margin-bottom: 4px; border-bottom: 1px solid var(--surface); padding-bottom: 2px; }
+
+        /* Modals: Minimalist Blur */
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(4px); justify-content: center; align-items: center; }
+        .modal-box { background: var(--surface); padding: 24px; border-radius: 24px; width: 90%; max-width: 340px; text-align: center; border: 1px solid var(--border); }
+        .win-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+        .btn-win-opt { background: var(--slate); color: white; padding: 12px; border: 1px solid var(--border); border-radius: 12px; font-weight: 700; cursor: pointer; }
+        .btn-win-opt:hover { background: var(--surface); border-color: var(--gold); }
     </style>
 </head>
 <body>
 
 <div class="branding">
     <div class="logo-box"><span class="logo-mvp">MVP</span><span class="logo-tv">TV</span></div>
-    <span class="app-subtitle">8 Ball 3 Pt. Offline Scorekeeper</span>
+    <span class="app-subtitle">8 Ball 3 Pt. Pro Offline</span>
 </div>
 
-<div class="app-container" id="capture-area">
-    <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-weight:900; font-size:0.8rem;">
-        <span>MATCH <span id="match-num">1</span>/5 — <span id="race-display">RACE 0-0</span></span>
-        <button onclick="showViewAll()" style="background:var(--ball-8); color:white; border:none; padding:2px 8px; border-radius:4px; font-size:0.6rem;">VIEW ALL</button>
+<div class="app-container">
+    <div class="match-header">
+        <div class="match-badge">MATCH <span id="match-num">1</span> OF 5</div>
+        <div class="match-badge" id="race-display">RACE 0 - 0</div>
     </div>
 
-    <div class="team-grid">
-        <div class="team-box">
-            <input type="text" id="h-team" class="team-input" placeholder="HOME TEAM">
-            <input type="text" id="h-player" placeholder="Player" style="width:100%; border:none; background:transparent; font-weight:bold;">
-            <select id="h-sl" onchange="updateRace()"><option value="2">SL2</option><option value="3">SL3</option><option value="4" selected>SL4</option><option value="5">SL5</option><option value="6">SL6</option><option value="7">SL7</option></select>
+    <div class="player-grid">
+        <div class="player-card">
+            <span class="player-label">Home Player</span>
+            <input type="text" id="h-name" class="player-input" placeholder="Enter Name">
+            <select id="h-sl" class="sl-select" onchange="updateRace()"><option value="2">SL2</option><option value="3">SL3</option><option value="4" selected>SL4</option><option value="5">SL5</option><option value="6">SL6</option><option value="7">SL7</option></select>
         </div>
-        <div class="team-box">
-            <input type="text" id="a-team" class="team-input" placeholder="AWAY TEAM">
-            <input type="text" id="a-player" placeholder="Player" style="width:100%; border:none; background:transparent; font-weight:bold;">
-            <select id="a-sl" onchange="updateRace()"><option value="2">SL2</option><option value="3">SL3</option><option value="4" selected>SL4</option><option value="5">SL5</option><option value="6">SL6</option><option value="7">SL7</option></select>
-        </div>
-    </div>
-
-    <div class="controls-grid">
-        <div style="display:flex; flex-direction:column; gap:12px; align-items:center;">
-            <button class="btn-8ball touch-btn" data-side="h" data-type="def">DEF<span id="h-def-cur">0</span></button>
-            <button class="btn-8ball touch-btn" data-side="h" data-type="to">T.O.<span id="h-to-cur">0</span></button>
-            <button class="btn-8ball win" onclick="openWin('h')">WIN</button>
-        </div>
-        <div style="text-align:center;">
-            <div style="font-size:0.6rem; font-weight:bold;">INNING</div>
-            <button class="touch-btn" data-side="both" data-type="inn" id="inn-cur" style="width:60px; height:60px; border-radius:12px; border:3px solid var(--ball-8); background:white; font-weight:900; font-size:1.5rem;">0</button>
-        </div>
-        <div style="display:flex; flex-direction:column; gap:12px; align-items:center;">
-            <button class="btn-8ball touch-btn" data-side="a" data-type="def">DEF<span id="a-def-cur">0</span></button>
-            <button class="btn-8ball touch-btn" data-side="a" data-type="to">T.O.<span id="a-to-cur">0</span></button>
-            <button class="btn-8ball win" onclick="openWin('a')">WIN</button>
+        <div class="player-card">
+            <span class="player-label">Away Player</span>
+            <input type="text" id="a-name" class="player-input" placeholder="Enter Name">
+            <select id="a-sl" class="sl-select" onchange="updateRace()"><option value="2">SL2</option><option value="3">SL3</option><option value="4" selected>SL4</option><option value="5">SL5</option><option value="6">SL6</option><option value="7">SL7</option></select>
         </div>
     </div>
 
-    <div id="log" style="background:white; padding:10px; border-radius:8px; font-family:monospace; font-size:0.7rem; min-height:80px; border:1px solid #ddd;"></div>
+    <div class="scoring-arena">
+        <div class="stat-stack">
+            <button class="btn-pro touch-btn" data-side="h" data-type="def"><span>Def</span><span id="h-def-cur">0</span></button>
+            <button class="btn-pro touch-btn" data-side="h" data-type="to"><span>T.O.</span><span id="h-to-cur">0</span></button>
+            <button class="btn-pro win" onclick="showWinModal('h')"><span>Win</span></button>
+        </div>
+
+        <div class="inning-wrap">
+            <span class="player-label">Inning</span>
+            <button class="btn-inning touch-btn" data-side="both" data-type="inn" id="inn-cur">0</button>
+        </div>
+
+        <div class="stat-stack">
+            <button class="btn-pro touch-btn" data-side="a" data-type="def"><span>Def</span><span id="a-def-cur">0</span></button>
+            <button class="btn-pro touch-btn" data-side="a" data-type="to"><span>T.O.</span><span id="a-to-cur">0</span></button>
+            <button class="btn-pro win" onclick="showWinModal('a')"><span>Win</span></button>
+        </div>
+    </div>
+
+    <div class="match-log" id="log">No games recorded...</div>
 </div>
 
-<div id="win-modal" class="modal"><div class="modal-content"><h3>WIN TYPE</h3><div id="win-opts"></div><button onclick="closeModal('win-modal')" style="margin-top:10px; color:var(--danger); border:none; background:none;">CANCEL</button></div></div>
-<div id="finish-modal" class="modal"><div class="modal-content"><h3>MATCH COMPLETE!</h3><p id="finish-msg"></p><button class="win-opt" onclick="saveMatch()">FINISH & SAVE</button><button class="win-opt" style="background:#555;" onclick="closeModal('finish-modal')">EDIT RACKS</button></div></div>
-
-<div id="view-all-screen" class="view-all-screen">
-    <h2 style="color:white; text-align:center; font-size:1.2rem;">SESSION OVERVIEW</h2>
-    <div id="session-list"></div>
-    <button class="win-opt" onclick="startNewMatchFromView()">+ START NEW MATCH</button>
-    <button class="win-opt" style="background:#555;" onclick="exportTxt()">EXPORT SESSION (.txt)</button>
-    <button class="win-opt" style="background:#555;" onclick="hideViewAll()">BACK</button>
+<!-- Modal Logic remains similar but with new styling -->
+<div id="win-modal" class="modal">
+    <div class="modal-box">
+        <h3 style="margin-top:0;">Rack Win Type</h3>
+        <div class="win-grid" id="win-opts"></div>
+        <button onclick="closeModal()" style="margin-top:20px; color:var(--danger); background:none; border:none; font-weight:700;">CANCEL</button>
+    </div>
 </div>
 
 <script>
-    // APA Race Chart [Home SL][Away SL]
+    // Modern logic includes APA Race Chart [SL Home][SL Away]
     const raceChart = { 2:{2:2,3:2,4:2,5:2,6:2,7:2}, 3:{2:3,3:2,4:2,5:2,6:2,7:2}, 4:{2:4,3:3,4:3,5:3,6:3,7:2}, 5:{2:5,3:4,4:4,5:4,6:4,7:3}, 6:{2:6,3:5,4:5,5:5,6:5,7:4}, 7:{2:7,3:6,4:5,5:5,6:5,7:5} };
-    let session = [];
     let match = { h: { wins: 0, def: 0, to: 0, sl: 4 }, a: { wins: 0, def: 0, to: 0, sl: 4 }, inn: 0, hist: [] };
 
     function updateRace() {
         const hSL = parseInt(document.getElementById('h-sl').value), aSL = parseInt(document.getElementById('a-sl').value);
         match.h.goal = raceChart[hSL][aSL]; match.a.goal = raceChart[aSL][hSL];
-        document.getElementById('race-display').innerText = `RACE ${match.h.goal}-${match.a.goal}`;
+        document.getElementById('race-display').innerText = `RACE ${match.h.goal} - ${match.a.goal}`;
     }
 
-    // Touch logic: Single Tap (+1), Double Tap (-1), Hold (Reset)
+    // Touch Handling for Scoring
     document.querySelectorAll('.touch-btn').forEach(btn => {
         let lastTap = 0, timer;
         btn.addEventListener('touchstart', (e) => {
@@ -111,81 +161,30 @@
 
     function mod(s, t, v) { 
         const obj = s === 'both' ? match : match[s];
-        if(t === 'to' && v === 1) {
-            const limit = match[s].sl >= 4 ? 1 : 2;
-            if(match[s].to >= limit) return alert("Timeout limit reached for SL " + match[s].sl);
-        }
         if (v === 'reset') obj[t] = 0; else obj[t] = Math.max(0, obj[t] + v);
-        render();
+        document.getElementById(`${s==='both'?'inn':s+'-'+t}-cur`).innerText = obj[t];
     }
 
-    function openWin(side) {
+    function showWinModal(side) {
         match.activeSide = side;
         const opts = ['Normal', 'B&R', '8BB', 'E8', 'S8', 'WP'];
-        document.getElementById('win-opts').innerHTML = opts.map(o => `<button class="win-opt" onclick="confirmWin('${o}')">${o}</button>`).join('');
+        document.getElementById('win-opts').innerHTML = opts.map(o => `<button class="btn-win-opt" onclick="recordWin('${o}')">${o}</button>`).join('');
         document.getElementById('win-modal').style.display = 'flex';
     }
 
-    function confirmWin(type) {
+    function recordWin(type) {
         if ((type === 'B&R' || type === '8BB') && match.inn > 0) return alert("B&R/8BB must be 0 innings!");
-        if (type === 'Normal' && match.inn === 0) return alert("Normal win requires >0 innings!");
         const side = match.activeSide;
-        match.hist.push(`g${match.h.wins+match.a.wins+1}(${type}) ${match.inn}i ${match[side].def}d ${match[side].to}t`);
+        const logEntry = `G${match.h.wins+match.a.wins+1}(${type}) ${match.inn}i ${match[side].def}d [${side.toUpperCase()}]`;
+        match.hist.unshift(logEntry); // Modern log adds latest to top
         match[side].wins++;
         match.inn = 0; match.h.def = 0; match.h.to = 0; match.a.def = 0; match.a.to = 0;
-        closeModal('win-modal');
-        if (match.h.wins >= match.h.goal || match.a.wins >= match.a.goal) {
-            const winnerName = match.h.wins >= match.h.goal ? (document.getElementById('h-player').value || 'Home') : (document.getElementById('a-player').value || 'Away');
-            document.getElementById('finish-msg').innerText = winnerName + " wins the match!";
-            document.getElementById('finish-modal').style.display = 'flex';
-        }
-        render();
+        document.getElementById('win-modal').style.display = 'none';
+        document.getElementById('log').innerHTML = match.hist.map(e => `<div class="log-entry">${e}</div>`).join('');
+        ['h-def','h-to','a-def','a-to','inn'].forEach(id => document.getElementById(id+'-cur').innerText = 0);
     }
 
-    function render() {
-        document.getElementById('h-def-cur').innerText = match.h.def;
-        document.getElementById('h-to-cur').innerText = match.h.to;
-        document.getElementById('a-def-cur').innerText = match.a.def;
-        document.getElementById('a-to-cur').innerText = match.a.to;
-        document.getElementById('inn-cur').innerText = match.inn;
-        document.getElementById('log').innerHTML = match.hist.join('<br>');
-    }
-
-    function saveMatch() {
-        const hW = match.h.wins, aW = match.a.wins, hG = match.h.goal, aG = match.a.goal;
-        let hP = 0, aP = 0; // 3-Point System
-        if (hW > aW) { hP = aW === aG-1 ? 2 : 3; aP = aW === aG-1 ? 1 : 0; }
-        else { aP = hW === hG-1 ? 2 : 3; hP = hW === hG-1 ? 1 : 0; }
-        session.push({ hTeam: document.getElementById('h-team').value, aTeam: document.getElementById('a-team').value, hName: document.getElementById('h-player').value, aName: document.getElementById('a-player').value, hPts: hP, aPts: aP, log: [...match.hist] });
-        closeModal('finish-modal'); showViewAll();
-    }
-
-    function showViewAll() {
-        const list = document.getElementById('session-list');
-        list.innerHTML = session.map((m, i) => `<div class="match-card"><b>Match ${i+1}: ${m.hTeam} vs ${m.aTeam}</b><br>Winner: ${m.hPts > m.aPts ? m.hName : m.aName} (Pts: ${m.hPts > m.aPts ? m.hPts : m.aPts})</div>`).join('');
-        document.getElementById('view-all-screen').style.display = 'block';
-    }
-
-    function exportTxt() {
-        let text = "SESSION RESULTS - 8 BALL 3 PT.\n\n";
-        session.forEach((m, i) => {
-            text += `MATCH ${i+1}: ${m.hName} (${m.hPts} pts) vs ${m.aName} (${m.aPts} pts)\nLOG:\n${m.log.join("\n")}\n\n`;
-        });
-        const blob = new Blob(, {type: "text/plain"});
-        const link = document.createElement("a");
-        link.download = "session_results.txt";
-        link.href = window.URL.createObjectURL(blob);
-        link.click();
-    }
-
-    function startNewMatchFromView() {
-        match = { h: { wins: 0, def: 0, to: 0, sl: 4 }, a: { wins: 0, def: 0, to: 0, sl: 4 }, inn: 0, hist: [] };
-        document.getElementById('match-num').innerText = session.length + 1;
-        document.getElementById('h-player').value = ''; document.getElementById('a-player').value = ''; render(); updateRace(); hideViewAll();
-    }
-
-    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-    function hideViewAll() { document.getElementById('view-all-screen').style.display = 'none'; }
+    function closeModal() { document.getElementById('win-modal').style.display = 'none'; }
     updateRace();
 </script>
 </body>
