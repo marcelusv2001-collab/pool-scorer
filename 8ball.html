@@ -13,192 +13,223 @@
         .logo-box { background: white; padding: 5px 15px; display: inline-block; border-radius: 12px; }
         .logo-mvp { color:#00FF00; font-size: 24px; font-weight: 900; }
         .logo-tv { color:#FF0000; font-size: 32px; font-style: italic; font-weight: 900; font-family: 'Brush Script MT', cursive; margin-left: -5px; }
-        .app-subtitle { display: block; color: #fff; font-weight: 700; font-size: 0.8rem; margin-top: 5px; text-transform: uppercase; }
-        .app-container { background: var(--app-bg); border-radius: 15px; padding: 15px; max-width: 600px; margin: auto; width: 100%; min-height: 85vh; }
+        .app-container { background: var(--app-bg); border-radius: 15px; padding: 15px; max-width: 600px; margin: auto; min-height: 85vh; position: relative; }
         .team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
         .team-box { background: rgba(0,0,0,0.05); padding: 8px; border-radius: 8px; }
-        .team-input { width:100%; border:none; border-bottom:2px solid var(--gold); background:transparent; font-weight:900; color:var(--ball-8); margin-bottom:5px; text-align:center; }
-        .btn-8ball { background: var(--ball-8); color: white; border: none; border-radius: 50%; width: 55px; height: 55px; font-weight: 900; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; }
+        .team-input { width:100%; border:none; border-bottom:2px solid var(--gold); background:transparent; font-weight:900; color:var(--ball-8); text-align:center; margin-bottom:5px; }
+        .btn-8ball { background: var(--ball-8); color: white; border: none; border-radius: 50%; width: 55px; height: 55px; font-weight: 900; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .btn-8ball.win { background: var(--felt); width: 70px; height: 70px; border: 3px solid #fff; }
         .controls-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 15px; margin: 10px 0; align-items: center; }
-        .view-all-screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--slate); z-index: 1000; padding: 20px; overflow-y: auto; }
-        .match-card { background: white; border-radius: 10px; padding: 10px; margin-bottom: 10px; color: #333; }
-        #win-modal, #edit-modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; }
-        .modal-content { background: var(--app-bg); padding: 20px; border-radius: 15px; width: 90%; max-width: 320px; text-align: center; }
-        .win-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        .win-opt { background: var(--ball-8); color: white; padding: 12px; border: none; border-radius: 8px; font-weight: bold; }
+        .view-all-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--slate); z-index: 1000; padding: 15px; overflow-y: auto; }
+        .match-card { background: white; border-radius: 10px; padding: 12px; margin-bottom: 10px; font-size: 0.8rem; border-left: 5px solid var(--gold); }
+        .modal { display: none; position: fixed; z-index: 200; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; }
+        .modal-content { background: var(--app-bg); padding: 20px; border-radius: 15px; width: 90%; max-width: 350px; text-align: center; max-height: 80vh; overflow-y: auto; }
+        .win-opt { background: var(--ball-8); color: white; padding: 10px; border: none; border-radius: 8px; font-weight: bold; width: 100%; margin: 4px 0; }
+        .edit-row { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
 <div class="branding">
     <div class="logo-box"><span class="logo-mvp">MVP</span><span class="logo-tv">TV</span></div>
-    <span class="app-subtitle">8 Ball 3 Pt. Offline Scorekeeper</span>
 </div>
 
-<div class="app-container" id="capture-area">
-    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-        <span style="font-weight:900;">MATCH <span id="match-num">1</span>/5</span>
-        <button class="win-opt" style="padding:4px 10px; font-size:0.7rem;" onclick="showViewAll()">VIEW ALL</button>
+<div class="app-container">
+    <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-weight:900; font-size:0.8rem;">
+        <span>MATCH <span id="match-num">1</span>/5 — <span id="race-display">RACE 0-0</span></span>
+        <button onclick="showViewAll()" style="background:var(--ball-8); color:white; border:none; padding:2px 8px; border-radius:4px;">VIEW ALL</button>
     </div>
 
     <div class="team-grid">
         <div class="team-box">
             <input type="text" id="h-team" class="team-input" placeholder="HOME TEAM">
-            <input type="text" id="h-player" placeholder="Player Name" style="width:100%; border:none; background:transparent;">
-            <select id="h-sl" onchange="updateRace()" style="width:100%;"><option value="2">SL2</option><option value="3">SL3</option><option value="4" selected>SL4</option><option value="5">SL5</option><option value="6">SL6</option><option value="7">SL7</option></select>
+            <input type="text" id="h-player" placeholder="Player" style="width:100%; border:none; background:transparent; font-weight:bold;">
+            <select id="h-sl" onchange="updateRace()"><option value="2">SL2</option><option value="3">SL3</option><option value="4" selected>SL4</option><option value="5">SL5</option><option value="6">SL6</option><option value="7">SL7</option></select>
         </div>
         <div class="team-box">
             <input type="text" id="a-team" class="team-input" placeholder="AWAY TEAM">
-            <input type="text" id="a-player" placeholder="Player Name" style="width:100%; border:none; background:transparent;">
-            <select id="a-sl" onchange="updateRace()" style="width:100%;"><option value="2">SL2</option><option value="3">SL3</option><option value="4" selected>SL4</option><option value="5">SL5</option><option value="6">SL6</option><option value="7">SL7</option></select>
+            <input type="text" id="a-player" placeholder="Player" style="width:100%; border:none; background:transparent; font-weight:bold;">
+            <select id="a-sl" onchange="updateRace()"><option value="2">SL2</option><option value="3">SL3</option><option value="4" selected>SL4</option><option value="5">SL5</option><option value="6">SL6</option><option value="7">SL7</option></select>
         </div>
     </div>
 
-    <div id="main-controls">
-        <div class="controls-grid">
-            <div style="display:flex; flex-direction:column; gap:12px; align-items:center;">
-                <button class="btn-8ball touch-btn" data-side="h" data-type="def">DEF<span id="h-def-cur">0</span></button>
-                <button class="btn-8ball touch-btn" data-side="h" data-type="to">T.O.<span id="h-to-cur">0</span></button>
-                <button class="btn-8ball win" onclick="openWin('h')">WIN</button>
-            </div>
-            <div style="text-align:center;">
-                <div style="font-size:0.6rem; font-weight:bold;">INNING</div>
-                <button class="touch-btn" data-side="both" data-type="inn" id="inn-cur" style="width:60px; height:60px; border-radius:12px; border:3px solid var(--ball-8); background:white; font-weight:900; font-size:1.5rem;">0</button>
-            </div>
-            <div style="display:flex; flex-direction:column; gap:12px; align-items:center;">
-                <button class="btn-8ball touch-btn" data-side="a" data-type="def">DEF<span id="a-def-cur">0</span></button>
-                <button class="btn-8ball touch-btn" data-side="a" data-type="to">T.O.<span id="a-to-cur">0</span></button>
-                <button class="btn-8ball win" onclick="openWin('a')">WIN</button>
-            </div>
+    <div class="controls-grid">
+        <div style="display:flex; flex-direction:column; gap:12px; align-items:center;">
+            <button class="btn-8ball touch-btn" data-side="h" data-type="def">DEF<span id="h-def-cur">0</span></button>
+            <button class="btn-8ball touch-btn" data-side="h" data-type="to">T.O.<span id="h-to-cur">0</span></button>
+            <button class="btn-8ball win" onclick="openWin('h')">WIN</button>
+        </div>
+        <div style="text-align:center;">
+            <div style="font-size:0.6rem; font-weight:bold;">INNING</div>
+            <button class="touch-btn" data-side="both" data-type="inn" id="inn-cur" style="width:60px; height:60px; border-radius:12px; border:3px solid var(--ball-8); background:white; font-weight:900; font-size:1.5rem;">0</button>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:12px; align-items:center;">
+            <button class="btn-8ball touch-btn" data-side="a" data-type="def">DEF<span id="a-def-cur">0</span></button>
+            <button class="btn-8ball touch-btn" data-side="a" data-type="to">T.O.<span id="a-to-cur">0</span></button>
+            <button class="btn-8ball win" onclick="openWin('a')">WIN</button>
         </div>
     </div>
 
-    <div id="log" style="background:white; padding:10px; border-radius:8px; font-family:monospace; font-size:0.75rem; min-height:50px;"></div>
-    <div id="post-match-actions" style="display:none; margin-top:10px; gap:5px; display:grid; grid-template-columns:1fr 1fr;">
-        <button class="win-opt" style="background:#555;" onclick="openEditMenu()">EDIT GAME</button>
-        <button class="win-opt" onclick="finishMatchAndNext()">FINISH MATCH</button>
-    </div>
+    <div id="log" style="background:white; padding:10px; border-radius:8px; font-family:monospace; font-size:0.7rem; min-height:100px; border:1px solid #ddd;"></div>
 </div>
+
+<!-- Modals -->
+<div id="win-modal" class="modal"><div class="modal-content"><h3>WIN TYPE</h3>
+    <div id="win-opts"></div>
+    <button onclick="closeModal('win-modal')" style="margin-top:10px; color:var(--danger); border:none; background:none;">CANCEL</button>
+</div></div>
+
+<div id="finish-modal" class="modal"><div class="modal-content"><h3>MATCH COMPLETE!</h3>
+    <p id="finish-msg"></p>
+    <button class="win-opt" onclick="saveMatch()">FINISH & SAVE</button>
+    <button class="win-opt" style="background:#555;" onclick="closeModal('finish-modal')">EDIT RACKS</button>
+</div></div>
+
+<div id="edit-modal" class="modal"><div class="modal-content"><h3>EDIT GAME</h3>
+    <div id="edit-fields"></div>
+    <button class="win-opt" onclick="saveGameEdit()">SAVE CHANGES</button>
+    <button class="win-opt" style="background:var(--danger);" onclick="closeModal('edit-modal')">CANCEL</button>
+</div></div>
 
 <div id="view-all-screen" class="view-all-screen">
-    <h2 style="color:white; text-align:center;">SESSION OVERVIEW</h2>
-    <div id="matches-list"></div>
-    <button class="win-opt" style="width:100%; margin-top:20px;" onclick="hideViewAll()">BACK TO CURRENT</button>
+    <h2 style="color:white; text-align:center; font-size:1.2rem;">SESSION OVERVIEW</h2>
+    <div id="session-list"></div>
+    <button class="win-opt" style="margin-top:10px;" onclick="startNewMatchFromView()">+ START NEW MATCH</button>
+    <button class="win-opt" style="background:#555;" onclick="hideViewAll()">BACK</button>
 </div>
-
-<div id="win-modal"><div class="modal-content"><h3>WIN TYPE</h3><div class="win-grid">
-    <button class="win-opt" onclick="confirmWin('Normal')">Normal</button><button class="win-opt" onclick="confirmWin('B&R')">B&R</button><button class="win-opt" onclick="confirmWin('8BB')">8BB</button><button class="win-opt" onclick="confirmWin('E8')">E8</button><button class="win-opt" onclick="confirmWin('S8')">S8</button><button class="win-opt" onclick="confirmWin('WP')">WP</button>
-</div><button onclick="document.getElementById('win-modal').style.display='none'" style="margin-top:15px; color:var(--danger); border:none; background:none;">CANCEL</button></div></div>
-
-<div id="edit-modal"><div class="modal-content"><h3>EDIT GAME</h3><div id="edit-list" class="win-grid" style="grid-template-columns:1fr;"></div><button onclick="document.getElementById('edit-modal').style.display='none'" style="margin-top:15px;">CANCEL</button></div></div>
 
 <script>
     const raceChart = { 2:{2:2,3:2,4:2,5:2,6:2,7:2}, 3:{2:3,3:3,4:3,5:3,6:3,7:3}, 4:{2:4,3:4,4:4,5:4,6:4,7:4}, 5:{2:5,3:5,4:5,5:5,6:5,7:5}, 6:{2:6,3:6,4:6,5:6,6:6,7:6}, 7:{2:7,3:7,4:7,5:7,6:7,7:7} };
-    let session = [];
-    let currentMatchIndex = 0;
-    let match = { h: { team: '', name: '', wins: 0, hist: [], def: 0, to: 0, sl: 4 }, a: { team: '', name: '', wins: 0, hist: [], def: 0, to: 0, sl: 4 }, inn: 0, status: 'active' };
+    let session = [], editingMatchIdx = -1, editingGameIdx = -1;
+    let match = { h: { name: '', sl: 4, wins: 0, def: 0, to: 0 }, a: { name: '', sl: 4, wins: 0, def: 0, to: 0 }, inn: 0, hist: [] };
 
     function updateRace() {
-        const r = raceChart[parseInt(document.getElementById('h-sl').value)][parseInt(document.getElementById('a-sl').value)];
-        match.h.goal = r; match.a.goal = r;
+        const hSL = parseInt(document.getElementById('h-sl').value), aSL = parseInt(document.getElementById('a-sl').value);
+        match.h.goal = raceChart[hSL][aSL]; match.a.goal = raceChart[aSL][hSL];
+        document.getElementById('race-display').innerText = `RACE ${match.h.goal}-${match.a.goal}`;
     }
 
-    // Touch logic: Single Tap (+1), Double Tap (-1), Hold (Reset)
     document.querySelectorAll('.touch-btn').forEach(btn => {
         let lastTap = 0, timer;
         btn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            const now = Date.now();
-            if (now - lastTap < 300) { clearTimeout(timer); modifyStat(btn.dataset.side, btn.dataset.type, -1); }
-            else { timer = setTimeout(() => modifyStat(btn.dataset.side, btn.dataset.type, 'reset'), 600); }
+            e.preventDefault(); const now = Date.now();
+            if (now - lastTap < 300) { clearTimeout(timer); mod(btn.dataset.side, btn.dataset.type, -1); }
+            else { timer = setTimeout(() => mod(btn.dataset.side, btn.dataset.type, 'reset'), 600); }
             lastTap = now;
         });
-        btn.addEventListener('touchend', () => { clearTimeout(timer); if (Date.now() - lastTap >= 300) modifyStat(btn.dataset.side, btn.dataset.type, 1); });
+        btn.addEventListener('touchend', () => { clearTimeout(timer); if (Date.now() - lastTap >= 300) mod(btn.dataset.side, btn.dataset.type, 1); });
     });
 
-    function modifyStat(side, type, val) {
-        const target = side === 'both' ? match : match[side];
-        if (val === 'reset') target[type] = 0; else target[type] = Math.max(0, target[type] + val);
+    function mod(s, t, v) { 
+        const obj = s === 'both' ? match : match[s];
+        if (v === 'reset') obj[t] = 0; else obj[t] = Math.max(0, obj[t] + v);
         render();
     }
 
-    function openWin(side) { match.activeSide = side; document.getElementById('win-modal').style.display = 'flex'; }
+    function openWin(side) {
+        match.activeSide = side;
+        const opts = ['Normal', 'B&R', '8BB', 'E8', 'S8', 'WP'];
+        document.getElementById('win-opts').innerHTML = opts.map(o => `<button class="win-opt" onclick="confirmWin('${o}')">${o}</button>`).join('');
+        document.getElementById('win-modal').style.display = 'flex';
+    }
 
     function confirmWin(type) {
-        if ((type === 'B&R' || type === '8BB') && match.inn > 0) { alert("B&R and 8BB must be 0 innings. Hold inning button to reset."); return; }
-        if (type === 'Normal' && match.inn === 0) { alert("Normal wins require at least 1 inning."); return; }
+        if ((type === 'B&R' || type === '8BB') && match.inn > 0) return alert("B&R/8BB must be 0 innings!");
+        if (type === 'Normal' && match.inn === 0) return alert("Normal win requires >0 innings!");
         
         const side = match.activeSide;
-        const entry = { type, inn: match.inn, def: match[side].def, to: match[side].to, winner: side };
-        match[side].hist.push(entry);
+        match.hist.push({ type, inn: match.inn, def: match[side].def, to: match[side].to, winner: side });
         match[side].wins++;
         match.inn = 0; match.h.def = 0; match.h.to = 0; match.a.def = 0; match.a.to = 0;
-        document.getElementById('win-modal').style.display = 'none';
+        closeModal('win-modal');
         
-        if (match[side].wins >= match[side].goal) {
-            match.status = 'finished';
-            document.getElementById('main-controls').style.display = 'none';
-            document.getElementById('post-match-actions').style.display = 'grid';
+        if (match.h.wins >= match.h.goal || match.a.wins >= match.a.goal) {
+            const winner = match.h.wins >= match.h.goal ? 'Home' : 'Away';
+            document.getElementById('finish-msg').innerText = `${winner} Player wins the match!`;
+            document.getElementById('finish-modal').style.display = 'flex';
         }
         render();
     }
 
     function render() {
-        document.getElementById('inn-cur').innerText = match.inn;
-        document.getElementById('h-def-cur').innerText = match.h.def;
-        document.getElementById('h-to-cur').innerText = match.h.to;
-        document.getElementById('a-def-cur').innerText = match.a.def;
-        document.getElementById('a-to-cur').innerText = match.a.to;
+        ['h-def-cur','h-to-cur','a-def-cur','a-to-cur','inn-cur'].forEach(id => {
+            const parts = id.split('-');
+            document.getElementById(id).innerText = parts[0] === 'inn' ? match.inn : match[parts[0]][parts[1]];
+        });
+        document.getElementById('log').innerHTML = match.hist.map((g, i) => 
+            `G${i+1}: ${g.type} | ${g.inn}i ${g.def}d ${g.to}t | Win: ${g.winner.toUpperCase()}`).join('<br>');
+    }
+
+    function saveMatch() {
+        const hW = match.h.wins, aW = match.a.wins, hG = match.h.goal, aG = match.a.goal;
+        let hP = 0, aP = 0; // 3-Pt System
+        if (hW > aW) { hP = aW === aG-1 ? 2 : 3; aP = aW === aG-1 ? 1 : (aW > 0 ? 0 : 0); }
+        else { aP = hW === hG-1 ? 2 : 3; hP = hW === hG-1 ? 1 : (hW > 0 ? 0 : 0); }
         
-        const log = document.getElementById('log');
-        log.innerHTML = '';
-        [...match.h.hist, ...match.a.hist].forEach((g, i) => {
-            log.innerHTML += `G${i+1}(${g.type}) ${g.inn}in ${g.def}def ${g.to}to [${g.winner==='h'?'H':'A'}]<br>`;
-        });
-    }
-
-    function openEditMenu() {
-        const list = document.getElementById('edit-list');
-        list.innerHTML = '';
-        const allGames = [...match.h.hist, ...match.a.hist];
-        allGames.forEach((g, i) => {
-            const btn = document.createElement('button');
-            btn.className = 'win-opt';
-            btn.innerText = `Edit Game ${i+1}`;
-            btn.onclick = () => {
-                const newInn = prompt("Enter new innings:", g.inn);
-                if (newInn !== null) { g.inn = parseInt(newInn); render(); }
-                document.getElementById('edit-modal').style.display = 'none';
-            };
-            list.appendChild(btn);
-        });
-        document.getElementById('edit-modal').style.display = 'flex';
-    }
-
-    function finishMatchAndNext() {
-        match.h.team = document.getElementById('h-team').value;
-        match.a.team = document.getElementById('a-team').value;
-        session.push(JSON.parse(JSON.stringify(match)));
-        if (session.length < 5) {
-            currentMatchIndex++;
-            document.getElementById('match-num').innerText = currentMatchIndex + 1;
-            match = { h: { team: '', name: '', wins: 0, hist: [], def: 0, to: 0, sl: 4 }, a: { team: '', name: '', wins: 0, hist: [], def: 0, to: 0, sl: 4 }, inn: 0, status: 'active' };
-            document.getElementById('main-controls').style.display = 'grid';
-            document.getElementById('post-match-actions').style.display = 'none';
-            document.getElementById('h-player').value = ''; document.getElementById('a-player').value = '';
-            render();
-        } else { alert("Session Complete!"); showViewAll(); }
+        const entry = { ...JSON.parse(JSON.stringify(match)), 
+            hTeam: document.getElementById('h-team').value, aTeam: document.getElementById('a-team').value,
+            hName: document.getElementById('h-player').value, aName: document.getElementById('a-player').value,
+            hPts: hP, aPts: aP 
+        };
+        session.push(entry);
+        closeModal('finish-modal');
+        showViewAll();
     }
 
     function showViewAll() {
-        const list = document.getElementById('matches-list');
-        list.innerHTML = '';
-        session.forEach((m, i) => {
-            list.innerHTML += `<div class="match-card"><strong>Match ${i+1}:</strong> ${m.h.team} vs ${m.a.team}<br>Winner: ${m.h.wins > m.a.wins ? m.h.name : m.a.name}</div>`;
-        });
+        const list = document.getElementById('session-list');
+        list.innerHTML = session.map((m, i) => `
+            <div class="match-card">
+                <b>Match ${i+1}: ${m.hTeam} vs ${m.aTeam}</b><br>
+                Winner: ${m.h.wins > m.a.wins ? m.hName : m.aName} (${m.h.wins > m.a.wins ? m.hPts : m.aPts} pts)<br>
+                <div style="font-size:0.6rem; color:#666; margin:5px 0;">${m.hist.map(g => g.type).join(', ')}</div>
+                <button onclick="editOldMatch(${i})" style="font-size:0.6rem;">EDIT MATCH</button>
+            </div>`).join('');
         document.getElementById('view-all-screen').style.display = 'block';
     }
+
+    function editOldMatch(idx) {
+        editingMatchIdx = idx;
+        const m = session[idx];
+        const list = m.hist.map((g, gi) => `<button class="win-opt" style="font-size:0.7rem;" onclick="prepGameEdit(${idx},${gi})">Edit Game ${gi+1}</button>`).join('');
+        document.getElementById('edit-fields').innerHTML = list;
+        document.getElementById('edit-modal').style.display = 'flex';
+    }
+
+    function prepGameEdit(mi, gi) {
+        editingGameIdx = gi;
+        const g = session[mi].hist[gi];
+        const opts = ['Normal', 'B&R', '8BB', 'E8', 'S8', 'WP'];
+        document.getElementById('edit-fields').innerHTML = `
+            <select id="edit-type" class="win-opt">${opts.map(o => `<option value="${o}" ${o===g.type?'selected':''}>${o}</option>`).join('')}</select>
+            <div class="edit-row">
+                <input type="number" id="edit-inn" value="${g.inn}" placeholder="Inn">
+                <input type="number" id="edit-def" value="${g.def}" placeholder="Def">
+            </div>
+            <div class="edit-row">
+                <input type="number" id="edit-to" value="${g.to}" placeholder="T.O.">
+                <select id="edit-win"><option value="h" ${g.winner==='h'?'selected':''}>Home Win</option><option value="a" ${g.winner==='a'?'selected':''}>Away Win</option></select>
+            </div>`;
+    }
+
+    function saveGameEdit() {
+        const m = session[editingMatchIdx], g = m.hist[editingGameIdx];
+        g.type = document.getElementById('edit-type').value;
+        g.inn = parseInt(document.getElementById('edit-inn').value);
+        g.def = parseInt(document.getElementById('edit-def').value);
+        g.to = parseInt(document.getElementById('edit-to').value);
+        g.winner = document.getElementById('edit-win').value;
+        closeModal('edit-modal'); showViewAll();
+    }
+
+    function startNewMatchFromView() {
+        match = { h: { name: '', sl: 4, wins: 0, def: 0, to: 0 }, a: { name: '', sl: 4, wins: 0, def: 0, to: 0 }, inn: 0, hist: [] };
+        document.getElementById('match-num').innerText = session.length + 1;
+        document.getElementById('h-player').value = ''; document.getElementById('a-player').value = '';
+        render(); updateRace(); hideViewAll();
+    }
+
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     function hideViewAll() { document.getElementById('view-all-screen').style.display = 'none'; }
     updateRace();
 </script>
