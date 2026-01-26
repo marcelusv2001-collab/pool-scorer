@@ -9,7 +9,6 @@
         * { box-sizing: border-box; touch-action: manipulation; -webkit-user-select: none; }
         body { font-family: system-ui, sans-serif; background-color: var(--slate); color: var(--text); padding: 12px; margin: 0; }
         .app-container { background: var(--surface); border-radius: 20px; padding: 20px; max-width: 500px; margin: auto; min-height: 85vh; border: 1px solid var(--border); }
-        .branding { text-align: center; margin-bottom: 20px; }
         .match-header { display: flex; justify-content: space-between; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
         .match-badge { background: var(--slate); padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; color: var(--gold); border: 1px solid var(--gold); font-weight: 800; }
         .player-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
@@ -23,11 +22,13 @@
         .btn-inning { width: 60px; height: 60px; border-radius: 12px; border: 2px solid var(--gold); background: var(--slate); color: var(--gold); font-size: 1.5rem; font-weight: 900; cursor: pointer; }
         .session-overview { background: var(--slate); border-radius: 15px; padding: 12px; border: 1px solid var(--border); }
         .table-row { display: grid; grid-template-columns: 0.8fr 2.5fr 1fr 1fr; gap: 8px; font-size: 0.8rem; border-bottom: 1px solid var(--surface); padding: 6px 0; }
+        .points { font-weight: 900; color: var(--felt); text-align: right; }
         .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; }
-        .modal-box { background: var(--surface); padding: 20px; border-radius: 20px; width: 90%; max-width: 350px; text-align: center; }
+        .modal-box { background: var(--surface); padding: 20px; border-radius: 20px; width: 90%; max-width: 350px; text-align: center; max-height: 80vh; overflow-y: auto; }
         .win-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
         .btn-win-opt { background: var(--slate); color: white; padding: 10px; border: 1px solid var(--border); border-radius: 10px; font-weight: 700; cursor: pointer; }
         .btn-action { width: 100%; padding: 12px; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; margin-top: 10px; }
+        .detail-row { display: flex; justify-content: space-between; font-size: 0.8rem; border-bottom: 1px solid var(--border); padding: 5px 0; }
     </style>
 </head>
 <body>
@@ -83,12 +84,23 @@
                 <button class="btn-win-opt" onclick="confirmRack('8BB')">8BB</button>
                 <button class="btn-win-opt" onclick="confirmRack('B&R')">B&R</button>
                 <button class="btn-win-opt" onclick="confirmRack('S8')">S8</button>
+                <button class="btn-win-opt" onclick="confirmRack('E8')">E8</button>
+                <button class="btn-win-opt" onclick="confirmRack('WP')">WP</button>
             </div>
             <button class="btn-action" style="background:var(--danger); color:white;" onclick="closeM()">Cancel</button>
         </div>
     </div>
 
+    <div id="detailsModal" class="modal">
+        <div class="modal-box">
+            <h3 id="det-title" style="color:var(--gold)">Match Details</h3>
+            <div id="det-content"></div>
+            <button class="btn-action" style="margin-top:20px;" onclick="document.getElementById('detailsModal').style.display='none'">Close</button>
+        </div>
+    </div>
+
 <script>
+    // Official 2026 APA 8-Ball "Games Must Win" Chart
     const CHART = {
         2: { 2: 2, 3: 2, 4: 2, 5: 2, 6: 2, 7: 2 },
         3: { 2: 3, 3: 2, 4: 2, 5: 2, 6: 2, 7: 2 },
@@ -99,13 +111,13 @@
     };
 
     let session = JSON.parse(localStorage.getItem('mvp_session')) || [];
-    let cur = { hDef: 0, aDef: 0, hTO: 0, aTO: 0, innings: 0, winnerSide: '', hGames: 0, aGames: 0 };
-
+    let cur = { hDef: 0, aDef: 0, hTO: 0, aTO: 0, innings: 0, winnerSide: '', hGames: 0, aGames: 0, rackHistory: [] };
+    
     function updateRace() {
         const h = document.getElementById('h-sl').value, a = document.getElementById('a-sl').value;
         const raceH = CHART[h][a], raceA = CHART[a][h];
         document.getElementById('race-display').innerText = `RACE ${raceH} - ${raceA}`;
-        checkEnd(raceH, raceA);
+        checkMatchEnd(raceH, raceA);
     }
 
     function adj(stat, val) {
@@ -122,52 +134,79 @@
 
     function confirmRack(type) {
         cur[cur.winnerSide + 'Games']++;
+        cur.rackHistory.push({ winner: cur.winnerSide, type: type, hDef: cur.hDef, aDef: cur.aDef, hTO: cur.hTO, aTO: cur.aTO, innings: cur.innings });
         document.getElementById(cur.winnerSide + '-games').innerText = cur[cur.winnerSide + 'Games'];
+        // Reset stats for next rack
+        cur.hDef = cur.aDef = cur.hTO = cur.aTO = cur.innings = 0;
+        ['hDef','aDef','hTO','aTO','innings'].forEach(id => document.getElementById(id + '-val').innerText = 0);
         updateRace();
         closeM();
     }
 
-    function checkEnd(rH, rA) {
+    function checkMatchEnd(rH, rA) {
         if (cur.hGames >= rH || cur.aGames >= rA) {
-            const hWin = cur.hGames >= rH;
-            const winner = hWin ? 'h' : 'a', loser = hWin ? 'a' : 'h';
-            const loserGames = cur[loser + 'Games'], winnerRace = hWin ? rH : rA, loserRace = hWin ? rA : rH;
-            
-            let ptsW = 2, ptsL = 0;
-            if (loserGames === 0) { ptsW = 3; ptsL = 0; }
-            else if (loserGames >= (loserRace - 1)) { ptsW = 2; ptsL = 1; }
-            
-            saveMatch(ptsW, ptsL, winner);
+            // Use window.confirm for mandatory action before proceeding to next match
+            if (window.confirm("Match complete. Confirm and start next match?")) {
+                saveMatch(rH, rA);
+            }
         }
     }
 
-    function saveMatch(pW, pL, side) {
-        if (session.length >= 5) return alert("Session Full");
+    function saveMatch(rH, rA) {
+        if (session.length >= 5) return alert("Session complete (5 matches). Cannot add more).");
+        const hWin = cur.hGames >= rH;
+        const winner = hWin ? 'h' : 'a', loser = hWin ? 'a' : 'h';
+        const loserGames = cur[loser + 'Games'];
+        
+        let ptsW = 2, ptsL = 0;
+        if (loserGames === 0) { ptsW = 3; ptsL = 0; }
+        else if (loserGames >= (rH - 1) || loserGames >= (rA - 1)) { ptsW = 2; ptsL = 1; }
+        
         session.push({
             num: session.length + 1,
             hName: document.getElementById('h-name').value,
             aName: document.getElementById('a-name').value,
-            hPts: side === 'h' ? pW : pL,
-            aPts: side === 'a' ? pW : pL,
-            score: `${cur.hGames}-${cur.aGames}`
+            hPts: winner === 'h' ? ptsW : ptsL,
+            aPts: winner === 'a' ? ptsW : ptsL,
+            score: `${cur.hGames}-${cur.aGames}`,
+            racks: [...cur.rackHistory]
         });
         localStorage.setItem('mvp_session', JSON.stringify(session));
-        cur.hGames = cur.aGames = cur.hDef = cur.aDef = cur.hTO = cur.aTO = cur.innings = 0;
-        location.reload();
+        // Reset for new match
+        cur.hGames = cur.aGames = 0; cur.rackHistory = [];
+        document.getElementById('h-games').innerText = 0; document.getElementById('a-games').innerText = 0;
+        render();
     }
 
     function render() {
-        const list = document.getElementById('results-list');
-        session.forEach(m => {
+        const list = document.getElementById('results-list'); list.innerHTML = '';
+        session.forEach((m, i) => {
             const row = document.createElement('div'); row.className = 'table-row';
-            row.innerHTML = `<span>#${m.num}</span><span>${m.hName} vs ${m.aName}</span><span>${m.score}</span><span style="color:var(--felt)">${m.hPts}-${m.aPts}</span>`;
+            row.innerHTML = `<span style="color:var(--gold);cursor:pointer;text-decoration:underline" onclick="showDet(${i})">#${m.num}</span><span>${m.hName} vs ${m.aName}</span><span>${m.score}</span><span style="color:var(--felt)">${m.hPts}-${m.aPts}</span>`;
             list.appendChild(row);
         });
         document.getElementById('match-num').innerText = Math.min(session.length + 1, 5);
     }
 
-    function clearSession() { localStorage.clear(); location.reload(); }
-    function exportSession() { alert(JSON.stringify(session)); }
+    function showDet(i) {
+        const m = session[i];
+        let rackHtml = `<p>Match Score: ${m.score} (${m.hPts}-${m.aPts} points)</p>`;
+        m.racks.forEach((r, ri) => {
+             // Calculate totals for this specific rack display
+            rackHtml += `<div class="detail-row"><span>G${ri+1}: ${r.winner.toUpperCase()} (${r.type})</span><span>Inn: ${r.innings} | D: ${r.hDef}/${r.aDef} | T: ${r.hTO}/${r.aTO}</span></div>`;
+        });
+
+        document.getElementById('det-content').innerHTML = rackHtml;
+        document.getElementById('detailsModal').style.display = 'flex';
+    }
+
+    function exportSession() { 
+        let txt = "MVP TV 8-BALL SESSION\n\n";
+        session.forEach(m => txt += `Match ${m.num}: ${m.hName} (${m.hPts}) vs ${m.aName} (${m.aPts}) | Score: ${m.score}\n`);
+        if (navigator.clipboard) { navigator.clipboard.writeText(txt).then(() => alert("Copied!")); }
+    }
+
+    function clearSession() { if (confirm("Reset all session data?")) { localStorage.clear(); location.reload(); } }
     window.onload = () => { updateRace(); render(); };
 </script>
 </body>
