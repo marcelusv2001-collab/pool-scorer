@@ -51,12 +51,14 @@
             width: 64px; height: 64px; border-radius: 14px; border: 2.5px solid var(--gold);
             background: var(--slate); color: var(--gold); font-size: 1.6rem; font-weight: 900;
         }
-        .match-log { background: var(--slate); border-radius: 12px; padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; border: 1px solid var(--border); max-height: 120px; overflow-y: auto; color: var(--text-muted); }
+        .match-log { background: var(--slate); border-radius: 12px; padding: 12px; font-family: monospace; font-size: 0.7rem; border: 1px solid var(--border); max-height: 120px; overflow-y: auto; color: var(--text-muted); }
         .log-entry { margin-bottom: 4px; border-bottom: 1px solid var(--surface); padding-bottom: 2px; }
         .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(4px); justify-content: center; align-items: center; }
         .modal-box { background: var(--surface); padding: 24px; border-radius: 24px; width: 90%; max-width: 340px; text-align: center; border: 1px solid var(--border); }
         .win-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
         .btn-win-opt { background: var(--slate); color: white; padding: 12px; border: 1px solid var(--border); border-radius: 12px; font-weight: 700; cursor: pointer; width: 100%; }
+        .action-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+        .btn-action { background: var(--border); color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 700; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -66,7 +68,7 @@
     <span class="app-subtitle">8 Ball 3 Pt. Pro Offline</span>
 </div>
 
-<div class="app-container">
+<div class="app-container" id="capture-area">
     <div class="match-header">
         <div class="match-badge">MATCH <span id="match-num">1</span> OF 5</div>
         <div class="match-badge" id="race-display">RACE 0 - 0</div>
@@ -77,13 +79,19 @@
             <input type="text" id="h-team" class="player-input" style="border-bottom-color: var(--gold)" placeholder="HOME TEAM">
             <span class="player-label">Home Player</span>
             <input type="text" id="h-name" class="player-input" placeholder="Enter Name">
-            <select id="h-sl" class="sl-select" onchange="updateRace()"><option value="2">SL2</option><option value="3">SL3</option><option value="4" selected>SL4</option><option value="5">SL5</option><option value="6">SL6</option><option value="7">SL7</option></select>
+            <select id="h-sl" class="sl-select" onchange="updateRace()">
+                <option value="2">SL2</option><option value="3">SL3</option><option value="4" selected>SL4</option>
+                <option value="5">SL5</option><option value="6">SL6</option><option value="7">SL7</option>
+            </select>
         </div>
         <div class="player-card">
             <input type="text" id="a-team" class="player-input" style="border-bottom-color: var(--gold)" placeholder="AWAY TEAM">
             <span class="player-label">Away Player</span>
             <input type="text" id="a-name" class="player-input" placeholder="Enter Name">
-            <select id="a-sl" class="sl-select" onchange="updateRace()"><option value="2">SL2</option><option value="3">SL3</option><option value="4" selected>SL4</option><option value="5">SL5</option><option value="6">SL6</option><option value="7">SL7</option></select>
+            <select id="a-sl" class="sl-select" onchange="updateRace()">
+                <option value="2">SL2</option><option value="3">SL3</option><option value="4" selected>SL4</option>
+                <option value="5">SL5</option><option value="6">SL6</option><option value="7">SL7</option>
+            </select>
         </div>
     </div>
 
@@ -105,6 +113,11 @@
     </div>
 
     <div class="match-log" id="log">No games recorded...</div>
+
+    <div class="action-bar">
+        <button class="btn-action" onclick="saveImage()">📸 SAVE IMAGE</button>
+        <button class="btn-action" style="background: var(--danger)" onclick="resetMatch()">🔄 RESET</button>
+    </div>
 </div>
 
 <div id="win-modal" class="modal">
@@ -156,7 +169,7 @@
 
     function recordWin(type) {
         if (type === 'Normal' && match.inn < 1) return alert("Normal win requires minimum 1 inning!");
-        if ((type === 'B&R' || type === '8BB') && match.inn > 0) return alert(`${type} must be recorded with 0 innings. Long-press inning button to reset.`);
+        if ((type === 'B&R' || type === '8BB') && match.inn > 0) return alert(`${type} must be recorded with 0 innings.`);
         
         const side = match.activeSide;
         const logEntry = `G${match.h.wins+match.a.wins+1}(${type}) ${match.inn}i ${match[side].def}d [${side.toUpperCase()}]`;
@@ -165,8 +178,7 @@
 
         if (match[side].wins >= match[side].goal) {
             const winnerName = document.getElementById(side + '-name').value || side.toUpperCase();
-            alert(`${winnerName} wins the match!`);
-            document.querySelectorAll('.btn-pro').forEach(b => b.disabled = true);
+            alert(`${winnerName} wins the match! Performance points calculated by APA system.`);
         }
 
         match.inn = 0; match.h.def = 0; match.h.to = 0; match.a.def = 0; match.a.to = 0;
@@ -175,6 +187,16 @@
         ['h-def','h-to','a-def','a-to','inn'].forEach(id => document.getElementById(id+'-cur').innerText = 0);
     }
 
+    function saveImage() {
+        html2canvas(document.getElementById('capture-area'), { backgroundColor: '#0f172a' }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `MVP-Score-${Date.now()}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        });
+    }
+
+    function resetMatch() { if(confirm("Wipe current match?")) location.reload(); }
     function closeModal() { document.getElementById('win-modal').style.display = 'none'; }
     updateRace();
 </script>
