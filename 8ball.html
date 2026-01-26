@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MVP TV Scorekeeper 2026</title>
+    <title>MVP TV 8 Ball 3 Pt. Offline Scorekeeper</title>
     <script src="https://cdnjs.cloudflare.com"></script>
     <style>
         :root { 
@@ -15,202 +15,320 @@
         body { 
             font-family: 'Inter', sans-serif; background-color: var(--slate); 
             background-image: radial-gradient(circle, #3d7a35 0%, #1a3a16 100%);
-            margin: 0; padding: 10px; color: #fff; min-height: 100vh;
+            margin: 0; padding: 10px; color: #fff;
         }
-        .branding { text-align: center; margin-bottom: 10px; }
+        .branding { text-align: center; margin-bottom: 10px; position: relative; }
         .logo-box { background: white; padding: 5px 15px; display: inline-block; border-radius: 12px; }
         .logo-mvp { color:#00FF00; font-size: 24px; font-weight: 900; }
         .logo-tv { color:#FF0000; font-size: 32px; font-style: italic; font-weight: 900; font-family: 'Brush Script MT', cursive; margin-left: -5px; }
+        .title { display: block; font-size: 0.9rem; color: #ccc; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-top: 5px; }
+
+        .app-container { background: var(--active-bg); border-radius: 15px; padding: 15px; color: #333; max-width: 600px; margin: auto; }
         
-        /* Fullscreen Match Container */
-        .match-container { 
-            background: white; border-radius: 15px; color: #333; 
-            min-height: 80vh; display: flex; flex-direction: column; padding: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        .header-actions { position: absolute; top: 0; right: 0; display: flex; gap: 5px; font-size: 0.75rem;}
+
+        .team-input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .team-box { background: #f0f0f0; padding: 10px; border-radius: 8px; }
+        .team-name { width: 100%; border: none; font-weight: 800; font-size: 0.9rem; background: transparent; }
+        .player-row { display: flex; align-items: center; gap: 5px; margin-top: 8px; }
+        .player-name { flex-grow: 1; border: none; border-bottom: 1px solid #ddd; background: transparent; }
+        .skill-level { width: 45px; padding: 5px; border-radius: 5px; }
+        
+        .race-chart-info { background: var(--ball-8); color: white; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 0.8rem; font-weight: bold; }
+        
+        .controls-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; margin-bottom: 10px; }
+        .side-controls { display: flex; flex-direction: column; gap: 8px; }
+        .inning-control { display: flex; justify-content: center; align-items: center; margin-top: 5px; }
+
+        /* Billiard Ball Style Buttons */
+        .btn-8ball { 
+            background: var(--ball-8); color: white; border: none; 
+            border-radius: 50%; width: 45px; height: 45px; font-weight: bold; 
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 4px 6px rgba(0,0,0,0.3);
+            cursor: pointer; position: relative; display: flex; justify-content: center; align-items: center;
         }
+        .btn-8ball::before { content: attr(data-label); position: absolute; top: -15px; font-size: 0.6rem; text-transform: uppercase; }
+        .btn-8ball.win { background: var(--felt); width: 60px; height: 60px; }
+        .btn-8ball.win::before { top: -18px; }
 
-        .player-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
-        .player-box { background: #f8f9fa; padding: 10px; border-radius: 10px; border: 2px solid #eee; }
-        .player-box.active { border-color: var(--felt); background: #e8f5e9; }
-        .player-box.winner { border-color: var(--gold); background: #fffde7; box-shadow: 0 0 10px var(--gold); }
+        .btn-action { background: #555; color: white; padding: 8px; border-radius: 8px; border: none; cursor: pointer; }
+        
+        .match-status { text-align: center; margin-bottom: 10px; font-weight: bold; color: var(--danger); }
+        .match-status.active { color: var(--felt); }
+        
+        .history-log { border-top: 1px solid #eee; padding-top: 10px; font-family: monospace; font-size: 0.75rem; white-space: pre-wrap; }
+        .winner-highlight { font-weight: bold; color: var(--gold); }
+        
+        .final-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
 
-        .name-input { width: 100%; border: none; border-bottom: 2px solid #ddd; font-weight: 900; font-size: 1.1rem; margin-bottom: 5px; background: transparent; }
-        
-        /* Game Stats Input Area */
-        .game-entry { background: var(--slate); color: white; padding: 15px; border-radius: 10px; margin: 10px 0; }
-        .stat-controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center; }
-        .counter-btn { background: var(--felt); border: none; color: white; width: 30px; height: 30px; border-radius: 5px; font-weight: bold; }
-        
-        /* History Log */
-        .history-log { flex-grow: 1; overflow-y: auto; margin: 10px 0; font-size: 0.85rem; border-top: 1px solid #eee; padding-top: 10px; }
-        .history-item { padding: 5px; border-bottom: 1px solid #f0f0f0; font-family: monospace; }
-
-        .footer-totals { 
-            background: var(--ball-8); color: var(--gold); 
-            padding: 15px; border-radius: 10px; text-align: center;
-            font-weight: 900; font-size: 0.9rem; text-transform: uppercase;
-        }
-
-        .win-btn { width: 100%; padding: 15px; background: var(--felt); color: white; border: none; border-radius: 10px; font-weight: 900; margin-top: 10px; }
-        
-        /* Summary Toggle */
-        .summary-dropdown { background: rgba(0,0,0,0.3); border-radius: 10px; margin-top: 10px; overflow: hidden; }
-        .summary-header { padding: 10px; display: flex; justify-content: space-between; cursor: pointer; font-weight: bold; }
-        
-        .highlight-name { color: var(--felt); text-decoration: underline; }
     </style>
 </head>
 <body>
 
 <div class="branding">
     <div class="logo-box"><span class="logo-mvp">MVP</span><span class="logo-tv">TV</span></div>
+    <span class="title">8 Ball 3 Pt. Offline Scorekeeper</span>
+    <div class="header-actions">
+        <button class="btn-action" onclick="toggleEditMode()">EDIT</button>
+        <button class="btn-action" onclick="finishMatch()">FINISH MATCH</button>
+    </div>
 </div>
 
-<div id="app">
-    <div class="match-container" id="capture-area">
-        <div class="player-row">
-            <div id="p1-box" class="player-box">
-                <input type="text" class="name-input" id="p1-name" placeholder="HOME PLAYER" oninput="updateUI()">
-                <div style="font-size: 0.8rem; font-weight: 800;">GAMES: <span id="p1-games">0</span></div>
-            </div>
-            <div id="p2-box" class="player-box">
-                <input type="text" class="name-input" id="p2-name" placeholder="AWAY PLAYER" oninput="updateUI()">
-                <div style="font-size: 0.8rem; font-weight: 800;">GAMES: <span id="p2-games">0</span></div>
-            </div>
-        </div>
-
-        <div class="game-entry">
-            <div style="text-align: center; font-weight: 800; color: var(--gold); margin-bottom: 10px;">CURRENT GAME STATS</div>
-            <div class="stat-controls">
-                <div>
-                    <div style="font-size: 0.6rem;">INN.</div>
-                    <button class="counter-btn" onclick="adj('inn', -1)">-</button>
-                    <span id="cur-inn" style="margin: 0 5px;">0</span>
-                    <button class="counter-btn" onclick="adj('inn', 1)">+</button>
-                </div>
-                <div>
-                    <div style="font-size: 0.6rem;">DEF.</div>
-                    <button class="counter-btn" onclick="adj('def', -1)">-</button>
-                    <span id="cur-def" style="margin: 0 5px;">0</span>
-                    <button class="counter-btn" onclick="adj('def', 1)">+</button>
-                </div>
-                <div>
-                    <div style="font-size: 0.6rem;">T.O.</div>
-                    <button class="counter-btn" onclick="adj('to', -1)">-</button>
-                    <span id="cur-to" style="margin: 0 5px;">0</span>
-                    <button class="counter-btn" onclick="adj('to', 1)">+</button>
-                </div>
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
-                <button class="win-btn" onclick="recordGame('p1')">P1 WIN</button>
-                <button class="win-btn" onclick="recordGame('p2')">P2 WIN</button>
-            </div>
-            <div style="text-align: center; margin-top: 10px;">
-                <select id="win-type" style="background: white; border-radius: 5px; font-weight: 800;">
-                    <option value="Normal">Normal</option>
-                    <option value="B&R">B&R</option>
-                    <option value="8BB">8BB</option>
+<div class="app-container" id="capture-area">
+    <div class="team-input-grid">
+        <div class="team-box">
+            <input type="text" class="team-name" id="home-team" placeholder="HOME TEAM">
+            <div class="player-row">
+                <input type="text" class="player-name" id="home-player" placeholder="Player Name">
+                <select class="skill-level" id="home-sl" onchange="updateRace()">
+                    <option value="2">SL2</option><option value="3">SL3</option>
+                    <option value="4">SL4</option><option value="5">SL5</option>
+                    <option value="6">SL6</option><option value="7">SL7</option>
                 </select>
             </div>
         </div>
-
-        <div class="history-log" id="history">
-            <!-- Logs appear here -->
+        <div class="team-box">
+            <input type="text" class="team-name" id="away-team" placeholder="AWAY TEAM">
+            <div class="player-row">
+                <input type="text" class="player-name" id="away-player" placeholder="Player Name">
+                <select class="skill-level" id="away-sl" onchange="updateRace()">
+                    <option value="2">SL2</option><option value="3">SL3</option>
+                    <option value="4">SL4</option><option value="5">SL5</option>
+                    <option value="6">SL6</option><option value="7">SL7</option>
+                </select>
+            </div>
         </div>
+    </div>
+    
+    <div class="race-chart-info" id="race-info">
+        Race: Home needs 0 wins vs Away needs 0 wins (SL Diff: 0)
+    </div>
 
-        <div class="footer-totals" id="totals-bar">
-            GAMES = 0, INNINGS = 0, DEFENSE = 0
+    <div class="match-status active" id="match-status">MATCH IN PROGRESS</div>
+
+    <div class="controls-grid" id="controls">
+        <div class="side-controls home-controls">
+            <button class="btn-8ball" data-label="Defense" onclick="adj('home', 'def', 1)">D</button>
+            <button class="btn-8ball" data-label="Timeout" onclick="adj('home', 'to', 1)">T</button>
+            <button class="btn-8ball win" data-label="WIN" onclick="promptWin('home')">W</button>
+        </div>
+        <div class="inning-control">
+            <button class="btn-action" onclick="adj('both', 'inn', 1)">INNING <span id="cur-inn">0</span></button>
+        </div>
+        <div class="side-controls away-controls">
+            <button class="btn-8ball" data-label="Defense" onclick="adj('away', 'def', 1)">D</button>
+            <button class="btn-8ball" data-label="Timeout" onclick="adj('away', 'to', 1)">T</button>
+            <button class="btn-8ball win" data-label="WIN" onclick="promptWin('away')">W</button>
         </div>
     </div>
 
-    <div class="summary-dropdown">
-        <div class="summary-header" onclick="saveImage()">
-            <span>📸 SAVE SCREENSHOT</span>
-            <span>⬇️</span>
-        </div>
+    <div class="history-log" id="history">
+        <!-- Game logs and totals appear here -->
+    </div>
+    
+    <div class="final-actions" id="final-actions" style="display: none;">
+        <button class="btn-action" onclick="saveScreenshot()">Screenshot</button>
+        <button class="btn-action" onclick="copyToClipboard()">Save to Clipboard</button>
+        <button class="btn-action" onclick="exportTxt()">Export TXT</button>
     </div>
 </div>
 
 <script>
-    let matchData = {
-        p1: { games: 0, history: [] },
-        p2: { games: 0, history: [] },
-        totals: { games: 0, inn: 0, def: 0, to: 0 },
-        current: { inn: 0, def: 0, to: 0 }
+    // APA Race Chart [SL Home][SL Away] = [Home Race, Away Race]
+    const RaceChart = {
+        2: { 2: [2, 2], 3: [2, 3], 4: [2, 4], 5: [2, 5], 6: [2, 6], 7: [2, 7] },
+        3: { 2: [3, 2], 3: [3, 3], 4: [3, 4], 5: [3, 5], 6: [3, 6], 7: [3, 7] },
+        4: { 2: [4, 2], 3: [4, 3], 4: [4, 4], 5: [4, 5], 6: [4, 6], 7: [4, 7] },
+        5: { 2: [5, 2], 3: [5, 3], 4: [5, 4], 5: [5, 5], 6: [5, 6], 7: [5, 7] },
+        6: { 2: [6, 2], 3: [6, 3], 4: [6, 4], 5: [6, 5], 6: [6, 6], 7: [6, 7] },
+        7: { 2: [7, 2], 3: [7, 3], 4: [7, 4], 5: [7, 5], 6: [7, 6], 7: [7, 7] }
     };
 
-    function adj(field, val) {
-        matchData.current[field] = Math.max(0, matchData.current[field] + val);
-        document.getElementById(`cur-${field}`).innerText = matchData.current[field];
+    let matchData = {
+        status: 'active',
+        home: { sl: 2, games_won: 0, history: [], def: 0, to: 0, points: 0 },
+        away: { sl: 2, games_won: 0, history: [], def: 0, to: 0, points: 0 },
+        current: { inn: 0 },
+        race_home: 0, race_away: 0,
+    };
+
+    function updateRace() {
+        const homeSL = parseInt(document.getElementById('home-sl').value);
+        const awaySL = parseInt(document.getElementById('away-sl').value);
+        matchData.home.sl = homeSL;
+        matchData.away.sl = awaySL;
+        const race = RaceChart[homeSL][awaySL];
+        matchData.race_home = race[0];
+        matchData.race_away = race[1];
+        renderUI();
     }
 
-    function recordGame(winner) {
-        const type = document.getElementById('win-type').value;
-        const typeStr = type !== 'Normal' ? `(${type}) ` : '';
-        const entry = `g${matchData.totals.games + 1}${typeStr} ${matchData.current.inn}in. ${matchData.current.def}def. ${matchData.current.to}to.`;
-        
-        // Log to player
-        matchData[winner].games++;
-        matchData[winner].history.push(entry);
-        
-        // Update Totals
-        matchData.totals.games++;
-        matchData.totals.inn += matchData.current.inn;
-        matchData.totals.def += matchData.current.def;
-        matchData.totals.to += matchData.current.to;
-
-        // Reset Current
-        matchData.current = { inn: 0, def: 0, to: 0 };
-        document.getElementById('cur-inn').innerText = 0;
-        document.getElementById('cur-def').innerText = 0;
-        document.getElementById('cur-to').innerText = 0;
-        
-        updateUI();
+    function adj(side, field, val) {
+        if (matchData.status !== 'active') return;
+        if (side === 'both') {
+            matchData.current[field] = Math.max(0, matchData.current[field] + val);
+        } else {
+            matchData[side][field] = Math.max(0, matchData[side][field] + val);
+        }
+        renderUI();
     }
 
-    function updateUI() {
-        const p1Name = document.getElementById('p1-name').value || "P1";
-        const p2Name = document.getElementById('p2-name').value || "P2";
+    function promptWin(winnerSide) {
+        if (matchData.status !== 'active') return;
+        const options = ['Normal', 'B&R', '8BB', 'E8', 'S8', 'WP'];
+        const winType = prompt(`Enter win type: ${options.join(', ')}`);
+        if (winType && options.includes(winType)) {
+            recordGame(winnerSide, winType);
+        }
+    }
+
+    function recordGame(winnerSide, winType) {
+        const gameNum = matchData.home.history.length + matchData.away.history.length + 1;
+        const loserSide = winnerSide === 'home' ? 'away' : 'home';
+
+        // Log format: g1(B&R) 2in. 1def. 1to.
+        const logEntry = `g${gameNum}${winType !== 'Normal' ? `(${winType})` : ''} ${matchData.current.inn}in. ${matchData[winnerSide].def}def. ${matchData[winnerSide].to}to.`;
+        matchData[winnerSide].history.push(logEntry);
         
-        document.getElementById('p1-games').innerText = matchData.p1.games;
-        document.getElementById('p2-games').innerText = matchData.p2.games;
+        // Update game counts
+        matchData[winnerSide].games_won++;
 
-        // Highlight Winner Logic (First to 2 for demo, adjust as needed)
-        const p1Box = document.getElementById('p1-box');
-        const p2Box = document.getElementById('p2-box');
-        p1Box.className = 'player-box';
-        p2Box.className = 'player-box';
+        // Reset current game stats
+        matchData.current.inn = 0;
+        matchData.home.def = 0; matchData.home.to = 0;
+        matchData.away.def = 0; matchData.away.to = 0;
 
-        let winMsg = "";
-        if(matchData.p1.games > matchData.p2.games) {
-            p1Box.classList.add('winner');
-            winMsg = `<span class="highlight-name">${p1Name}</span> wins 3-0`;
-        } else if(matchData.p2.games > matchData.p1.games) {
-            p2Box.classList.add('winner');
-            winMsg = `<span class="highlight-name">${p2Name}</span> wins 3-0`;
+        // Check for match end
+        if (matchData[winnerSide].games_won >= matchData[`race_${winnerSide}`]) {
+            calculatePoints();
+            matchData.status = 'finished';
         }
 
-        // Render History
-        const historyDiv = document.getElementById('history');
-        historyDiv.innerHTML = `
-            <div style="font-weight:bold; margin-bottom:5px;">${winMsg}</div>
-            <div style="color:var(--felt)">${p1Name}: ${matchData.p1.history.join(', ')}</div>
-            <div style="color:var(--danger); margin-top:5px;">${p2Name}: ${matchData.p2.history.join(', ')}</div>
-        `;
-
-        // Update Footer
-        document.getElementById('totals-bar').innerText = 
-            `GAMES = ${matchData.totals.games}, INNINGS = ${matchData.totals.inn}, DEFENSE = ${matchData.totals.def}`;
+        renderUI();
+    }
+    
+    function calculatePoints() {
+        const homeGames = matchData.home.games_won;
+        const awayGames = matchData.away.games_won;
+        // APA 3-point system: 3-0 shutout, 2-1 if loser reached hill, 2-0 if loser won a game but not hill
+        if (homeGames > awayGames) {
+            matchData.home.points = awayGames === matchData.race_away - 1 ? 2 : 3;
+            matchData.away.points = awayGames === matchData.race_away - 1 ? 1 : 0;
+        } else {
+            matchData.away.points = homeGames === matchData.race_home - 1 ? 2 : 3;
+            matchData.home.points = homeGames === matchData.race_home - 1 ? 1 : 0;
+        }
     }
 
-    function saveImage() {
+
+    function renderUI() {
+        // Update race info
+        document.getElementById('race-info').innerText = 
+            `Race: Home needs ${matchData.race_home} wins vs Away needs ${matchData.race_away} wins (SL Diff: ${Math.abs(matchData.home.sl - matchData.away.sl)})`;
+
+        // Update current inning counter
+        document.getElementById('cur-inn').innerText = matchData.current.inn;
+
+        // Update match status and controls visibility
+        const statusEl = document.getElementById('match-status');
+        const controlsEl = document.getElementById('controls');
+        const finalActionsEl = document.getElementById('final-actions');
+        if (matchData.status === 'finished') {
+            statusEl.innerText = 'MATCH FINISHED';
+            statusEl.classList.remove('active');
+            controlsEl.style.display = 'none';
+            finalActionsEl.style.display = 'grid';
+        } else {
+            statusEl.innerText = 'MATCH IN PROGRESS';
+            statusEl.classList.add('active');
+            controlsEl.style.display = 'grid';
+            finalActionsEl.style.display = 'none';
+        }
+
+        // Render history and totals
+        const historyEl = document.getElementById('history');
+        let historyHTML = '';
+        if (matchData.status === 'finished') {
+            const homeName = document.getElementById('home-player').value || 'HOME';
+            const awayName = document.getElementById('away-player').value || 'AWAY';
+            const homeTotalInn = matchData.home.history.reduce((sum, entry) => sum + parseInt(entry.match(/(\d+)in\./)[1]), 0);
+            const homeTotalDef = matchData.home.history.reduce((sum, entry) => sum + parseInt(entry.match(/(\d+)def\./)[1]), 0);
+            const homeTotalTO = matchData.home.history.reduce((sum, entry) => sum + parseInt(entry.match(/(\d+)to\./)[1]), 0);
+            const awayTotalInn = matchData.away.history.reduce((sum, entry) => sum + parseInt(entry.match(/(\d+)in\./)[1]), 0);
+            const awayTotalDef = matchData.away.history.reduce((sum, entry) => sum + parseInt(entry.match(/(\d+)def\./)[1]), 0);
+            const awayTotalTO = matchData.away.history.reduce((sum, entry) => sum + parseInt(entry.match(/(\d+)to\./)[1]), 0);
+            const totalGames = matchData.home.games_won + matchData.away.games_won;
+
+            const homeWin = matchData.home.points > matchData.away.points;
+            
+            historyHTML += `<div style="margin-bottom: 10px;">MATCH RESULT: <span class="${homeWin ? 'winner-highlight' : ''}">${homeName} ${matchData.home.points}pts</span> vs <span class="${!homeWin ? 'winner-highlight' : ''}">${awayName} ${matchData.away.points}pts</span></div>`;
+            historyHTML += `<div>${homeName}: ${matchData.home.history.join(', ')}</div>`;
+            historyHTML += `<div>${awayName}: ${matchData.away.history.join(', ')}</div>`;
+            historyHTML += `<div style="margin-top: 10px; font-weight: bold;">TOTALS: Games = ${totalGames}, Innings = ${homeTotalInn + awayTotalInn}, Defense = ${homeTotalDef + awayTotalDef}</div>`;
+        } else {
+            historyHTML = 'Match history will appear here once games are won.';
+        }
+        document.getElementById('history').innerHTML = historyHTML;
+
+        // Disable input fields in edit mode
+        toggleEditMode(true);
+    }
+
+    function finishMatch() {
+        if (matchData.status !== 'active') return;
+        if (confirm("Are you sure you want to finish the match? Points will be calculated based on current games won.")) {
+            calculatePoints();
+            matchData.status = 'finished';
+            renderUI();
+        }
+    }
+
+    function toggleEditMode(autoDisable = false) {
+        const inputs = document.querySelectorAll('input, select');
+        const isFinished = matchData.status === 'finished';
+        const isEditMode = document.querySelector('.btn-action').innerText === 'DONE';
+
+        if (autoDisable) {
+            inputs.forEach(input => input.disabled = isFinished);
+        } else {
+            // Manual toggle
+            const newMode = !isEditMode;
+            document.querySelector('.btn-action').innerText = newMode ? 'DONE' : 'EDIT';
+            inputs.forEach(input => input.disabled = newMode);
+        }
+    }
+
+    function saveScreenshot() {
         html2canvas(document.getElementById('capture-area')).then(canvas => {
             const link = document.createElement('a');
-            link.download = `MVP-Score-${Date.now()}.png`;
+            link.download = `MVP-Scorecard-${Date.now()}.png`;
             link.href = canvas.toDataURL();
             link.click();
         });
     }
+
+    function copyToClipboard() {
+        const historyText = document.getElementById('history').innerText;
+        navigator.clipboard.writeText(historyText).then(() => {
+            alert('Score copied to clipboard!');
+        }).catch(err => {
+            console.error('Could not copy text: ', err);
+        });
+    }
+
+    function exportTxt() {
+        const historyText = document.getElementById('history').innerText;
+        const blob = new Blob([historyText], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `MVP-Scorecard-${Date.now()}.txt`;
+        link.click();
+        URL.revokeObjectURL(url);
+    }
+
+    // Initial render
+    updateRace();
 </script>
 
 </body>
