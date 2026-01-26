@@ -3,364 +3,226 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MVP TV 8 Ball 3 Pt. Offline Scorekeeper</title>
+    <title>MVP TV APA 8-Ball Pro</title>
     <script src="https://cdnjs.cloudflare.com"></script>
     <style>
         :root { 
-            --felt: #2d5a27; --slate: #1a1a1a; --wood: #5d4037; 
-            --gold: #f1c40f; --chalk: #3498db; --ball-8: #2c3e50; --danger: #e74c3c;
-            --active-bg: #ffffff; 
-            --app-bg: #ffebee; /* Light Red Background */
+            --felt: #2d5a27; --slate: #1a1a1a; --gold: #f1c40f; 
+            --chalk: #3498db; --ball-8: #2c3e50; --danger: #e74c3c;
+            --app-bg: #ffebee;
         }
         * { box-sizing: border-box; touch-action: manipulation; }
         body { 
             font-family: 'Inter', sans-serif; background-color: var(--slate); 
-            background-image: radial-gradient(circle, #3d7a35 0%, #1a3a16 100%);
-            margin: 0; padding: 10px; color: #333; /* Default body color adjusted for light red bg */
+            margin: 0; padding: 10px; color: #333;
         }
         .branding { text-align: center; margin-bottom: 10px; position: relative; }
         .logo-box { background: white; padding: 5px 15px; display: inline-block; border-radius: 12px; }
         .logo-mvp { color:#00FF00; font-size: 24px; font-weight: 900; }
         .logo-tv { color:#FF0000; font-size: 32px; font-style: italic; font-weight: 900; font-family: 'Brush Script MT', cursive; margin-left: -5px; }
-        .title { display: block; font-size: 0.9rem; color: #555; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-top: 5px; }
-
-        /* Mobile Optimization & Light Red BG */
+        
         .app-container { 
-            background: var(--app-bg); 
-            border-radius: 15px; padding: 15px; color: #333; 
-            max-width: 600px; margin: auto; 
-            width: 100%; min-height: 90vh; /* Fit mobile screen height */
+            background: var(--app-bg); border-radius: 15px; padding: 15px; 
+            max-width: 600px; margin: auto; width: 100%; min-height: 90vh;
         }
-        
-        .header-actions { position: absolute; top: 0; right: 0; display: flex; gap: 5px; font-size: 0.75rem;}
 
-        .team-input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .team-box { background: #f0f0f0; padding: 10px; border-radius: 8px; }
-        .team-name { width: 100%; border: none; font-weight: 800; font-size: 0.9rem; background: transparent; }
-        .player-row { display: flex; align-items: center; gap: 5px; margin-top: 8px; }
-        .player-name { flex-grow: 1; border: none; border-bottom: 1px solid #ddd; background: transparent; }
-        .skill-level { width: 45px; padding: 5px; border-radius: 5px; }
+        .header-actions { position: absolute; top: 0; right: 0; display: flex; gap: 5px; }
+        .team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .team-box { background: rgba(0,0,0,0.05); padding: 10px; border-radius: 8px; }
+        .player-row { margin-top: 5px; display: flex; align-items: center; gap: 4px; }
         
-        .race-chart-info { background: var(--ball-8); color: white; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 0.8rem; font-weight: bold; }
-        
-        .controls-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; margin-bottom: 10px; }
-        .side-controls { display: flex; flex-direction: column; gap: 8px; }
-        .inning-control { display: flex; justify-content: center; align-items: center; margin-top: 5px; }
+        .race-banner { 
+            background: var(--ball-8); color: white; padding: 8px; 
+            border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 10px; 
+        }
 
-        /* Billiard Ball Style Buttons */
+        .controls-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 15px; margin: 15px 0; align-items: center; }
         .btn-8ball { 
-            background: var(--ball-8); color: white; border: none; 
-            border-radius: 50%; width: 45px; height: 45px; font-weight: bold; 
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 4px 6px rgba(0,0,0,0.3);
-            cursor: pointer; position: relative; display: flex; justify-content: center; align-items: center;
+            background: var(--ball-8); color: white; border: none; border-radius: 50%; 
+            width: 50px; height: 50px; font-weight: 900; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
-        .btn-8ball::before { content: attr(data-label); position: absolute; top: -15px; font-size: 0.6rem; text-transform: uppercase; color: #333; }
-        .btn-8ball.win { background: var(--felt); width: 60px; height: 60px; }
-        .btn-8ball.win::before { top: -18px; }
+        .btn-8ball.win { background: var(--felt); width: 65px; height: 65px; border: 3px solid #fff; }
+        .label { font-size: 0.5rem; text-transform: uppercase; margin-bottom: -2px; }
 
-        .btn-action { background: #555; color: white; padding: 8px; border-radius: 8px; border: none; cursor: pointer; }
-        
-        .match-status { text-align: center; margin-bottom: 10px; font-weight: bold; color: var(--danger); }
-        .match-status.active { color: var(--felt); }
-        
-        .history-log { border-top: 1px solid #eee; padding-top: 10px; font-family: monospace; font-size: 0.75rem; white-space: pre-wrap; }
-        .winner-highlight { font-weight: bold; color: var(--gold); }
-        
-        .final-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
-
-        /* Modal for Win Options */
         #win-modal {
-            display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.8); justify-content: center; align-items: center;
+            display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); justify-content: center; align-items: center;
         }
-        .modal-content {
-            background-color: var(--app-bg); padding: 20px; border-radius: 10px; text-align: center; width: 90%; max-width: 300px;
-        }
-        .win-option-btn {
-            background-color: var(--ball-8); color: white; padding: 10px; margin: 5px 0; border: none; border-radius: 5px; width: 100%;
-            cursor: pointer;
-        }
+        .modal-content { background: var(--app-bg); padding: 20px; border-radius: 15px; width: 85%; max-width: 320px; text-align: center; }
+        .win-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .win-opt { background: var(--ball-8); color: white; padding: 12px; border: none; border-radius: 8px; font-weight: bold; }
+
+        .history-log { background: white; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 0.8rem; margin-top: 10px; }
+        .winner-tag { color: var(--felt); font-weight: bold; text-decoration: underline; }
     </style>
 </head>
 <body>
 
 <div class="branding">
     <div class="logo-box"><span class="logo-mvp">MVP</span><span class="logo-tv">TV</span></div>
-    <span class="title">8 Ball 3 Pt. Offline Scorekeeper</span>
     <div class="header-actions">
-        <button class="btn-action" onclick="toggleEditMode()">EDIT</button>
-        <button class="btn-action" onclick="finishMatch()">FINISH MATCH</button>
+        <button onclick="toggleEdit()" id="edit-btn" style="padding:5px 10px; border-radius:5px; border:none; background:#555; color:white;">EDIT</button>
     </div>
 </div>
 
 <div class="app-container" id="capture-area">
-    <div class="team-input-grid">
+    <div class="team-grid">
         <div class="team-box">
-            <input type="text" class="team-name" id="home-team" placeholder="HOME TEAM">
+            <input type="text" id="h-team" placeholder="HOME TEAM" style="width:100%; font-weight:bold; border:none; background:transparent;">
             <div class="player-row">
-                <input type="text" class="player-name" id="home-player" placeholder="Player Name">
-                <select class="skill-level" id="home-sl" onchange="updateRace()">
-                    <option value="2">SL2</option><option value="3">SL3</option>
-                    <option value="4">SL4</option><option value="5">SL5</option>
-                    <option value="6">SL6</option><option value="7">SL7</option>
+                <input type="text" id="h-player" placeholder="Player" style="width:70%; border:none; border-bottom:1px solid #ccc; background:transparent;">
+                <select id="h-sl" onchange="updateRace()" style="width:30%;">
+                    <option value="2">2</option><option value="3">3</option><option value="4" selected>4</option>
+                    <option value="5">5</option><option value="6">6</option><option value="7">7</option>
                 </select>
             </div>
         </div>
         <div class="team-box">
-            <input type="text" class="team-name" id="away-team" placeholder="AWAY TEAM">
+            <input type="text" id="a-team" placeholder="AWAY TEAM" style="width:100%; font-weight:bold; border:none; background:transparent;">
             <div class="player-row">
-                <input type="text" class="player-name" id="away-player" placeholder="Player Name">
-                <select class="skill-level" id="away-sl" onchange="updateRace()">
-                    <option value="2">SL2</option><option value="3">SL3</option>
-                    <option value="4">SL4</option><option value="5">SL5</option>
-                    <option value="6">SL6</option><option value="7">SL7</option>
+                <input type="text" id="a-player" placeholder="Player" style="width:70%; border:none; border-bottom:1px solid #ccc; background:transparent;">
+                <select id="a-sl" onchange="updateRace()" style="width:30%;">
+                    <option value="2">2</option><option value="3">3</option><option value="4" selected>4</option>
+                    <option value="5">5</option><option value="6">6</option><option value="7">7</option>
                 </select>
             </div>
         </div>
     </div>
-    
-    <div class="race-chart-info" id="race-info">
-        Race: Home needs 0 wins vs Away needs 0 wins (SL Diff: 0)
+
+    <div class="race-banner" id="race-display">RACE: 3 TO 3</div>
+
+    <div class="controls-grid" id="main-controls">
+        <div style="display:flex; flex-direction:column; gap:15px; align-items:center;">
+            <button class="btn-8ball" onclick="stat('h','def',1)"><span class="label">Def</span><span id="h-def-cur">0</span></button>
+            <button class="btn-8ball" onclick="stat('h','to',1)"><span class="label">T.O.</span><span id="h-to-cur">0</span></button>
+            <button class="btn-8ball win" onclick="openWin('h')"><span class="label">WIN</span></button>
+        </div>
+        
+        <div style="text-align:center;">
+            <div style="font-size:0.7rem; font-weight:bold;">INNING</div>
+            <button onclick="stat('both','inn',1)" style="width:50px; height:50px; border-radius:8px; border:2px solid var(--ball-8); background:white; font-weight:bold; font-size:1.2rem;" id="inn-cur">0</button>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:15px; align-items:center;">
+            <button class="btn-8ball" onclick="stat('a','def',1)"><span class="label">Def</span><span id="a-def-cur">0</span></button>
+            <button class="btn-8ball" onclick="stat('a','to',1)"><span class="label">T.O.</span><span id="a-to-cur">0</span></button>
+            <button class="btn-8ball win" onclick="openWin('a')"><span class="label">WIN</span></button>
+        </div>
     </div>
 
-    <div class="match-status active" id="match-status">MATCH IN PROGRESS</div>
-
-    <div class="controls-grid" id="controls">
-        <div class="side-controls home-controls">
-            <button class="btn-8ball" data-label="Defense" onclick="adj('home', 'def', 1)">D</button>
-            <button class="btn-8ball" data-label="Timeout" onclick="adj('home', 'to', 1)">T</button>
-            <button class="btn-8ball win" data-label="WIN" onclick="promptWin('home')">W</button>
-        </div>
-        <div class="inning-control">
-            <button class="btn-action" onclick="adj('both', 'inn', 1)">INNING <span id="cur-inn">0</span></button>
-        </div>
-        <div class="side-controls away-controls">
-            <button class="btn-8ball" data-label="Defense" onclick="adj('away', 'def', 1)">D</button>
-            <button class="btn-8ball" data-label="Timeout" onclick="adj('away', 'to', 1)">T</button>
-            <button class="btn-8ball win" data-label="WIN" onclick="promptWin('away')">W</button>
-        </div>
-    </div>
-
-    <div class="history-log" id="history">
-        <!-- Game logs and totals appear here -->
-    </div>
-    
-    <div class="final-actions" id="final-actions" style="display: none;">
-        <button class="btn-action" onclick="saveScreenshot()">Screenshot</button>
-        <button class="btn-action" onclick="copyToClipboard()">Save to Clipboard</button>
-        <button class="btn-action" onclick="exportTxt()">Export TXT</button>
-    </div>
+    <div class="history-log" id="log">Logs will appear here...</div>
 </div>
 
-<!-- Win Options Modal (New Feature) -->
 <div id="win-modal">
     <div class="modal-content">
-        <h4 style="margin-bottom: 15px;">Select Win Type</h4>
-        <button class="win-option-btn" onclick="recordGame(modalSide, 'Normal')">Normal</button>
-        <button class="win-option-btn" onclick="recordGame(modalSide, 'B&R')">B&R</button>
-        <button class="win-option-btn" onclick="recordGame(modalSide, '8BB')">8BB</button>
-        <button class="win-option-btn" onclick="recordGame(modalSide, 'E8')">E8</button>
-        <button class="win-option-btn" onclick="recordGame(modalSide, 'S8')">S8</button>
-        <button class="win-option-btn" onclick="recordGame(modalSide, 'WP')">WP</button>
-        <button class="win-option-btn" style="background-color: var(--danger);" onclick="document.getElementById('win-modal').style.display='none'">Cancel</button>
+        <h3>Win Category</h3>
+        <div class="win-grid">
+            <button class="win-opt" onclick="confirmWin('Normal')">Normal</button>
+            <button class="win-opt" onclick="confirmWin('B&R')">B&R</button>
+            <button class="win-opt" onclick="confirmWin('8BB')">8BB</button>
+            <button class="win-opt" onclick="confirmWin('E8')">E8</button>
+            <button class="win-opt" onclick="confirmWin('S8')">S8</button>
+            <button class="win-opt" onclick="confirmWin('WP')">WP</button>
+        </div>
+        <button onclick="document.getElementById('win-modal').style.display='none'" style="margin-top:15px; border:none; background:none; color:var(--danger); font-weight:bold;">CANCEL</button>
     </div>
 </div>
 
 <script>
-    // APA Race Chart [Home SL][Away SL] = Race To Games
-    // This is the actual APA chart data obtained via search results
-    const RaceChart = {
-        2: { 2: 2, 3: 2, 4: 2, 5: 2, 6: 2, 7: 2 },
-        3: { 2: 3, 3: 3, 4: 3, 5: 3, 6: 3, 7: 3 },
-        4: { 2: 4, 3: 4, 4: 4, 5: 4, 6: 4, 7: 4 },
-        5: { 2: 5, 3: 5, 4: 5, 5: 5, 6: 5, 7: 5 },
-        6: { 2: 6, 3: 6, 4: 6, 5: 6, 6: 6, 7: 6 },
-        7: { 2: 7, 3: 7, 4: 7, 5: 7, 6: 7, 7: 7 }
+    // APA Race Chart [SL Home][SL Away] = [Home Race, Away Race]
+    const raceChart = {
+        2: { 2:[2,2], 3:[2,3], 4:[2,4], 5:[2,5], 6:[2,6], 7:[2,7] },
+        3: { 2:[3,2], 3:[2,2], 4:[2,3], 5:[2,4], 6:[2,5], 7:[2,6] },
+        4: { 2:[4,2], 3:[3,2], 4:[3,3], 5:[3,4], 6:[3,5], 7:[2,5] },
+        5: { 2:[5,2], 3:[4,2], 4:[4,3], 5:[4,4], 6:[4,5], 7:[3,5] },
+        6: { 2:[6,2], 3:[5,2], 4:[5,3], 5:[5,4], 6:[5,5], 7:[4,5] },
+        7: { 2:[7,2], 3:[6,2], 4:[5,2], 5:[5,3], 6:[5,4], 7:[5,5] }
     };
 
-    let matchData = {
-        status: 'active',
-        home: { sl: 2, games_won: 0, history: [], def: 0, to: 0, points: 0 },
-        away: { sl: 2, games_won: 0, history: [], def: 0, to: 0, points: 0 },
-        current: { inn: 0 },
-        race_home: 0, race_away: 0,
+    let match = {
+        h: { wins: 0, hist: [], def: 0, to: 0, sl: 4 },
+        a: { wins: 0, hist: [], def: 0, to: 0, sl: 4 },
+        inn: 0, status: 'active', activeSide: null
     };
-    let modalSide = ''; // To track which side initiated the win modal
 
     function updateRace() {
-        const homeSL = parseInt(document.getElementById('home-sl').value);
-        const awaySL = parseInt(document.getElementById('away-sl').value);
-        matchData.home.sl = homeSL;
-        matchData.away.sl = awaySL;
-        // The race is always based on the higher SL number vs the lower SL's "games to win" for their race
-        matchData.race_home = RaceChart[Math.max(homeSL, awaySL)][awaySL];
-        matchData.race_away = RaceChart[Math.max(homeSL, awaySL)][homeSL];
-        renderUI();
+        match.h.sl = parseInt(document.getElementById('h-sl').value);
+        match.a.sl = parseInt(document.getElementById('a-sl').value);
+        const r = raceChart[match.h.sl][match.a.sl];
+        match.h.goal = r[0]; match.a.goal = r[1];
+        document.getElementById('race-display').innerText = `RACE: ${r[0]} TO ${r[1]}`;
     }
 
-    function adj(side, field, val) {
-        if (matchData.status !== 'active') return;
-        if (side === 'both') {
-            matchData.current[field] = Math.max(0, matchData.current[field] + val);
-        } else {
-            matchData[side][field] = Math.max(0, matchData[side][field] + val);
+    function stat(side, field, val) {
+        if(side === 'both') match.inn += val;
+        else {
+            const limit = match[side].sl >= 4 ? 1 : 2;
+            if(field === 'to' && match[side].to >= limit) return alert("Timeout limit reached!");
+            match[side][field] += val;
         }
-        renderUI();
+        render();
     }
 
-    // Opens the modal with 5 win options
-    function promptWin(winnerSide) {
-        if (matchData.status !== 'active') return;
-        modalSide = winnerSide;
+    function openWin(side) {
+        match.activeSide = side;
         document.getElementById('win-modal').style.display = 'flex';
     }
 
-    function recordGame(winnerSide, winType) {
-        document.getElementById('win-modal').style.display = 'none'; // Close modal
-        const gameNum = matchData.home.history.length + matchData.away.history.length + 1;
+    function confirmWin(type) {
+        const side = match.activeSide;
+        const entry = `g${match.h.wins+match.a.wins+1}${type === 'Normal' ? '' : '('+type+')'} ${match.inn}in ${match[side].def}def ${match[side].to}to`;
+        match[side].hist.push(entry);
+        match[side].wins++;
         
-        // Log format: g1(B&R) 2in. 1def. 1to.
-        const logEntry = `g${gameNum}${winType !== 'Normal' ? `(${winType})` : ''} ${matchData.current.inn}in. ${matchData[winnerSide].def}def. ${matchData[winnerSide].to}to.`;
-        matchData[winnerSide].history.push(logEntry);
-        
-        // Update game counts
-        matchData[winnerSide].games_won++;
+        // Reset for next rack
+        match.inn = 0; match.h.def = 0; match.h.to = 0; match.a.def = 0; match.a.to = 0;
+        document.getElementById('win-modal').style.display = 'none';
 
-        // Reset current game stats
-        matchData.current.inn = 0;
-        matchData.home.def = 0; matchData.home.to = 0;
-        matchData.away.def = 0; matchData.away.to = 0;
-
-        // Check for match end
-        if (matchData[winnerSide].games_won >= matchData[`race_${winnerSide}`]) {
-            calculatePoints();
-            matchData.status = 'finished';
-        }
-
-        renderUI();
-    }
-    
-    function calculatePoints() {
-        const homeGames = matchData.home.games_won;
-        const awayGames = matchData.away.games_won;
-        
-        if (homeGames > awayGames) {
-            // Home wins. If away reached "hill" (race_away - 1), it's 2-1 points. Otherwise 3-0.
-            matchData.home.points = awayGames === matchData.race_away - 1 ? 2 : 3;
-            matchData.away.points = awayGames === matchData.race_away - 1 ? 1 : 0;
-        } else {
-            // Away wins. If home reached "hill" (race_home - 1), it's 2-1 points. Otherwise 3-0.
-            matchData.away.points = homeGames === matchData.race_home - 1 ? 2 : 3;
-            matchData.home.points = homeGames === matchData.race_home - 1 ? 1 : 0;
-        }
-    }
-
-
-    function renderUI() {
-        document.getElementById('race-info').innerText = 
-            `Race: Home needs ${matchData.race_home} wins vs Away needs ${matchData.race_away} wins`;
-
-        document.getElementById('cur-inn').innerText = matchData.current.inn;
-
-        const statusEl = document.getElementById('match-status');
-        const controlsEl = document.getElementById('controls');
-        const finalActionsEl = document.getElementById('final-actions');
-        if (matchData.status === 'finished') {
-            statusEl.innerText = 'MATCH FINISHED';
-            statusEl.classList.remove('active');
-            controlsEl.style.display = 'none';
-            finalActionsEl.style.display = 'grid';
-        } else {
-            statusEl.innerText = 'MATCH IN PROGRESS';
-            statusEl.classList.add('active');
-            controlsEl.style.display = 'grid';
-            finalActionsEl.style.display = 'none';
-        }
-
-        const historyEl = document.getElementById('history');
-        let historyHTML = '';
-        const homeName = document.getElementById('home-player').value || 'HOME PLAYER';
-        const awayName = document.getElementById('away-player').value || 'AWAY PLAYER';
-
-        if (matchData.status === 'finished') {
-            const homeTotalInn = matchData.home.history.reduce((sum, entry) => sum + parseInt(entry.match(/(\d+)in\./)[1] || 0), 0);
-            const homeTotalDef = matchData.home.history.reduce((sum, entry) => sum + parseInt(entry.match(/(\d+)def\./)[1] || 0), 0);
-            const homeTotalTO = matchData.home.history.reduce((sum, entry) => sum + parseInt(entry.match(/(\d+)to\./)[1] || 0), 0);
-            const awayTotalInn = matchData.away.history.reduce((sum, entry) => sum + parseInt(entry.match(/(\d+)in\./)[1] || 0), 0);
-            const awayTotalDef = matchData.away.history.reduce((sum, entry) => sum + parseInt(entry.match(/(\d+)def\./)[1] || 0), 0);
-            const awayTotalTO = matchData.away.history.reduce((sum, entry) => sum + parseInt(entry.match(/(\d+)to\./)[1] || 0), 0);
-            const totalGames = matchData.home.games_won + matchData.away.games_won;
-
-            const homeWin = matchData.home.points > matchData.away.points;
-            
-            historyHTML += `<div style="margin-bottom: 10px;">MATCH RESULT: <span class="${homeWin ? 'winner-highlight' : ''}">${homeName} ${matchData.home.points}pts</span> vs <span class="${!homeWin ? 'winner-highlight' : ''}">${awayName} ${matchData.away.points}pts</span></div>`;
-            historyHTML += `<div>${homeName}: ${matchData.home.history.join(', ')}</div>`;
-            historyHTML += `<div>${awayName}: ${matchData.away.history.join(', ')}</div>`;
-            historyHTML += `<div style="margin-top: 10px; font-weight: bold;">TOTALS: Games = ${totalGames}, Innings = ${homeTotalInn + awayTotalInn}, Defense = ${homeTotalDef + awayTotalDef}</div>`;
-        } else {
-            historyHTML = 'Match history will appear here once games are won.';
-        }
-        document.getElementById('history').innerHTML = historyHTML;
-
-        toggleEditMode(true);
+        if(match[side].wins >= match[side].goal) finishMatch();
+        render();
     }
 
     function finishMatch() {
-        if (matchData.status !== 'active') return;
-        if (confirm("Are you sure you want to finish the match? Points will be calculated based on current games won.")) {
-            calculatePoints();
-            matchData.status = 'finished';
-            renderUI();
-        }
-    }
-
-    function toggleEditMode(autoDisable = false) {
-        const inputs = document.querySelectorAll('input, select');
-        const isFinished = matchData.status === 'finished';
-        const editButton = document.querySelector('.header-actions .btn-action');
-        const isEditMode = editButton.innerText === 'DONE';
-
-        if (autoDisable) {
-            inputs.forEach(input => input.disabled = isFinished);
+        match.status = 'done';
+        document.getElementById('main-controls').style.display = 'none';
+        
+        // 3-Point System Calculation
+        let hPts = 0, aPts = 0;
+        if(match.h.wins > match.a.wins) {
+            if(match.a.wins === 0) { hPts = 3; aPts = 0; }
+            else if(match.a.wins === match.a.goal - 1) { hPts = 2; aPts = 1; }
+            else { hPts = 2; aPts = 0; }
         } else {
-            const newMode = !isEditMode;
-            editButton.innerText = newMode ? 'DONE' : 'EDIT';
-            inputs.forEach(input => input.disabled = !newMode && !isFinished);
+            if(match.h.wins === 0) { aPts = 3; hPts = 0; }
+            else if(match.h.wins === match.h.goal - 1) { aPts = 2; hPts = 1; }
+            else { aPts = 2; hPts = 0; }
+        }
+        match.h.finalPts = hPts; match.a.finalPts = aPts;
+    }
+
+    function render() {
+        document.getElementById('inn-cur').innerText = match.inn;
+        document.getElementById('h-def-cur').innerText = match.h.def;
+        document.getElementById('h-to-cur').innerText = match.h.to;
+        document.getElementById('a-def-cur').innerText = match.a.def;
+        document.getElementById('a-to-cur').innerText = match.a.to;
+
+        const hName = document.getElementById('h-player').value || "Home";
+        const aName = document.getElementById('a-player').value || "Away";
+
+        if(match.status === 'done') {
+            const hWin = match.h.wins > match.a.wins;
+            let html = `<div style="text-align:center; font-size:1rem; margin-bottom:10px;">`;
+            html += `<span class="${hWin?'winner-tag':''}">${hName} (${match.h.finalPts}pts)</span> vs `;
+            html += `<span class="${!hWin?'winner-tag':''}">${aName} (${match.a.finalPts}pts)</span></div>`;
+            html += `<div>${hName}: ${match.h.hist.join(', ')}</div>`;
+            html += `<div style="margin-top:5px;">${aName}: ${match.a.hist.join(', ')}</div>`;
+            document.getElementById('log').innerHTML = html;
         }
     }
 
-    function saveScreenshot() {
-        html2canvas(document.getElementById('capture-area'), { backgroundColor: '#ffebee' }).then(canvas => {
-            const link = document.createElement('a');
-            link.download = `MVP-Scorecard-${Date.now()}.png`;
-            link.href = canvas.toDataURL();
-            link.click();
-        });
-    }
-
-    function copyToClipboard() {
-        const historyText = document.getElementById('history').innerText;
-        navigator.clipboard.writeText(historyText).then(() => {
-            alert('Score copied to clipboard!');
-        }).catch(err => {
-            console.error('Could not copy text: ', err);
-        });
-    }
-
-    function exportTxt() {
-        const historyText = document.getElementById('history').innerText;
-        const blob = new Blob([historyText], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `MVP-Scorecard-${Date.now()}.txt`;
-        link.click();
-        URL.revokeObjectURL(url);
-    }
-
-    // Initial render
     updateRace();
 </script>
-
 </body>
 </html>
