@@ -10,7 +10,7 @@
         .container { max-width: 450px; margin: auto; border: 2px solid var(--felt); padding: 15px; border-radius: 12px; background: var(--card); }
         h1 { font-size: 1.1rem; text-align: center; color: var(--gold); text-transform: uppercase; margin: 0 0 10px; }
         .row { display: flex; gap: 10px; margin-bottom: 8px; }
-        .header-stats { display: flex; justify-content: space-between; font-size: 0.85rem; color: #bbb; margin-bottom: 10px; font-weight: bold; }
+        .header-stats { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: #bbb; margin-bottom: 10px; font-weight: bold; }
         input, select { flex: 1; padding: 10px; border-radius: 5px; border: 1px solid #333; background: #000; color: #fff; font-size: 0.9rem; }
         .lag-btn { flex: 1; padding: 8px; text-align: center; border: 2px solid #444; border-radius: 20px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
         .lag-btn.active { background: var(--felt); border-color: var(--gold); }
@@ -24,7 +24,7 @@
         .log-container { margin-top: 15px; }
         .log-controls { display: flex; gap: 5px; margin-bottom: 5px; }
         .log-controls button { flex: 1; padding: 5px; font-size: 0.7rem; background: #333; color: #fff; border: 1px solid #555; border-radius: 3px; cursor: pointer; }
-        .log { height: 120px; overflow-y: auto; background: #000; padding: 10px; font-size: 0.75rem; border: 1px solid #333; border-radius: 5px; color: #0f0; font-family: monospace; white-space: pre-wrap; }
+        .log { height: 140px; overflow-y: auto; background: #000; padding: 10px; font-size: 0.75rem; border: 1px solid #333; border-radius: 5px; color: #0f0; font-family: monospace; white-space: pre-wrap; }
         .footer-btns { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px; }
         .footer-btns button { padding: 12px; cursor: pointer; background: #333; color: white; border: none; border-radius: 5px; font-weight: bold; font-size: 0.8rem; }
         #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); justify-content: center; align-items: center; z-index: 100; }
@@ -34,7 +34,13 @@
 <body>
 <div class="container">
     <h1>8 Ball 3Pt. Scorekeeper</h1>
-    <div class="header-stats"><span>Match: <span id="mNum">1</span>/5</span><span id="race">Race: 2/2</span><span id="totalSl">SLs: 2/2</span></div>
+    <div class="header-stats">
+        <span>Match: <select id="mSelect" style="display:inline; width:auto; padding:2px; font-size:0.8rem;" onchange="state.m = this.value">
+            <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+        </select>/5</span>
+        <span id="race">Race: 2/2</span>
+        <span id="totalSl">SLs: 2/2</span>
+    </div>
     <div class="row"><input type="text" id="hTeam" placeholder="Home Team"><input type="text" id="aTeam" placeholder="Away Team"></div>
     <div class="row"><div class="lag-btn" id="lH" onclick="setLag('H')">LAG HOME</div><div class="lag-btn" id="lA" onclick="setLag('A')">LAG AWAY</div></div>
     <div class="row"><input type="text" id="hPlayer" placeholder="Home Player"><select id="slH" onchange="initRace()"><option value="2">SL 2</option><option value="3">SL 3</option><option value="4">SL 4</option><option value="5">SL 5</option><option value="6">SL 6</option><option value="7">SL 7</option></select></div>
@@ -58,51 +64,58 @@
         <div class="log-controls"><button onclick="copyLog()">Copy Log</button><button id="editBtn" onclick="toggleEdit()">Edit Log</button></div>
         <div class="log" id="matchLog" contenteditable="false"></div>
     </div>
-    <div class="footer-btns"><button onclick="resetMatch()" style="background:var(--red)">Reset Match</button><button onclick="undo()" style="background:#444">Undo Action</button></div>
+    <div class="footer-btns"><button onclick="endMatch()" style="background:var(--felt)">End Match</button><button onclick="undo()" style="background:#444">Undo</button></div>
 </div>
 <div id="modal"><div class="m-content" id="mBtns"></div></div>
 
 <script>
 // Official APA Games Must Win Chart
 const officialRace = {
-    2: { 2: [2, 2], 3: [2, 3], 4: [2, 4], 5: [2, 5], 6: [2, 6], 7: [2, 7] },
-    3: { 2: [3, 2], 3: [2, 2], 4: [2, 3], 5: [2, 4], 6: [2, 5], 7: [2, 6] },
-    4: { 2: [4, 2], 3: [3, 2], 4: [3, 3], 5: [3, 4], 6: [3, 5], 7: [2, 5] },
-    5: { 2: [5, 2], 3: [4, 2], 4: [4, 3], 5: [4, 4], 6: [4, 5], 7: [3, 6] },
-    6: { 2: [6, 2], 3: [5, 2], 4: [5, 3], 5: [5, 4], 6: [5, 5], 7: [4, 6] },
-    7: { 2: [7, 2], 3: [6, 2], 4: [5, 2], 5: [6, 3], 6: [6, 4], 7: [7, 7] }
+    2: { 2:2, 3:2, 4:2, 5:2, 6:2, 7:2 },
+    3: { 2:3, 3:2, 4:2, 5:2, 6:2, 7:2 },
+    4: { 2:4, 3:3, 4:3, 5:2, 6:2, 7:2 },
+    5: { 2:5, 3:4, 4:4, 5:3, 6:3, 7:2 },
+    6: { 2:6, 3:5, 4:5, 5:4, 6:4, 7:3 },
+    7: { 2:7, 3:6, 4:6, 5:5, 6:5, 7:4 }
 };
 
-let state = { m:1, g:1, toH:0, toA:0, defH:0, defA:0, inn:0, gwH:0, gwA:0, reqH:2, reqA:2 };
+let state = { m:1, g:1, toH:0, toA:0, defH:0, defA:0, inn:0, gwH:0, gwA:0, reqH:2, reqA:2, isMatchLogged: false };
 let history = [];
 
 function initRace() {
     const slH = parseInt(document.getElementById('slH').value);
     const slA = parseInt(document.getElementById('slA').value);
-    [state.reqH, state.reqA] = officialRace[slH][slA];
+    state.reqH = officialRace[slH][slA];
+    state.reqA = officialRace[slA][slH]; // Symmetric lookup
     updateUI();
 }
 
 function inc(key) {
     saveHistory();
-    // Official Coaching (Timeout) limits: SL 2-3 get 2 per game, SL 4-7 get 1
     if (key.includes('to')) {
         const sl = parseInt(document.getElementById(key === 'toH' ? 'slH' : 'slA').value);
         const limit = sl <= 3 ? 2 : 1;
-        if (state[key] >= limit && !confirm(`Player already used ${limit} timeout(s). Allow another?`)) return;
+        if (state[key] >= limit && !confirm(`Exceed coaching limit (${limit})?`)) return;
     }
     state[key]++;
     updateUI();
 }
 
-function setLag(player) {
-    document.getElementById('lH').classList.toggle('active', player==='H');
-    document.getElementById('lA').classList.toggle('active', player==='A');
+function setLag(p) { 
+    document.getElementById('lH').classList.toggle('active', p==='H'); 
+    document.getElementById('lA').classList.toggle('active', p==='A'); 
 }
 
 function openRack(winner) {
-    // Enforcement: Cannot score more wins than required per race chart
     if ((winner === 'H' && state.gwH >= state.reqH) || (winner === 'A' && state.gwA >= state.reqA)) return;
+    
+    if (!state.isMatchLogged) {
+        const hp = document.getElementById('hPlayer').value || "Home";
+        const ap = document.getElementById('aPlayer').value || "Away";
+        const mHeader = `(M${state.m} ${hp}(H) Vs. ${ap}(A))`;
+        document.getElementById('matchLog').innerText += (document.getElementById('matchLog').innerText ? '\n' : '') + mHeader;
+        state.isMatchLogged = true;
+    }
 
     const modal = document.getElementById('modal');
     const container = document.getElementById('mBtns');
@@ -114,27 +127,16 @@ function openRack(winner) {
         btn.innerText = type;
         btn.onclick = () => {
             saveHistory();
-            const hStatus = winner === 'H' ? 'win' : 'loss';
-            const aStatus = winner === 'A' ? 'win' : 'loss';
-            // Custom Log Format requested: (M1 G1 (H)win 2def 2to (A)loss 2 def 1to inn.4)
-            const entry = `(M${state.m} G${state.g} (H)${hStatus} ${state.defH}def ${state.toH}to (A)${aStatus} ${state.defA}def ${state.toA}to inn.${state.inn})`;
-            document.getElementById('matchLog').innerText += (document.getElementById('matchLog').innerText ? '\n' : '') + entry;
-
+            const hRes = winner === 'H' ? 'win' : 'loss';
+            const aRes = winner === 'A' ? 'win' : 'loss';
+            const entry = `(M${state.m} G${state.g} (H)${hRes} ${state.defH}def ${state.toH}to (A)${aRes} ${state.defA}def ${state.toA}to inn.${state.inn})`;
+            document.getElementById('matchLog').innerText += '\n' + entry;
             if(winner==='H') state.gwH++; else state.gwA++;
-            state.g++;
-            // Reset per-game stats
-            state.toH = 0; state.toA = 0; state.defH = 0; state.defA = 0; state.inn = 0;
-            modal.style.display = 'none';
-            updateUI();
+            state.g++; state.toH = 0; state.toA = 0; state.defH = 0; state.defA = 0; state.inn = 0;
+            modal.style.display = 'none'; updateUI();
         };
         container.appendChild(btn);
     });
-
-    let cancel = document.createElement('button');
-    cancel.innerText = "Cancel";
-    cancel.style.marginTop = "10px";
-    cancel.onclick = () => modal.style.display = 'none';
-    container.appendChild(cancel);
     modal.style.display = 'flex';
 }
 
@@ -146,7 +148,6 @@ function updateUI() {
     document.getElementById('inn').innerText = state.inn;
     document.getElementById('gw').innerText = `GW ${state.gwH}/${state.reqH} - ${state.gwA}/${state.reqA}`;
     document.getElementById('race').innerText = `Race: ${state.reqH}/${state.reqA}`;
-    document.getElementById('totalSl').innerText = `SLs: ${document.getElementById('slH').value}/${document.getElementById('slA').value}`;
     
     const isOver = state.gwH >= state.reqH || state.gwA >= state.reqA;
     document.getElementById('rackH').disabled = isOver;
@@ -154,42 +155,45 @@ function updateUI() {
     document.getElementById('rackH').style.opacity = isOver ? "0.3" : "1";
     document.getElementById('rackA').style.opacity = isOver ? "0.3" : "1";
 
-    // Official 3-Point Scoring System
     let ptsH = 0, ptsA = 0;
     if (state.gwH >= state.reqH) {
-        if (state.gwA === 0) { ptsH = 3; ptsA = 0; } // Shutout (3-0)
+        if (state.gwA === 0) ptsH = 3; 
         else if (state.gwA === state.reqA - 1) { ptsH = 2; ptsA = 1; } // Hill Loss (2-1)
-        else { ptsH = 2; ptsA = 0; } // Non-shutout, Non-hill Loss (2-0)
+        else ptsH = 2; // Normal Loss (2-0)
     } else if (state.gwA >= state.reqA) {
-        if (state.gwH === 0) { ptsA = 3; ptsH = 0; }
-        else if (state.gwH === state.reqH - 1) { ptsA = 2; ptsH = 1; }
-        else { ptsA = 2; ptsH = 0; }
+        if (state.gwH === 0) ptsA = 3; 
+        else if (state.gwH === state.reqH - 1) { ptsA = 2; ptsH = 1; } 
+        else ptsA = 2;
     }
     document.getElementById('ptsH').innerText = ptsH;
     document.getElementById('ptsA').innerText = ptsA;
 }
 
+function endMatch() {
+    if(!confirm("Start next match? Teams and logs persist.")) return;
+    state.g = 1; state.toH = 0; state.toA = 0; state.defH = 0; state.defA = 0; 
+    state.inn = 0; state.gwH = 0; state.gwA = 0; state.isMatchLogged = false;
+    document.getElementById('hPlayer').value = ""; document.getElementById('aPlayer').value = "";
+    let next = Math.min(5, parseInt(state.m) + 1);
+    state.m = next; document.getElementById('mSelect').value = next;
+    updateUI();
+}
+
 function toggleEdit() {
     const log = document.getElementById('matchLog');
-    const btn = document.getElementById('editBtn');
     const isEditing = log.contentEditable === "true";
     log.contentEditable = !isEditing;
-    btn.innerText = isEditing ? "Edit Log" : "Save Log";
-    btn.style.background = isEditing ? "#333" : "var(--felt)";
-    if(!isEditing) log.focus();
+    document.getElementById('editBtn').innerText = isEditing ? "Edit Log" : "Save Log";
+    document.getElementById('editBtn').style.background = isEditing ? "#333" : "var(--felt)";
 }
 
 async function copyLog() {
-    try {
-        await navigator.clipboard.writeText(document.getElementById('matchLog').innerText);
-        alert("Log copied to clipboard!");
-    } catch (err) { alert("Failed to copy."); }
+    try { await navigator.clipboard.writeText(document.getElementById('matchLog').innerText); alert("Log Copied!"); } catch(e) {}
 }
 
 function saveHistory() { history.push(JSON.stringify(state)); }
 function undo() { if(history.length > 0) { state = JSON.parse(history.pop()); updateUI(); } }
-function resetMatch() { if(confirm("Clear and restart this match?")) location.reload(); }
-
+function resetMatch() { if(confirm("Clear current score?")) { state.g=1; state.gwH=0; state.gwA=0; updateUI(); } }
 window.onload = initRace;
 </script>
 </body>
