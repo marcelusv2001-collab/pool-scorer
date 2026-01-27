@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>8 Ball 3Pt. Scorekeeper</title>
+    <title>8 Ball 3Pt. Offline Scorekeeper</title>
     <style>
         :root { --bg: #0a0e14; --felt: #0d5a32; --gold: #ffd700; --blue: #1e3a8a; --red: #991b1b; --card: #161b22; }
         body { background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; touch-action: manipulation; }
         .container { max-width: 450px; margin: auto; border: 2px solid var(--felt); padding: 15px; border-radius: 12px; background: var(--card); }
-        h1 { font-size: 1.1rem; text-align: center; color: var(--gold); text-transform: uppercase; margin: 0 0 10px; }
+        h1 { font-size: 1.1rem; text-align: center; color: var(--gold); text-transform: uppercase; margin: 0 0 15px; }
         .row { display: flex; gap: 10px; margin-bottom: 8px; }
         .header-stats { display: flex; justify-content: space-between; font-size: 0.85rem; color: #bbb; margin-bottom: 10px; font-weight: bold; }
         input, select { flex: 1; padding: 10px; border-radius: 5px; border: 1px solid #333; background: #000; color: #fff; font-size: 0.9rem; }
         .lag-btn { flex: 1; padding: 8px; text-align: center; border: 2px solid #444; border-radius: 20px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
-        .lag-btn.active { background: var(--felt); border-color: var(--gold); }
+        .lag-btn.active { background: var(--felt); border-color: var(--gold); color: #fff; }
         .score-banner { text-align: center; font-size: 1.3rem; font-weight: 800; margin: 15px 0; color: var(--gold); border-top: 1px solid #333; padding-top: 10px; }
         .grid { display: grid; grid-template-columns: 1fr 80px 1fr; gap: 12px; }
         .btn-stack { display: flex; flex-direction: column; gap: 10px; }
@@ -34,11 +34,7 @@
 <body>
 <div class="container">
     <h1>8 Ball 3Pt. Scorekeeper</h1>
-    <div class="header-stats">
-        <span id="matchCount">Match: 1/5</span>
-        <span id="race">Race: 2/2</span>
-        <span id="totalSl">SLs: H(2) A(2)</span>
-    </div>
+    <div class="header-stats"><span id="matchCount">Match: 1/5</span><span id="race">Race: 2/2</span><span id="totalSl">SLs: H(2) A(2)</span></div>
     <div class="row"><input type="text" id="hTeam" placeholder="Home Team"><input type="text" id="aTeam" placeholder="Away Team"></div>
     <div class="row"><div class="lag-btn" id="lH" onclick="setLag('H')">LAG HOME</div><div class="lag-btn" id="lA" onclick="setLag('A')">LAG AWAY</div></div>
     <div class="row"><input type="text" id="hPlayer" placeholder="Home Player"><select id="slH" onchange="initRace()"><option value="2">SL 2</option><option value="3">SL 3</option><option value="4">SL 4</option><option value="5">SL 5</option><option value="6">SL 6</option><option value="7">SL 7</option></select></div>
@@ -59,15 +55,14 @@
     </div>
     <div class="pts-box"><span>HOME Pts: <span id="ptsH">0</span></span><span>AWAY Pts: <span id="ptsA">0</span></span></div>
     <div class="footer-btns">
-        <button onclick="endMatch()" style="background:var(--felt)">End Match</button>
-        <button onclick="resetMatch()" style="background:var(--red)">Reset Match</button>
-        <button onclick="viewAll()" style="grid-column: span 2; border: 1px solid var(--gold);">View All & Session Summary</button>
+        <button onclick="endMatch()" style="background:var(--felt)">End Match</button><button onclick="resetMatch()" style="background:var(--red)">Reset Match</button>
+        <button onclick="viewAll()" style="grid-column: span 2; border: 1px solid var(--gold);">View Session Summary</button>
     </div>
     <div class="log" id="matchLog">LOG: Ready...</div>
 </div>
 
 <div id="modal"><div class="m-content" id="mBtns"></div></div>
-<div id="historyView"><div class="history-content"><h2 style="color:var(--gold)">Session Summary</h2><div id="historyList"></div><div id="sessionTotal" style="margin:15px 0; font-weight:bold; color:var(--gold); border-top: 1px solid #444; padding-top:10px;"></div><button onclick="closeHistory()" style="width:100%; padding:12px; background:#555; color:#fff; border:none; border-radius:5px; margin-bottom:10px;">Back to Match</button><button onclick="clearSession()" style="width:100%; padding:12px; background:var(--red); color:#fff; border:none; border-radius:5px;">Reset All Matches</button></div></div>
+<div id="historyView"><div class="history-content"><h2 style="color:var(--gold)">Session Summary</h2><div id="historyList"></div><div id="sessionTotal" style="margin:15px 0; font-weight:bold; color:var(--gold); border-top:1px solid #444; padding-top:10px;"></div><button onclick="closeHistory()" style="width:100%; padding:12px; background:#555; color:#fff; border:none; border-radius:5px; margin-bottom:10px;">Back</button><button onclick="clearSession()" style="width:100%; padding:12px; background:var(--red); color:#fff; border:none; border-radius:5px;">Reset All</button></div></div>
 
 <script>
 const officialRace = { 2: {2:, 3:, 4:, 5:, 6:, 7:}, 3: {2:, 3:, 4:, 5:, 6:, 7:}, 4: {2:, 3:, 4:, 5:, 6:, 7:}, 5: {2:, 3:, 4:, 5:, 6:, 7:}, 6: {2:, 3:, 4:, 5:, 6:, 7:}, 7: {2:, 3:, 4:, 5:, 6:, 7:} };
@@ -88,7 +83,8 @@ function handle(e, key) {
     e.preventDefault();
     if (key.includes('to')) {
         const sl = parseInt(document.getElementById(key === 'toH' ? 'slH' : 'slA').value);
-        if (clickTimer === null && data[key] >= (sl <= 3 ? 2 : 1)) return alert("Timeout limit reached!");
+        const limit = sl <= 3 ? 2 : 1; 
+        if (clickTimer === null && data[key] >= limit && e.type !== 'touchstart') { alert(`Limit ${limit} reached!`); return; }
     }
     if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; data[key] = Math.max(0, data[key] - 1); } 
     else {
@@ -100,8 +96,7 @@ function handle(e, key) {
 }
 
 function openRack(side) {
-    if (side === 'H' && data.gwH >= data.reqH) return alert("Home player finished.");
-    if (side === 'A' && data.gwA >= data.reqA) return alert("Away player finished.");
+    if ((side === 'H' && data.gwH >= data.reqH) || (side === 'A' && data.gwA >= data.reqA)) return alert("Match finished.");
     data.activeSide = side; 
     document.getElementById('modal').style.display = 'flex';
     document.getElementById('mBtns').innerHTML = ['Win','8BB','B&R','WP','E8','S8','CANCEL'].map(opt => `<button onclick="submitRack('${opt}')">${opt}</button>`).join('');
@@ -116,7 +111,6 @@ function submitRack(type) {
     data.defH = 0; data.defA = 0; data.inn = 0; data.toH = 0; data.toA = 0;
     calcMatchPts(); updateUI();
     document.getElementById('modal').style.display = 'none';
-    if(data.gwH === data.reqH || data.gwA === data.reqA) setTimeout(() => alert("Match Point! End Match to save."), 300);
 }
 
 function calcMatchPts() {
@@ -140,42 +134,25 @@ function endMatch() {
     if (data.gwH < data.reqH && data.gwA < data.reqA) return alert("Match not finished.");
     if (session.length >= 5) return alert("Session Full.");
     const pts = calcMatchPts();
-    session.push({ h: document.getElementById('hPlayer').value || "Home", a: document.getElementById('aPlayer').value || "Away", score: `${data.gwH}-${data.gwA}`, pts: pts, logs: [...data.logs] });
+    session.push({ h: document.getElementById('hPlayer').value || "H", a: document.getElementById('aPlayer').value || "A", score: `${data.gwH}-${data.gwA}`, pts: pts, logs: [...data.logs] });
     localStorage.setItem('apa_session', JSON.stringify(session));
     location.reload();
 }
 
-function resetMatch() { if(confirm("Reset this match?")) { data.gwH = 0; data.gwA = 0; data.logs = []; data.totDefH=0; data.totDefA=0; data.totInn=0; updateUI(); } }
-
-function viewAll() {
-    document.getElementById('historyView').style.display = 'flex';
-    renderHistory();
-}
-
+function resetMatch() { if(confirm("Reset current match?")) { data.gwH = 0; data.gwA = 0; data.logs = []; updateUI(); } }
+function viewAll() { document.getElementById('historyView').style.display = 'flex'; renderHistory(); }
+function closeHistory() { document.getElementById('historyView').style.display = 'none'; }
 function renderHistory() {
     let th = 0, ta = 0;
     document.getElementById('historyList').innerHTML = session.map((m,i)=>{
         th += m.pts; ta += m.pts;
-        return `<div class="hist-item">
-            <div><b>M${i+1}: ${m.h} vs ${m.a}</b><br>Score: ${m.score} | Pts: ${m.pts}-${m.pts}</div>
-            <button class="edit-btn" onclick="editMatchInHistory(${i})">Edit Log</button>
-        </div>`;
+        return `<div class="hist-item"><div><b>M${i+1}: ${m.h} vs ${m.a}</b><br>Score: ${m.score} | Pts: ${m.pts}-${m.pts}</div><button class="edit-btn" onclick="editMatchInHistory(${i})">Edit</button></div>`;
     }).join('') || "No matches yet.";
     document.getElementById('sessionTotal').innerText = `SESSION TOTAL: Home ${th} | Away ${ta}`;
 }
-
-function editMatchInHistory(index) {
-    let n = prompt("Edit Log for Match " + (index+1) + " (comma separated):", session[index].logs.join(', '));
-    if(n !== null) {
-        session[index].logs = n.split(',').map(s=>s.trim());
-        localStorage.setItem('apa_session', JSON.stringify(session));
-        renderHistory();
-    }
-}
-
+function editMatchInHistory(idx) { let n = prompt("Edit Log (comma separated):", session[idx].logs.join(', ')); if(n) { session[idx].logs = n.split(',').map(s=>s.trim()); localStorage.setItem('apa_session', JSON.stringify(session)); renderHistory(); } }
+function clearSession() { if(confirm("Clear ALL data?")) { localStorage.clear(); location.reload(); } }
 function setLag(s) { document.getElementById('lH').className = s === 'H' ? 'lag-btn active' : 'lag-btn'; document.getElementById('lA').className = s === 'A' ? 'lag-btn active' : 'lag-btn'; }
-function closeHistory() { document.getElementById('historyView').style.display = 'none'; }
-function clearSession() { if(confirm("Clear ALL session data?")) { localStorage.clear(); location.reload(); } }
 initRace();
 </script>
 </body>
