@@ -42,9 +42,9 @@
         <span id="race">Race: 2/2</span>
         <span id="totalSl">SLs: H(2) A(2)</span>
     </div>
-    <div class="row"><input type="text" id="hTeam" placeholder="Home Team"><input type="text" id="aTeam" placeholder="Away Team"></div>
+    <div class="row"><input type="text" id="hTeam" placeholder="Home Team Name"><input type="text" id="aTeam" placeholder="Away Team Name"></div>
     <div class="row"><div class="lag-btn" id="lH" onclick="setLag('H')">LAG HOME</div><div class="lag-btn" id="lA" onclick="setLag('A')">LAG AWAY</div></div>
-    <div class="row"><input type="text" id="hPlayer" placeholder="Home Player"><input type="text" id="aPlayer" placeholder="Away Player"></div>
+    <div class="row"><input type="text" id="hPlayer" placeholder="Home Player Name"><input type="text" id="aPlayer" placeholder="Away Player Name"></div>
     <div class="row">
         <select id="slH" onchange="initRace()"><option value="2">H-SL 2</option><option value="3">H-SL 3</option><option value="4">H-SL 4</option><option value="5">H-SL 5</option><option value="6">H-SL 6</option><option value="7">H-SL 7</option></select>
         <select id="slA" onchange="initRace()"><option value="2">A-SL 2</option><option value="3">A-SL 3</option><option value="4">A-SL 4</option><option value="5">A-SL 5</option><option value="6">A-SL 6</option><option value="7">A-SL 7</option></select>
@@ -63,8 +63,14 @@
             <button class="score-btn a-btn" id="rackA" onclick="openRack('A')">RACK</button>
         </div>
     </div>
-    <div class="pts-box"><span>HOME Match: <span id="ptsH">0</span></span><span>AWAY Match: <span id="ptsA">0</span></span></div>
-    <div class="total-pts-box"><span>HOME Session: <span id="totalPtsH">0</span></span><span>AWAY Session: <span id="totalPtsA">0</span></span></div>
+    <div class="pts-box">
+        <span id="playerPtsH">HOME Match: <span id="ptsH">0</span></span>
+        <span id="playerPtsA">AWAY Match: <span id="ptsA">0</span></span>
+    </div>
+    <div class="total-pts-box">
+        <span id="teamPtsH">HOME Session: <span id="totalPtsH">0</span></span>
+        <span id="teamPtsA">AWAY Session: <span id="totalPtsA">0</span></span>
+    </div>
     <div class="log-container">
         <div class="log-controls"><button onclick="copyLog()">Copy Log</button><button id="editBtn" onclick="toggleEdit()">Edit Log</button></div>
         <div class="log" id="matchLog" contenteditable="false"></div>
@@ -78,75 +84,50 @@
 <div id="modal" onclick="if(event.target==this)this.style.display='none'"><div class="m-content" id="mBtns"></div></div>
 
 <script>
-// Official APA Games Must Win Chart
 const officialRace = {
-    2: { 2:2, 3:2, 4:2, 5:2, 6:2, 7:2 },
-    3: { 2:3, 3:2, 4:2, 5:2, 6:2, 7:2 },
-    4: { 2:4, 3:3, 4:3, 5:2, 6:2, 7:2 },
-    5: { 2:5, 3:4, 4:4, 5:3, 6:3, 7:2 },
-    6: { 2:6, 3:5, 4:5, 5:4, 6:4, 7:3 },
-    7: { 2:7, 3:6, 4:6, 5:5, 6:5, 7:4 }
+    2: { 2:2, 3:2, 4:2, 5:2, 6:2, 7:2 }, 3: { 2:3, 3:2, 4:2, 5:2, 6:2, 7:2 },
+    4: { 2:4, 3:3, 4:3, 5:2, 6:2, 7:2 }, 5: { 2:5, 3:4, 4:4, 5:3, 6:3, 7:2 },
+    6: { 2:6, 3:5, 4:5, 5:4, 6:4, 7:3 }, 7: { 2:7, 3:6, 4:6, 5:5, 6:5, 7:4 }
 };
-
 let state = { m:1, g:1, toH:0, toA:0, defH:0, defA:0, inn:0, gwH:0, gwA:0, reqH:2, reqA:2, isMatchLogged: false, sesH: 0, sesA: 0, lagWinner: '' };
 let historyStack = [];
 
 function initRace() {
-    const slH = parseInt(document.getElementById('slH').value);
-    const slA = parseInt(document.getElementById('slA').value);
-    state.reqH = officialRace[slH][slA];
-    state.reqA = officialRace[slA][slH];
-    updateUI();
+    const slH = parseInt(document.getElementById('slH').value), slA = parseInt(document.getElementById('slA').value);
+    state.reqH = officialRace[slH][slA]; state.reqA = officialRace[slA][slH]; updateUI();
 }
-
 function inc(key) {
     saveHistory();
     if (key.includes('to')) {
         const sl = parseInt(document.getElementById(key === 'toH' ? 'slH' : 'slA').value);
-        const limit = sl <= 3 ? 2 : 1; // APA Coaching Rules
-        if (state[key] >= limit && !confirm(`Player already reached the ${limit} timeout limit. Allow?`)) return;
+        if (state[key] >= (sl <= 3 ? 2 : 1) && !confirm("Exceed coaching limit?")) return;
     }
     state[key]++; updateUI();
 }
-
-function setLag(p) { 
-    state.lagWinner = p; 
-    document.querySelectorAll('.lag-btn').forEach(b => b.classList.remove('active')); 
-    document.getElementById('l'+p).classList.add('active'); 
-}
+function setLag(p) { state.lagWinner = p; document.querySelectorAll('.lag-btn').forEach(b => b.classList.remove('active')); document.getElementById('l'+p).classList.add('active'); }
 
 function openRack(winner) {
     if ((winner === 'H' && state.gwH >= state.reqH) || (winner === 'A' && state.gwA >= state.reqA)) return;
     const hp = document.getElementById('hPlayer').value, ap = document.getElementById('aPlayer').value;
-    if (!hp || !ap || !state.lagWinner) return alert("Required: Mandatory Names & Lag Winner!");
+    if (!hp || !ap || !state.lagWinner) return alert("Required: Names & Lag Winner!");
 
     if (!state.isMatchLogged) {
         document.getElementById('matchLog').innerText += `\n(M${state.m} ${hp}(H) Vs. ${ap}(A) Lag:${state.lagWinner})`;
         state.isMatchLogged = true;
     }
-
     const modal = document.getElementById('modal'), container = document.getElementById('mBtns');
     container.innerHTML = `<h3 style="text-align:center;color:var(--gold);margin-top:0">Game ${state.g} Winner: ${winner}</h3>`;
     
-    // Official Win/Loss Scenarios
-    const options = [
-        { label: "Normal Win", tag: "Win" },
-        { label: "Break & Run (BR)", tag: "BR" },
-        { label: "8-on-Break (OB)", tag: "OB" },
-        { label: "Opponent WP (Wrong Pocket)", tag: "WP" },
-        { label: "Opponent S8 (Scratch on 8)", tag: "S8" },
-        { label: "Opponent E8 (Early 8)", tag: "E8" }
-    ];
-
+    const options = [{label: "Normal Win", tag: "Win"}, {label: "Break & Run (BR)", tag: "BR"}, {label: "8-on-Break (OB)", tag: "OB"}, {label: "Opponent WP (Wrong Pocket)", tag: "WP"}, {label: "Opponent S8 (Scratch on 8)", tag: "S8"}, {label: "Opponent E8 (Early 8)", tag: "E8"}];
     options.forEach(opt => {
         let btn = document.createElement('button');
         btn.className = 'score-btn ' + (winner==='H' ? 'h-btn' : 'a-btn');
-        btn.style.padding = "15px 5px";
-        btn.innerText = opt.label;
+        btn.style.padding = "15px 5px"; btn.innerText = opt.label;
         btn.onclick = () => {
             saveHistory();
             const entry = `(M${state.m} G${state.g} (H)${winner==='H'?'win':'loss'} ${state.defH}def ${state.toH}to (A)${winner==='A'?'win':'loss'} ${state.defA}def ${state.toA}to inn.${state.inn} [${opt.tag}])`;
-            document.getElementById('matchLog').innerText += '\n' + entry;
+            // Add dots separator here
+            document.getElementById('matchLog').innerText += `\n...........` + `\n` + entry;
             winner==='H' ? state.gwH++ : state.gwA++;
             state.g++; state.toH=0; state.toA=0; state.defH=0; state.defA=0; state.inn=0;
             modal.style.display = 'none'; updateUI();
@@ -164,23 +145,28 @@ function updateUI() {
     document.getElementById('race').innerText = `Race: ${state.reqH}/${state.reqA}`;
     document.getElementById('totalSl').innerText = `SLs: H(${document.getElementById('slH').value}) A(${document.getElementById('slA').value})`;
     
-    // Official 3-Point System Calculation
+    // Update labels with Player/Team names
+    const hp = document.getElementById('hPlayer').value || "HOME";
+    const ap = document.getElementById('aPlayer').value || "AWAY";
+    const ht = document.getElementById('hTeam').value || "HOME TEAM";
+    const at = document.getElementById('aTeam').value || "AWAY TEAM";
+    document.getElementById('playerPtsH').innerHTML = `${hp} Match: <span id="ptsH">0</span>`;
+    document.getElementById('playerPtsA').innerHTML = `${ap} Match: <span id="ptsA">0</span>`;
+    document.getElementById('teamPtsH').innerHTML = `${ht} Session: <span id="totalPtsH">0</span>`;
+    document.getElementById('teamPtsA').innerHTML = `${at} Session: <span id="totalPtsA">0</span>`;
+
     let ptsH = 0, ptsA = 0;
     if (state.gwH >= state.reqH) {
-        if (state.gwA === 0) ptsH = 3; // Shutout
-        else if (state.gwA === state.reqH - 1 || state.gwA >= state.reqA - 1) ptsH = 2, ptsA = 1; // Hill Loss
-        else ptsH = 2; // Normal Loss
+        if (state.gwA === 0) ptsH = 3; else if (state.gwA >= state.reqA - 1) ptsH = 2, ptsA = 1; else ptsH = 2;
     } else if (state.gwA >= state.reqA) {
-        if (state.gwH === 0) ptsA = 3;
-        else if (state.gwH === state.reqA - 1 || state.gwH >= state.reqH - 1) ptsA = 2, ptsH = 1; // Hill Loss
-        else ptsA = 2;
+        if (state.gwH === 0) ptsA = 3; else if (state.gwH >= state.reqH - 1) ptsA = 2, ptsH = 1; else ptsA = 2;
     }
     document.getElementById('ptsH').innerText = ptsH; document.getElementById('ptsA').innerText = ptsA;
     document.getElementById('totalPtsH').innerText = state.sesH + ptsH; document.getElementById('totalPtsA').innerText = state.sesA + ptsA;
 }
 
 function endMatch() {
-    if(!confirm("Next Match? Current totals will be saved to Session.")) return;
+    if(!confirm("End Match? Current totals will be saved to Session.")) return;
     state.sesH += parseInt(document.getElementById('ptsH').innerText);
     state.sesA += parseInt(document.getElementById('ptsA').innerText);
     state.g=1; state.gwH=0; state.gwA=0; state.isMatchLogged=false; state.lagWinner='';
@@ -191,20 +177,14 @@ function endMatch() {
 }
 
 function resetSession() { if(confirm("WARNING: Wipe everything for the night?")) location.reload(); }
-
 function toggleEdit() {
     const log = document.getElementById('matchLog'), btn = document.getElementById('editBtn');
     const isEd = log.contentEditable === "true"; log.contentEditable = !isEd;
     btn.innerText = isEd ? "Edit Log" : "Save Log"; btn.style.background = isEd ? "#333" : "var(--felt)";
 }
-
-async function copyLog() {
-    try { await navigator.clipboard.writeText(document.getElementById('matchLog').innerText); alert("Log Copied!"); } catch(e) {}
-}
-
+async function copyLog() { try { await navigator.clipboard.writeText(document.getElementById('matchLog').innerText); alert("Copied!"); } catch(e) {} }
 function saveHistory() { historyStack.push(JSON.stringify(state)); }
 function undo() { if(historyStack.length > 0) { state = JSON.parse(historyStack.pop()); updateUI(); } }
-
 window.onload = initRace;
 </script>
 </body>
