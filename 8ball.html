@@ -8,7 +8,7 @@
         :root { --bg: #0a0e14; --felt: #0d5a32; --gold: #ffd700; --blue: #1e3a8a; --red: #991b1b; --card: #161b22; }
         body { background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; touch-action: manipulation; }
         .container { max-width: 450px; margin: auto; border: 2px solid var(--felt); padding: 15px; border-radius: 12px; background: var(--card); }
-        h1 { font-size: 1.1rem; text-align: center; color: var(--gold); text-transform: uppercase; margin: 0 0 10px; }
+        h1 { font-size: 1.1rem; text-align: center; color: var(--gold); text-transform: uppercase; margin: 0 0 15px; }
         .row { display: flex; gap: 10px; margin-bottom: 8px; }
         .header-stats { display: flex; justify-content: space-between; font-size: 0.85rem; color: #bbb; margin-bottom: 10px; font-weight: bold; }
         input, select { flex: 1; padding: 10px; border-radius: 5px; border: 1px solid #333; background: #000; color: #fff; font-size: 0.9rem; }
@@ -18,22 +18,15 @@
         .grid { display: grid; grid-template-columns: 1fr 80px 1fr; gap: 12px; }
         .btn-stack { display: flex; flex-direction: column; gap: 10px; }
         .score-btn { padding: 22px 5px; border: none; border-radius: 8px; color: white; font-weight: bold; font-size: 1rem; cursor: pointer; box-shadow: 0 4px #000; }
+        .score-btn:active { transform: translateY(2px); box-shadow: 0 2px #000; }
         .h-btn { background: var(--blue); } .a-btn { background: var(--red); }
         .inn-btn { background: #333; border: 2px solid var(--gold); height: 100%; color: var(--gold); }
         .pts-box { display: flex; justify-content: space-around; margin-top: 20px; padding: 12px; background: #000; border-radius: 8px; border: 1px solid var(--felt); font-weight: bold; color: var(--gold); }
-        .log { margin-top: 15px; height: 140px; overflow-y: auto; background: #000; padding: 10px; font-size: 0.8rem; border: 1px solid #333; border-radius: 5px; color: #0f0; font-family: monospace; }
+        .log { margin-top: 15px; height: 100px; overflow-y: auto; background: #000; padding: 10px; font-size: 0.8rem; border: 1px solid #333; border-radius: 5px; color: #0f0; font-family: monospace; }
         .footer-btns { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 20px; }
         .footer-btns button { padding: 12px; cursor: pointer; background: #333; color: white; border: none; border-radius: 5px; font-weight: bold; font-size: 0.8rem; }
-        #modal, #historyView { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); justify-content: center; align-items: center; z-index: 100; }
-        .m-content { background: var(--card); padding: 20px; border-radius: 15px; border: 2px solid var(--felt); display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 85%; }
-        .m-content button { padding: 18px; background: var(--felt); color: #fff; border: none; border-radius: 8px; font-weight: bold; }
-        .history-content { background: var(--card); width: 90%; padding: 20px; border-radius: 10px; color: #fff; max-height: 85vh; overflow-y: auto; border: 1px solid var(--gold); }
-        .hist-item { border-bottom: 1px solid #444; padding: 15px 0; flex-direction: column; display: flex; gap: 10px; }
-        .hist-controls { display: flex; gap: 5px; flex-wrap: wrap; }
-        .edit-btn { background: var(--gold); color: #000; border: none; padding: 6px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; cursor: pointer; }
-        .show-btn { background: var(--blue); color: #fff; border: none; padding: 6px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; cursor: pointer; }
-        .copy-btn { background: var(--felt); color: #fff; border: none; padding: 6px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; cursor: pointer; }
-        .match-detail-log { display: none; background: #000; color: #0f0; padding: 8px; font-size: 0.75rem; border-radius: 4px; margin-top: 5px; font-family: monospace; white-space: pre-wrap; }
+        #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; z-index: 100; }
+        .m-content { background: var(--card); padding: 20px; border-radius: 15px; border: 2px solid var(--felt); display: grid; grid-template-columns: 1fr; gap: 10px; width: 80%; max-width: 300px; }
     </style>
 </head>
 <body>
@@ -44,159 +37,127 @@
     <div class="row"><div class="lag-btn" id="lH" onclick="setLag('H')">LAG HOME</div><div class="lag-btn" id="lA" onclick="setLag('A')">LAG AWAY</div></div>
     <div class="row"><input type="text" id="hPlayer" placeholder="Home Player"><select id="slH" onchange="initRace()"><option value="2">SL 2</option><option value="3">SL 3</option><option value="4">SL 4</option><option value="5">SL 5</option><option value="6">SL 6</option><option value="7">SL 7</option></select></div>
     <div class="row"><input type="text" id="aPlayer" placeholder="Away Player"><select id="slA" onchange="initRace()"><option value="2">SL 2</option><option value="3">SL 3</option><option value="4">SL 4</option><option value="5">SL 5</option><option value="6">SL 6</option><option value="7">SL 7</option></select></div>
+    
     <div class="score-banner" id="gw">GW 0/2 - 0/2</div>
+    
     <div class="grid">
         <div class="btn-stack">
-            <button class="score-btn h-btn" onmousedown="handle(event, 'toH')" ontouchstart="handle(event, 'toH')">TO: <span id="toH">0</span></button>
-            <button class="score-btn h-btn" onmousedown="handle(event, 'defH')" ontouchstart="handle(event, 'defH')">DEF: <span id="defH">0</span></button>
+            <button class="score-btn h-btn" onclick="inc('toH')">TO: <span id="toH">0</span></button>
+            <button class="score-btn h-btn" onclick="inc('defH')">DEF: <span id="defH">0</span></button>
             <button class="score-btn h-btn" onclick="openRack('H')">RACK</button>
         </div>
-        <button class="score-btn inn-btn" onmousedown="handle(event, 'inn')" ontouchstart="handle(event, 'inn')">INN<br><span id="inn">0</span></button>
+        <button class="score-btn inn-btn" onclick="inc('inn')">INN<br><span id="inn">0</span></button>
         <div class="btn-stack">
-            <button class="score-btn a-btn" onmousedown="handle(event, 'toA')" ontouchstart="handle(event, 'toA')">TO: <span id="toA">0</span></button>
-            <button class="score-btn a-btn" onmousedown="handle(event, 'defA')" ontouchstart="handle(event, 'defA')">DEF: <span id="defA">0</span></button>
+            <button class="score-btn a-btn" onclick="inc('toA')">TO: <span id="toA">0</span></button>
+            <button class="score-btn a-btn" onclick="inc('defA')">DEF: <span id="defA">0</span></button>
             <button class="score-btn a-btn" onclick="openRack('A')">RACK</button>
         </div>
     </div>
+    
     <div class="pts-box"><span>HOME Pts: <span id="ptsH">0</span></span><span>AWAY Pts: <span id="ptsA">0</span></span></div>
+    
     <div class="footer-btns">
-        <button onclick="endMatch()" style="background:var(--felt)">End Match</button><button onclick="resetMatch()" style="background:var(--red)">Reset Match</button>
-        <button onclick="viewAll()" style="grid-column: span 2; border: 1px solid var(--gold);">View Session Summary</button>
+        <button onclick="resetMatch()" style="background:var(--red)">Reset Match</button>
+        <button onclick="undo()" style="background:#444">Undo Action</button>
     </div>
     <div class="log" id="matchLog">LOG: Ready...</div>
 </div>
 
 <div id="modal"><div class="m-content" id="mBtns"></div></div>
-<div id="historyView"><div class="history-content"><h2 style="color:var(--gold)">Session Summary</h2><div id="historyList"></div><div id="sessionTotal" style="margin:15px 0; font-weight:bold; color:var(--gold); border-top: 1px solid #444; padding-top:10px;"></div><button onclick="closeHistory()" style="width:100%; padding:12px; background:#555; color:#fff; border:none; border-radius:5px; margin-bottom:10px;">Back</button><button onclick="clearSession()" style="width:100%; padding:12px; background:var(--red); color:#fff; border:none; border-radius:5px;">Reset All (New Night)</button></div></div>
 
 <script>
-const officialRace = { 2: {2:, 3:, 4:, 5:, 6:, 7:}, 3: {2:, 3:, 4:, 5:, 6:, 7:}, 4: {2:, 3:, 4:, 5:, 6:, 7:}, 5: {2:, 3:, 4:, 5:, 6:, 7:}, 6: {2:, 3:, 4:, 5:, 6:, 7:}, 7: {2:, 3:, 4:, 5:, 6:, 7:} };
-let data = { toH:0, toA:0, defH:0, defA:0, inn:0, gwH:0, gwA:0, reqH:2, reqA:2, logs: [], totDefH:0, totDefA:0, totInn:0 };
-let session = JSON.parse(localStorage.getItem('apa_session')) || [];
-let clickTimer = null;
+// OFFICIAL APA 8-BALL GAMES-MUST-WIN CHART
+const officialRace = {
+    2: { 2:[2,2], 3:[2,3], 4:[2,4], 5:[2,5], 6:[2,6], 7:[2,7] },
+    3: { 2:[3,2], 3:[2,2], 4:[2,3], 5:[2,4], 6:[2,5], 7:[2,6] },
+    4: { 2:[4,2], 3:[3,2], 4:[3,3], 5:[3,4], 6:[3,5], 7:[3,6] },
+    5: { 2:[5,2], 3:[4,2], 4:[4,3], 5:[4,4], 6:[4,5], 7:[4,6] },
+    6: { 2:[6,2], 3:[5,2], 4:[5,3], 5:[5,4], 6:[5,5], 7:[5,6] },
+    7: { 2:[7,2], 3:[6,2], 4:[6,3], 5:[6,4], 6:[6,5], 7:[7,7] }
+};
+
+let state = { toH:0, toA:0, defH:0, defA:0, inn:0, gwH:0, gwA:0, reqH:2, reqA:2, logs:[] };
+let history = [];
 
 function initRace() {
-    const h = parseInt(document.getElementById('slH').value), a = parseInt(document.getElementById('slA').value);
-    [data.reqH, data.reqA] = officialRace[h][a];
-    document.getElementById('race').innerText = `Race: ${data.reqH}/${data.reqA}`;
-    document.getElementById('totalSl').innerText = `SLs: H(${h}) A(${a})`;
-    document.getElementById('matchCount').innerText = `Match: ${session.length + 1}/5`;
+    const slH = parseInt(document.getElementById('slH').value);
+    const slA = parseInt(document.getElementById('slA').value);
+    [state.reqH, state.reqA] = officialRace[slH][slA];
     updateUI();
 }
 
-function handle(e, key) {
-    e.preventDefault();
-    if (key.includes('to')) {
-        const sl = parseInt(document.getElementById(key === 'toH' ? 'slH' : 'slA').value);
-        const limit = sl <= 3 ? 2 : 1; 
-        if (clickTimer === null && data[key] >= limit && e.type !== 'touchstart') { alert(`Limit ${limit} reached!`); return; }
-    }
-    if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; data[key] = Math.max(0, data[key] - 1); } 
-    else {
-        const lp = setTimeout(() => { data[key] = 0; updateUI(); clickTimer = null; }, 600);
-        clickTimer = setTimeout(() => { if (clickTimer) { data[key]++; updateUI(); clickTimer = null; } }, 250);
-        e.target.onmouseup = e.target.ontouchend = () => clearTimeout(lp);
-    }
+function inc(key) {
+    saveHistory();
+    state[key]++;
+    logAction(`${key.toUpperCase()} updated to ${state[key]}`);
     updateUI();
 }
 
-function openRack(side) {
-    if ((side === 'H' && data.gwH >= data.reqH) || (side === 'A' && data.gwA >= data.reqA)) return alert("Match finished.");
-    data.activeSide = side; 
-    document.getElementById('modal').style.display = 'flex';
-    document.getElementById('mBtns').innerHTML = ['Win','8BB','B&R','WP','E8','S8','CANCEL'].map(opt => `<button onclick="submitRack('${opt}')">${opt}</button>`).join('');
+function setLag(player) {
+    document.getElementById('lH').classList.toggle('active', player==='H');
+    document.getElementById('lA').classList.toggle('active', player==='A');
 }
 
-function submitRack(type) {
-    if(type === 'CANCEL') return document.getElementById('modal').style.display = 'none';
-    let markedInn = (type === '8BB' || type === 'B&R') ? 0 : data.inn;
-    if(data.activeSide === 'H') data.gwH++; else data.gwA++;
-    data.totDefH += data.defH; data.totDefA += data.defA; data.totInn += markedInn;
-    data.logs.push(`G${data.gwH+data.gwA}(${data.activeSide}):${type} I:${markedInn} D:${data.defH}/${data.defA}`);
-    data.defH = 0; data.defA = 0; data.inn = 0; data.toH = 0; data.toA = 0;
-    calcMatchPts(); updateUI();
-    document.getElementById('modal').style.display = 'none';
-}
+function openRack(winner) {
+    const modal = document.getElementById('modal');
+    const container = document.getElementById('mBtns');
+    container.innerHTML = `<h3 style="text-align:center">Rack Winner: ${winner}</h3>`;
+    
+    const wins = ["Normal Win", "8-on-Break", "Break & Run"];
+    wins.forEach(type => {
+        let btn = document.createElement('button');
+        btn.className = 'score-btn ' + (winner==='H' ? 'h-btn' : 'a-btn');
+        btn.innerText = type;
+        btn.onclick = () => {
+            saveHistory();
+            if(winner==='H') state.gwH++; else state.gwA++;
+            logAction(`${winner} won rack (${type})`);
+            modal.style.display = 'none';
+            updateUI();
+        };
+        container.appendChild(btn);
+    });
 
-function calcMatchPts() {
-    let pH = 0, pA = 0;
-    if (data.gwH >= data.reqH) {
-        if (data.gwA === 0) pH = 3; else if (data.gwA === data.reqA - 1) { pH = 2; pA = 1; } else pH = 2;
-    } else if (data.gwA >= data.reqA) {
-        if (data.gwH === 0) pA = 3; else if (data.gwH === data.reqH - 1) { pA = 2; pH = 1; } else pA = 2;
-    }
-    document.getElementById('ptsH').innerText = pH; document.getElementById('ptsA').innerText = pA;
-    return [pH, pA];
+    let cancel = document.createElement('button');
+    cancel.innerText = "Cancel";
+    cancel.style.marginTop = "10px";
+    cancel.onclick = () => modal.style.display = 'none';
+    container.appendChild(cancel);
+    modal.style.display = 'flex';
 }
 
 function updateUI() {
-    ['toH','toA','defH','defA','inn'].forEach(k => document.getElementById(k).innerText = data[k]);
-    document.getElementById('gw').innerText = `GW ${data.gwH}/${data.reqH} - ${data.gwA}/${data.reqA}`;
-    document.getElementById('matchLog').innerHTML = `T-Def: ${data.totDefH}/${data.totDefA} | T-Inn: ${data.totInn}<br>` + data.logs.join('<br>');
+    document.getElementById('toH').innerText = state.toH;
+    document.getElementById('toA').innerText = state.toA;
+    document.getElementById('defH').innerText = state.defH;
+    document.getElementById('defA').innerText = state.defA;
+    document.getElementById('inn').innerText = state.inn;
+    document.getElementById('gw').innerText = `GW ${state.gwH}/${state.reqH} - ${state.gwA}/${state.reqA}`;
+    document.getElementById('race').innerText = `Race: ${state.reqH}/${state.reqA}`;
+    document.getElementById('totalSl').innerText = `SLs: H(${document.getElementById('slH').value}) A(${document.getElementById('slA').value})`;
+    
+    // APA 3-Point Scoring Logic
+    let ptsH = 0, ptsA = 0;
+    if (state.gwH >= state.reqH) {
+        if (state.gwA === 0) { ptsH = 3; ptsA = 0; } // Shutout
+        else if (state.gwA === state.reqA - 1) { ptsH = 2; ptsA = 1; } // Hill Loss
+        else { ptsH = 2; ptsA = 0; } // Normal Win
+    } else if (state.gwA >= state.reqA) {
+        if (state.gwH === 0) { ptsA = 3; ptsH = 0; }
+        else if (state.gwH === state.reqH - 1) { ptsA = 2; ptsH = 1; }
+        else { ptsA = 2; ptsH = 0; }
+    }
+    
+    document.getElementById('ptsH').innerText = ptsH;
+    document.getElementById('ptsA').innerText = ptsA;
 }
 
-function endMatch() {
-    if (data.gwH < data.reqH && data.gwA < data.reqA) return alert("Match not finished.");
-    if (session.length >= 5) return alert("Session Full.");
-    const pts = calcMatchPts();
-    session.push({ 
-        h: document.getElementById('hPlayer').value || "H", 
-        a: document.getElementById('aPlayer').value || "A", 
-        score: `${data.gwH}-${data.gwA}`, 
-        pts: pts, 
-        logs: [...data.logs],
-        teams: `${document.getElementById('hTeam').value || 'Home'} vs ${document.getElementById('aTeam').value || 'Away'}`
-    });
-    localStorage.setItem('apa_session', JSON.stringify(session));
-    data.gwH = 0; data.gwA = 0; data.logs = []; data.totDefH=0; data.totDefA=0; data.totInn=0;
-    document.getElementById('hPlayer').value = ''; document.getElementById('aPlayer').value = '';
-    initRace();
-}
+function saveHistory() { history.push(JSON.stringify(state)); }
+function undo() { if(history.length > 0) { state = JSON.parse(history.pop()); updateUI(); } }
+function logAction(msg) { state.logs.push(msg); document.getElementById('matchLog').innerText = state.logs.slice(-4).join('\n'); }
+function resetMatch() { if(confirm("Reset current match?")) { state = { ...state, toH:0, toA:0, defH:0, defA:0, inn:0, gwH:0, gwA:0, logs:[] }; updateUI(); } }
 
-function resetMatch() { if(confirm("Reset player stats for this match?")) { data.gwH = 0; data.gwA = 0; data.logs = []; data.totDefH=0; data.totDefA=0; data.totInn=0; updateUI(); } }
-
-function viewAll() { document.getElementById('historyView').style.display = 'flex'; renderHistory(); }
-
-function renderHistory() {
-    let th = 0, ta = 0;
-    document.getElementById('historyList').innerHTML = session.map((m,i)=>{
-        th += m.pts; ta += m.pts;
-        return `<div class="hist-item">
-            <div><b>M${i+1}: ${m.h} vs ${m.a}</b><br><small>${m.teams}</small><br>Score: ${m.score} | Pts: ${m.pts}-${m.pts}</div>
-            <div class="hist-controls">
-                <button class="show-btn" onclick="toggleMatchLog(${i})">Show Log</button>
-                <button class="edit-btn" onclick="editMatchInHistory(${i})">Edit</button>
-                <button class="copy-btn" onclick="copyMatchLog(${i})">Copy</button>
-            </div>
-            <div id="hist-log-${i}" class="match-detail-log">${m.logs.join('\n')}</div>
-        </div>`;
-    }).join('') || "No matches yet.";
-    document.getElementById('sessionTotal').innerText = `SESSION TOTAL: Home ${th} | Away ${ta}`;
-}
-
-function toggleMatchLog(idx) {
-    const el = document.getElementById(`hist-log-${idx}`);
-    el.style.display = el.style.display === 'block' ? 'none' : 'block';
-}
-
-function copyMatchLog(idx) {
-    const m = session[idx];
-    const text = `APA Match ${idx+1}: ${m.h} vs ${m.a}\nScore: ${m.score}\nPts: ${m.pts}-${m.pts}\nLogs:\n${m.logs.join('\n')}`;
-    navigator.clipboard.writeText(text).then(() => alert("Match log copied to clipboard!"));
-}
-
-function editMatchInHistory(idx) { 
-    let n = prompt("Edit Log (comma separated):", session[idx].logs.join(', ')); 
-    if(n) { 
-        session[idx].logs = n.split(',').map(s=>s.trim()); 
-        localStorage.setItem('apa_session', JSON.stringify(session)); 
-        renderHistory(); 
-    } 
-}
-
-function clearSession() { if(confirm("Clear ALL data?")) { localStorage.clear(); document.getElementById('hTeam').value = ''; document.getElementById('aTeam').value = ''; location.reload(); } }
-function setLag(s) { document.getElementById('lH').className = s === 'H' ? 'lag-btn active' : 'lag-btn'; document.getElementById('lA').className = s === 'A' ? 'lag-btn active' : 'lag-btn'; }
-initRace();
+window.onload = initRace;
 </script>
 </body>
 </html>
