@@ -34,15 +34,16 @@
 <div class="container">
     <h1>8 Ball 3Pt. Scorekeeper</h1>
     <div class="header-stats">
-        <span>Match: <select id="mSelect" style="width:auto; padding:2px;" onchange="switchMatch(this.value)">
-            <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
-        </select>/5</span>
+        <span>Match: <select id="mSelect" style="width:auto; padding:2px;" onchange="switchMatch(this.value)"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>/5</span>
         <span id="race">Race: 2/2</span>
         <span id="totalSl">SLs: H(2) A(2)</span>
     </div>
     <div class="row"><input type="text" id="hTeam" placeholder="Home Team Name"><input type="text" id="aTeam" placeholder="Away Team Name"></div>
     <div class="row"><div class="lag-btn" id="lH" onclick="setLag('H')">LAG HOME</div><div class="lag-btn" id="lA" onclick="setLag('A')">LAG AWAY</div></div>
-    <div class="row"><input type="text" id="hPlayer" placeholder="Home Player Name"><input type="text" id="aPlayer" placeholder="Away Player Name"></div>
+    <div class="row">
+        <input type="text" id="hPlayer" placeholder="Home Player Name" oninput="saveName('hp', this.value)">
+        <input type="text" id="aPlayer" placeholder="Away Player Name" oninput="saveName('ap', this.value)">
+    </div>
     <div class="row">
         <select id="slH" onchange="initRace()"><option value="2">H-SL 2</option><option value="3">H-SL 3</option><option value="4">H-SL 4</option><option value="5">H-SL 5</option><option value="6">H-SL 6</option><option value="7">H-SL 7</option></select>
         <select id="slA" onchange="initRace()"><option value="2">A-SL 2</option><option value="3">A-SL 3</option><option value="4">A-SL 4</option><option value="5">A-SL 5</option><option value="6">A-SL 6</option><option value="7">A-SL 7</option></select>
@@ -64,7 +65,7 @@
     <div class="pts-box"><span id="playerPtsH">H Match: <span id="ptsH">0</span></span><span id="playerPtsA">A Match: <span id="ptsA">0</span></span></div>
     <div class="total-pts-box"><span id="teamPtsH">H Session: <span id="totalPtsH">0</span></span><span id="teamPtsA">A Session: <span id="totalPtsA">0</span></span></div>
     <div class="log-container">
-        <div class="row" style="gap:5px;"><button onclick="copyLog()" style="flex:1; padding:5px; font-size:0.7rem; background:#333; color:#fff; border:1px solid #444; border-radius:3px;">Copy Log</button><button id="editBtn" onclick="toggleEdit()" style="flex:1; padding:5px; font-size:0.7rem; background:#333; color:#fff; border:1px solid #444; border-radius:3px;">Edit Log</button></div>
+        <div class="row" style="gap:5px;"><button onclick="copyLog()" style="flex:1; padding:5px; font-size:0.7rem; background:#333; border:1px solid #444; color:#fff; border-radius:3px;">Copy Log</button><button id="editBtn" onclick="toggleEdit()" style="flex:1; padding:5px; font-size:0.7rem; background:#333; border:1px solid #444; color:#fff; border-radius:3px;">Edit Log</button></div>
         <div class="log" id="matchLog" contenteditable="false"></div>
     </div>
     <div class="footer-btns">
@@ -77,20 +78,18 @@
 
 <script>
 const officialRace = {
-    2: {2:2, 3:2, 4:2, 5:2, 6:2, 7:2},
-    3: {2:3, 3:2, 4:2, 5:2, 6:2, 7:2},
-    4: {2:4, 3:3, 4:3, 5:2, 6:2, 7:2},
-    5: {2:4, 3:4, 4:4, 5:3, 6:3, 7:2},
-    6: {2:6, 3:5, 4:5, 5:4, 6:4, 7:3},
-    7: {2:7, 3:6, 4:6, 5:5, 6:5, 7:4}
+    2: {2:2, 3:2, 4:2, 5:2, 6:2, 7:2}, 3: {2:3, 3:2, 4:2, 5:2, 6:2, 7:2}, 4: {2:4, 3:3, 4:3, 5:2, 6:2, 7:2},
+    5: {2:4, 3:4, 4:4, 5:3, 6:3, 7:2}, 6: {2:6, 3:5, 4:5, 5:4, 6:4, 7:3}, 7: {2:7, 3:6, 4:6, 5:5, 6:5, 7:4}
 };
 
 let matches = JSON.parse(localStorage.getItem('pool_session')) || { 1: createMatch(), 2: createMatch(), 3: createMatch(), 4: createMatch(), 5: createMatch() };
 let currentM = 1, historyStack = [];
 
-function createMatch() { return { g:1, toH:0, toA:0, defH:0, defA:0, inn:0, gwH:0, gwA:0, reqH:2, reqA:2, hp:'', ap:'', slH:2, slA:2, lag:'', isLogged:false, isEnded:false, matchLog: '' }; }
+function createMatch() { return { g:1, toH:0, toA:0, defH:0, defA:0, inn:0, gwH:0, gwA:0, reqH:2, reqA:2, hp:'', ap:'', slH:2, slA:2, lag:'', isLogged:false, isEnded:false }; }
 
-function switchMatch(val) { saveState(); currentM = parseInt(val); updateUI(); }
+function saveName(field, val) { matches[currentM][field] = val; updateUI(); }
+
+function switchMatch(val) { currentM = parseInt(val); updateUI(); }
 
 function initRace() {
     let m = matches[currentM]; if(m.isEnded) return;
@@ -102,7 +101,7 @@ function inc(k) {
     let m = matches[currentM]; if(m.isEnded) return; saveHistory();
     if(k.includes('to')) {
         let limit = m[k.includes('H')?'slH':'slA'] <= 3 ? 2 : 1;
-        if(m[k] >= limit && !confirm("Exceed official per-game coaching limit?")) return;
+        if(m[k] >= limit && !confirm("Exceed coaching limit?")) return;
     }
     m[k]++; updateUI();
 }
@@ -111,7 +110,6 @@ function setLag(p) { if(matches[currentM].isEnded) return; saveHistory(); matche
 
 function openRack(winner) {
     let m = matches[currentM]; if (m.isEnded || (winner==='H' && m.gwH >= m.reqH) || (winner==='A' && m.gwA >= m.reqA)) return;
-    m.hp = document.getElementById('hPlayer').value; m.ap = document.getElementById('aPlayer').value;
     if(!m.hp || !m.ap || !m.lag) return alert("Required: Names & Lag Winner!");
 
     if(!m.isLogged) {
@@ -138,9 +136,10 @@ function updateUI() {
     let m = matches[currentM];
     document.getElementById('toH').innerText = m.toH; document.getElementById('toA').innerText = m.toA;
     document.getElementById('defH').innerText = m.defH; document.getElementById('defA').innerText = m.defA;
-    document.getElementById('inn').innerText = m.inn; document.getElementById('hPlayer').value = m.hp || ''; 
-    document.getElementById('aPlayer').value = m.ap || ''; document.getElementById('slH').value = m.slH; 
-    document.getElementById('slA').value = m.slA; document.getElementById('gw').innerText = `GW ${m.gwH}/${m.reqH} - ${m.gwA}/${m.reqA}`;
+    document.getElementById('inn').innerText = m.inn;
+    document.getElementById('hPlayer').value = m.hp; document.getElementById('aPlayer').value = m.ap;
+    document.getElementById('slH').value = m.slH; document.getElementById('slA').value = m.slA;
+    document.getElementById('gw').innerText = `GW ${m.gwH}/${m.reqH} - ${m.gwA}/${m.reqA}`;
     document.getElementById('race').innerText = `Race: ${m.reqH}/${m.reqA}`;
     
     document.querySelectorAll('.lag-btn').forEach(b => b.classList.remove('active'));
@@ -158,16 +157,20 @@ function updateUI() {
         }
         sesH += mH; sesA += mA; if(match === m) { ph = mH; pa = mA; }
     });
-    document.getElementById('ptsH').innerText = ph; document.getElementById('ptsA').innerText = pa;
-    document.getElementById('totalPtsH').innerText = sesH; document.getElementById('totalPtsA').innerText = sesA;
-    saveState();
+    
+    const ht = document.getElementById('hTeam').value || "Home", at = document.getElementById('aTeam').value || "Away";
+    document.getElementById('playerPtsH').innerHTML = `${m.hp||'H'} Match: <span id="ptsH">${ph}</span>`;
+    document.getElementById('playerPtsA').innerHTML = `${m.ap||'A'} Match: <span id="ptsA">${pa}</span>`;
+    document.getElementById('teamPtsH').innerHTML = `${ht} Session: <span id="totalPtsH">${sesH}</span>`;
+    document.getElementById('teamPtsA').innerHTML = `${at} Session: <span id="totalPtsA">${sesA}</span>`;
+    
+    localStorage.setItem('pool_session', JSON.stringify(matches));
 }
 
-function endMatch() { if(!confirm("Lock match scores?")) return; matches[currentM].isEnded = true; if(currentM < 5) { currentM++; document.getElementById('mSelect').value = currentM; } updateUI(); }
-function resetSession() { if(confirm("Wipe everything?")) { localStorage.removeItem('pool_session'); location.reload(); } }
+function endMatch() { if(!confirm("Lock match?")) return; matches[currentM].isEnded = true; if(currentM < 5) { currentM++; document.getElementById('mSelect').value = currentM; } updateUI(); }
+function resetSession() { if(confirm("Wipe all?")) { localStorage.clear(); location.reload(); } }
 function toggleEdit() { const l = document.getElementById('matchLog'), b = document.getElementById('editBtn'), is = l.contentEditable === "true"; l.contentEditable = !is; b.innerText = is ? "Edit Log" : "Save Log"; b.style.background = is ? "#333" : "var(--felt)"; if(!is) l.focus(); }
-async function copyLog() { try { await navigator.clipboard.writeText(document.getElementById('matchLog').innerText); alert("Copied!"); } catch(e) {} }
-function saveState() { localStorage.setItem('pool_session', JSON.stringify(matches)); }
+async function copyLog() { try { await navigator.clipboard.writeText(document.getElementById('matchLog').innerText); alert("Log Copied!"); } catch(e) {} }
 function saveHistory() { historyStack.push(JSON.stringify(matches)); }
 function undo() { if(historyStack.length > 0) { matches = JSON.parse(historyStack.pop()); updateUI(); } }
 window.onload = initRace;
