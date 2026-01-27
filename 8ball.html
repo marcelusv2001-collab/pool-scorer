@@ -65,7 +65,7 @@
 <div id="historyView"><div class="history-content"><h2 style="color:var(--gold)">Session Summary</h2><div id="historyList"></div><div id="sessionTotal" style="margin:15px 0; font-weight:bold; color:var(--gold); border-top:1px solid #444; padding-top:10px;"></div><button onclick="closeHistory()" style="width:100%; padding:12px; background:#555; color:#fff; border:none; border-radius:5px; margin-bottom:10px;">Back</button><button onclick="clearSession()" style="width:100%; padding:12px; background:var(--red); color:#fff; border:none; border-radius:5px;">Reset All</button></div></div>
 
 <script>
-const officialRace = { 2: {2:, 3:, 4:, 5:, 6:, 7:}, 3: {2:, 3:, 4:, 5:, 6:, 7:}, 4: {2:, 3:, 4:, 5:, 6:, 7:}, 5: {2:, 3:, 4:, 5:, 6:, 7:}, 6: {2:, 3:, 4:, 5:, 6:, 7:}, 7: {2:, 3:, 4:, 5:, 6:, 7:} };
+const officialRace = { 2: {2:[2,2], 3:[2,2], 4:[2,3], 5:[2,4], 6:[2,5], 7:[2,6]}, 3: {2:[2,2], 3:[2,2], 4:[2,3], 5:[2,4], 6:[2,5], 7:[2,6]}, 4: {2:[3,2], 3:[3,2], 4:[3,3], 5:[3,4], 6:[3,5], 7:[2,5]}, 5: {2:[4,2], 3:[4,2], 4:[4,3], 5:[4,4], 6:[4,5], 7:[3,5]}, 6: {2:[5,2], 3:[5,2], 4:[5,3], 5:[5,4], 6:[5,5], 7:[4,5]}, 7: {2:[6,2], 3:[6,2], 4:[5,2], 5:[5,3], 6:[5,4], 7:[5,5]} };
 let data = { toH:0, toA:0, defH:0, defA:0, inn:0, gwH:0, gwA:0, reqH:2, reqA:2, logs: [], totDefH:0, totDefA:0, totInn:0 };
 let session = JSON.parse(localStorage.getItem('apa_session')) || [];
 let clickTimer = null;
@@ -145,8 +145,8 @@ function closeHistory() { document.getElementById('historyView').style.display =
 function renderHistory() {
     let th = 0, ta = 0;
     document.getElementById('historyList').innerHTML = session.map((m,i)=>{
-        th += m.pts; ta += m.pts;
-        return `<div class="hist-item"><div><b>M${i+1}: ${m.h} vs ${m.a}</b><br>Score: ${m.score} | Pts: ${m.pts}-${m.pts}</div><button class="edit-btn" onclick="editMatchInHistory(${i})">Edit</button></div>`;
+        th += m.pts[0]; ta += m.pts[1];
+        return `<div class="hist-item"><div><b>M${i+1}: ${m.h} vs ${m.a}</b><br>Score: ${m.score} | Pts: ${m.pts[0]}-${m.pts[1]}</div><button class="edit-btn" onclick="editMatchInHistory(${i})">Edit</button></div>`;
     }).join('') || "No matches yet.";
     document.getElementById('sessionTotal').innerText = `SESSION TOTAL: Home ${th} | Away ${ta}`;
 }
