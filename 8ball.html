@@ -19,6 +19,7 @@
         .grid { display: grid; grid-template-columns: 1fr 70px 1fr; gap: 10px; align-items: stretch; }
         .btn-stack { display: flex; flex-direction: column; gap: 8px; }
         .score-btn { padding: clamp(15px, 4vh, 25px) 5px; border: none; border-radius: 8px; color: white; font-weight: bold; font-size: 0.9rem; cursor: pointer; box-shadow: 0 4px #000; }
+        .score-btn:disabled { opacity: 0.3; cursor: not-allowed; box-shadow: none; transform: translateY(2px); }
         .h-btn { background: var(--blue); } .a-btn { background: var(--red); }
         .inn-btn { background: #333; border: 2px solid var(--gold); color: var(--gold); display: flex; align-items: center; justify-content: center; text-align: center; font-weight: bold; }
         .pts-box, .total-pts-box { display: flex; justify-content: space-around; padding: 10px; background: #000; border-radius: 8px; border: 1px solid #333; font-weight: bold; color: var(--gold); font-size: 0.8rem; }
@@ -26,14 +27,16 @@
         .footer-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .footer-btns button { padding: 12px; border: none; border-radius: 5px; color: white; font-weight: bold; font-size: 0.75rem; cursor: pointer; }
         #modal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.95); justify-content: center; align-items: center; z-index: 100; }
-        .m-content { background: var(--card); padding: 15px; border-radius: 12px; border: 2px solid var(--felt); display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 350px; max-height: 90vh; overflow-y: auto; }
+        .m-content { background: var(--card); padding: 15px; border-radius: 12px; border: 2px solid var(--felt); display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 350px; }
     </style>
 </head>
 <body>
 <div class="container">
     <h1>8 Ball 3Pt. Scorekeeper</h1>
     <div class="header-stats">
-        <span>Match: <select id="mSelect" style="width:auto; padding:2px;" onchange="state.m = this.value"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>/5</span>
+        <span>Match: <select id="mSelect" style="width:auto; padding:2px;" onchange="switchMatch(this.value)">
+            <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+        </select>/5</span>
         <span id="race">Race: 2/2</span>
         <span id="totalSl">SLs: H(2) A(2)</span>
     </div>
@@ -47,25 +50,25 @@
     <div class="score-banner" id="gw">GW 0/2 - 0/2</div>
     <div class="grid">
         <div class="btn-stack">
-            <button class="score-btn h-btn" onclick="inc('toH')">TO: <span id="toH">0</span></button>
-            <button class="score-btn h-btn" onclick="inc('defH')">DEF: <span id="defH">0</span></button>
-            <button class="score-btn h-btn" id="rackH" onclick="openRack('H')">RACK</button>
+            <button class="score-btn h-btn m-ctrl" onclick="inc('toH')">TO: <span id="toH">0</span></button>
+            <button class="score-btn h-btn m-ctrl" onclick="inc('defH')">DEF: <span id="defH">0</span></button>
+            <button class="score-btn h-btn m-ctrl" onclick="openRack('H')">RACK</button>
         </div>
-        <button class="score-btn inn-btn" onclick="inc('inn')">INN<br><span id="inn">0</span></button>
+        <button class="score-btn inn-btn m-ctrl" onclick="inc('inn')">INN<br><span id="inn">0</span></button>
         <div class="btn-stack">
-            <button class="score-btn a-btn" onclick="inc('toA')">TO: <span id="toA">0</span></button>
-            <button class="score-btn a-btn" onclick="inc('defA')">DEF: <span id="defA">0</span></button>
-            <button class="score-btn a-btn" id="rackA" onclick="openRack('A')">RACK</button>
+            <button class="score-btn a-btn m-ctrl" onclick="inc('toA')">TO: <span id="toA">0</span></button>
+            <button class="score-btn a-btn m-ctrl" onclick="inc('defA')">DEF: <span id="defA">0</span></button>
+            <button class="score-btn a-btn m-ctrl" onclick="openRack('A')">RACK</button>
         </div>
     </div>
     <div class="pts-box"><span id="playerPtsH">H Match: <span id="ptsH">0</span></span><span id="playerPtsA">A Match: <span id="ptsA">0</span></span></div>
     <div class="total-pts-box"><span id="teamPtsH">H Session: <span id="totalPtsH">0</span></span><span id="teamPtsA">A Session: <span id="totalPtsA">0</span></span></div>
     <div class="log-container">
         <div class="row" style="gap:5px;"><button onclick="copyLog()" style="flex:1; padding:5px; font-size:0.7rem; background:#333; color:#fff; border:1px solid #444; border-radius:3px;">Copy Log</button><button id="editBtn" onclick="toggleEdit()" style="flex:1; padding:5px; font-size:0.7rem; background:#333; color:#fff; border:1px solid #444; border-radius:3px;">Edit Log</button></div>
-        <div class="log" id="matchLog"></div>
+        <div class="log" id="matchLog" contenteditable="false"></div>
     </div>
     <div class="footer-btns">
-        <button onclick="endMatch()" style="background:var(--felt)">End Match</button>
+        <button onclick="endMatch()" class="m-ctrl" style="background:var(--felt)">End Match</button>
         <button onclick="resetSession()" style="background:var(--red)">Reset Session</button>
         <button onclick="undo()" style="background:#444; grid-column: span 2;">Undo Last Action</button>
     </div>
@@ -73,57 +76,100 @@
 <div id="modal" onclick="if(event.target==this)this.style.display='none'"><div class="m-content" id="mBtns"></div></div>
 
 <script>
-const officialRace = { 2: { 2:2, 3:2, 4:2, 5:2, 6:2, 7:2 }, 3: { 2:3, 3:2, 4:2, 5:2, 6:2, 7:2 }, 4: { 2:4, 3:3, 4:3, 5:2, 6:2, 7:2 }, 5: { 2:4, 3:4, 4:4, 5:3, 6:3, 7:2 }, 6: { 2:6, 3:5, 4:5, 5:4, 6:4, 7:3 }, 7: { 2:7, 3:6, 4:6, 5:5, 6:5, 7:4 } };
-let state = { m:1, g:1, toH:0, toA:0, defH:0, defA:0, inn:0, gwH:0, gwA:0, reqH:2, reqA:2, isMatchLogged: false, sesH: 0, sesA: 0, lagWinner: '' };
-let historyStack = [];
+const officialRace = {
+    2: {2:2, 3:2, 4:2, 5:2, 6:2, 7:2},
+    3: {2:3, 3:2, 4:2, 5:2, 6:2, 7:2},
+    4: {2:4, 3:3, 4:3, 5:2, 6:2, 7:2},
+    5: {2:4, 3:4, 4:4, 5:3, 6:3, 7:2},
+    6: {2:6, 3:5, 4:5, 5:4, 6:4, 7:3},
+    7: {2:7, 3:6, 4:6, 5:5, 6:5, 7:4}
+};
+
+let matches = JSON.parse(localStorage.getItem('pool_session')) || { 1: createMatch(), 2: createMatch(), 3: createMatch(), 4: createMatch(), 5: createMatch() };
+let currentM = 1, historyStack = [];
+
+function createMatch() { return { g:1, toH:0, toA:0, defH:0, defA:0, inn:0, gwH:0, gwA:0, reqH:2, reqA:2, hp:'', ap:'', slH:2, slA:2, lag:'', isLogged:false, isEnded:false, matchLog: '' }; }
+
+function switchMatch(val) { saveState(); currentM = parseInt(val); updateUI(); }
 
 function initRace() {
-    const slH = parseInt(document.getElementById('slH').value), slA = parseInt(document.getElementById('slA').value);
-    state.reqH = officialRace[slH][slA]; state.reqA = officialRace[slA][slH]; updateUI();
+    let m = matches[currentM]; if(m.isEnded) return;
+    m.slH = parseInt(document.getElementById('slH').value); m.slA = parseInt(document.getElementById('slA').value);
+    m.reqH = officialRace[m.slH][m.slA]; m.reqA = officialRace[m.slA][m.slH]; updateUI();
 }
-function inc(k) { 
-    saveHistory(); 
-    if (k.includes('to')) {
-        const sl = parseInt(document.getElementById(k === 'toH' ? 'slH' : 'slA').value);
-        if (state[k] >= (sl <= 3 ? 2 : 1) && !confirm("Exceed official coaching limit?")) return;
+
+function inc(k) {
+    let m = matches[currentM]; if(m.isEnded) return; saveHistory();
+    if(k.includes('to')) {
+        let limit = m[k.includes('H')?'slH':'slA'] <= 3 ? 2 : 1;
+        if(m[k] >= limit && !confirm("Exceed official per-game coaching limit?")) return;
     }
-    state[k]++; updateUI(); 
+    m[k]++; updateUI();
 }
-function setLag(p) { state.lagWinner = p; document.querySelectorAll('.lag-btn').forEach(b => b.classList.remove('active')); document.getElementById('l'+p).classList.add('active'); }
+
+function setLag(p) { if(matches[currentM].isEnded) return; saveHistory(); matches[currentM].lag = p; updateUI(); }
+
 function openRack(winner) {
-    if ((winner === 'H' && state.gwH >= state.reqH) || (winner === 'A' && state.gwA >= state.reqA)) return;
-    const hp = document.getElementById('hPlayer').value, ap = document.getElementById('aPlayer').value;
-    if (!hp || !ap || !state.lagWinner) return alert("Required: Names & Lag Winner!");
-    if (!state.isMatchLogged) { document.getElementById('matchLog').innerText += `\n(M${state.m} ${hp}(H) Vs. ${ap}(A) Lag:${state.lagWinner})`; state.isMatchLogged = true; }
+    let m = matches[currentM]; if (m.isEnded || (winner==='H' && m.gwH >= m.reqH) || (winner==='A' && m.gwA >= m.reqA)) return;
+    m.hp = document.getElementById('hPlayer').value; m.ap = document.getElementById('aPlayer').value;
+    if(!m.hp || !m.ap || !m.lag) return alert("Required: Names & Lag Winner!");
+
+    if(!m.isLogged) {
+        document.getElementById('matchLog').innerText += `\n(M${currentM} ${m.hp}(H) Vs. ${m.ap}(A) Lag:${m.lag})`;
+        m.isLogged = true;
+    }
+
     const modal = document.getElementById('modal'), container = document.getElementById('mBtns');
-    modal.style.display = 'flex';
-    container.innerHTML = `<h3 style="text-align:center;color:var(--gold);margin:0">Game ${state.g} Winner: ${winner}</h3>`;
+    modal.style.display = 'flex'; container.innerHTML = `<h3 style="text-align:center;color:var(--gold);margin:0">Game ${m.g} Winner: ${winner}</h3>`;
+    
     ["Win", "BR", "OB", "WP", "S8", "E8"].forEach(t => {
         let b = document.createElement('button'); b.className = 'score-btn ' + (winner==='H'?'h-btn':'a-btn'); b.innerText = t;
-        b.onclick = () => { saveHistory(); document.getElementById('matchLog').innerText += `\n...........\n(M${state.m} G${state.g} (H)${winner==='H'?'win':'loss'} ${state.defH}def ${state.toH}to (A)${winner==='A'?'win':'loss'} ${state.defA}def ${state.toA}to inn.${state.inn} [${t}])`; winner==='H' ? state.gwH++ : state.gwA++; state.g++; state.toH=0; state.toA=0; state.defH=0; state.defA=0; state.inn=0; modal.style.display = 'none'; updateUI(); };
+        b.onclick = () => {
+            saveHistory();
+            document.getElementById('matchLog').innerText += `\n...........\n(M${currentM} G${m.g} (H)${winner==='H'?'win':'loss'} ${m.defH}def ${m.toH}to (A)${winner==='A'?'win':'loss'} ${m.defA}def ${m.toA}to inn.${m.inn} [${t}])`;
+            winner==='H' ? m.gwH++ : m.gwA++; m.g++; m.toH=0; m.toA=0; m.defH=0; m.defA=0; m.inn=0;
+            modal.style.display = 'none'; if(m.gwH >= m.reqH || m.gwA >= m.reqA) m.isEnded = true; updateUI();
+        };
         container.appendChild(b);
     });
 }
+
 function updateUI() {
-    document.getElementById('toH').innerText = state.toH; document.getElementById('toA').innerText = state.toA;
-    document.getElementById('defH').innerText = state.defH; document.getElementById('defA').innerText = state.defA;
-    document.getElementById('inn').innerText = state.inn; document.getElementById('gw').innerText = `GW ${state.gwH}/${state.reqH} - ${state.gwA}/${state.reqA}`;
-    document.getElementById('race').innerText = `Race: ${state.reqH}/${state.reqA}`;
-    const hp = document.getElementById('hPlayer').value || "H", ap = document.getElementById('aPlayer').value || "A", ht = document.getElementById('hTeam').value || "H-Team", at = document.getElementById('aTeam').value || "A-Team";
-    document.getElementById('playerPtsH').innerHTML = `${hp} Match: <span id="ptsH">0</span>`; document.getElementById('playerPtsA').innerHTML = `${ap} Match: <span id="ptsA">0</span>`;
-    document.getElementById('teamPtsH').innerHTML = `${ht} Session: <span id="totalPtsH">0</span>`; document.getElementById('teamPtsA').innerHTML = `${at} Session: <span id="totalPtsA">0</span>`;
-    let ph=0, pa=0;
-    if(state.gwH>=state.reqH){ if(state.gwA===0) ph=3; else if(state.gwA>=state.reqA-1) ph=2,pa=1; else ph=2; }
-    else if(state.gwA>=state.reqA){ if(state.gwH===0) pa=3; else if(state.gwH>=state.reqH-1) pa=2,ph=1; else pa=2; }
+    let m = matches[currentM];
+    document.getElementById('toH').innerText = m.toH; document.getElementById('toA').innerText = m.toA;
+    document.getElementById('defH').innerText = m.defH; document.getElementById('defA').innerText = m.defA;
+    document.getElementById('inn').innerText = m.inn; document.getElementById('hPlayer').value = m.hp || ''; 
+    document.getElementById('aPlayer').value = m.ap || ''; document.getElementById('slH').value = m.slH; 
+    document.getElementById('slA').value = m.slA; document.getElementById('gw').innerText = `GW ${m.gwH}/${m.reqH} - ${m.gwA}/${m.reqA}`;
+    document.getElementById('race').innerText = `Race: ${m.reqH}/${m.reqA}`;
+    
+    document.querySelectorAll('.lag-btn').forEach(b => b.classList.remove('active'));
+    if(m.lag) document.getElementById('l'+m.lag).classList.add('active');
+    document.querySelectorAll('.m-ctrl').forEach(btn => btn.disabled = m.isEnded);
+    ['hPlayer', 'aPlayer', 'slH', 'slA'].forEach(id => document.getElementById(id).disabled = m.isEnded);
+
+    let sesH=0, sesA=0, ph=0, pa=0;
+    Object.values(matches).forEach(match => {
+        let mH=0, mA=0;
+        if(match.gwH >= match.reqH) {
+            if(match.gwA===0) mH=3; else if(match.gwA >= match.reqA-1) mH=2, mA=1; else mH=2;
+        } else if(match.gwA >= match.reqA) {
+            if(match.gwH===0) mA=3; else if(match.gwH >= match.reqH-1) mA=2, mH=1; else mA=2;
+        }
+        sesH += mH; sesA += mA; if(match === m) { ph = mH; pa = mA; }
+    });
     document.getElementById('ptsH').innerText = ph; document.getElementById('ptsA').innerText = pa;
-    document.getElementById('totalPtsH').innerText = state.sesH + ph; document.getElementById('totalPtsA').innerText = state.sesA + pa;
+    document.getElementById('totalPtsH').innerText = sesH; document.getElementById('totalPtsA').innerText = sesA;
+    saveState();
 }
-function endMatch() { saveHistory(); state.sesH += parseInt(document.getElementById('ptsH').innerText); state.sesA += parseInt(document.getElementById('ptsA').innerText); state.g=1; state.gwH=0; state.gwA=0; state.isMatchLogged=false; state.lagWinner=''; document.getElementById('hPlayer').value=""; document.getElementById('aPlayer').value=""; document.querySelectorAll('.lag-btn').forEach(b => b.classList.remove('active')); state.m = Math.min(5, parseInt(state.m)+1); document.getElementById('mSelect').value = state.m; updateUI(); }
-function resetSession() { if(confirm("Wipe session?")) location.reload(); }
+
+function endMatch() { if(!confirm("Lock match scores?")) return; matches[currentM].isEnded = true; if(currentM < 5) { currentM++; document.getElementById('mSelect').value = currentM; } updateUI(); }
+function resetSession() { if(confirm("Wipe everything?")) { localStorage.removeItem('pool_session'); location.reload(); } }
 function toggleEdit() { const l = document.getElementById('matchLog'), b = document.getElementById('editBtn'), is = l.contentEditable === "true"; l.contentEditable = !is; b.innerText = is ? "Edit Log" : "Save Log"; b.style.background = is ? "#333" : "var(--felt)"; if(!is) l.focus(); }
 async function copyLog() { try { await navigator.clipboard.writeText(document.getElementById('matchLog').innerText); alert("Copied!"); } catch(e) {} }
-function saveHistory() { historyStack.push(JSON.stringify(state)); }
-function undo() { if(historyStack.length > 0) { state = JSON.parse(historyStack.pop()); updateUI(); } }
+function saveState() { localStorage.setItem('pool_session', JSON.stringify(matches)); }
+function saveHistory() { historyStack.push(JSON.stringify(matches)); }
+function undo() { if(historyStack.length > 0) { matches = JSON.parse(historyStack.pop()); updateUI(); } }
 window.onload = initRace;
 </script>
 </body>
