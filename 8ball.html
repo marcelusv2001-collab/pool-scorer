@@ -3,80 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>8 Ball 3Pt. Offline Scorekeeper</title>
+    <title>8 Ball 3Pt. Pro Scorekeeper</title>
     <style>
         :root { --bg: #0a0e14; --felt: #0d5a32; --gold: #ffd700; --blue: #1e3a8a; --red: #991b1b; --card: #161b22; }
         body { background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; touch-action: manipulation; }
         .container { max-width: 450px; margin: auto; border: 2px solid var(--felt); padding: 15px; border-radius: 12px; background: var(--card); }
-        h1 { font-size: 1.1rem; text-align: center; color: var(--gold); text-transform: uppercase; margin: 0 0 15px; }
+        h1 { font-size: 1.1rem; text-align: center; color: var(--gold); text-transform: uppercase; margin: 0 0 10px; }
         .row { display: flex; gap: 10px; margin-bottom: 8px; }
         .header-stats { display: flex; justify-content: space-between; font-size: 0.85rem; color: #bbb; margin-bottom: 10px; font-weight: bold; }
         input, select { flex: 1; padding: 10px; border-radius: 5px; border: 1px solid #333; background: #000; color: #fff; font-size: 0.9rem; }
         .lag-btn { flex: 1; padding: 8px; text-align: center; border: 2px solid #444; border-radius: 20px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
-        .lag-btn.active { background: var(--felt); border-color: var(--gold); color: #fff; }
+        .lag-btn.active { background: var(--felt); border-color: var(--gold); }
         .score-banner { text-align: center; font-size: 1.3rem; font-weight: 800; margin: 15px 0; color: var(--gold); border-top: 1px solid #333; padding-top: 10px; }
         .grid { display: grid; grid-template-columns: 1fr 80px 1fr; gap: 12px; }
         .btn-stack { display: flex; flex-direction: column; gap: 10px; }
         .score-btn { padding: 22px 5px; border: none; border-radius: 8px; color: white; font-weight: bold; font-size: 1rem; cursor: pointer; box-shadow: 0 4px #000; }
-        .score-btn:active { transform: translateY(2px); box-shadow: 0 2px #000; }
         .h-btn { background: var(--blue); } .a-btn { background: var(--red); }
         .inn-btn { background: #333; border: 2px solid var(--gold); height: 100%; color: var(--gold); }
-        .pts-box { display: flex; justify-content: space-around; margin-top: 20px; padding: 12px; background: #000; border-radius: 8px; border: 1px solid var(--felt); font-weight: bold; color: var(--gold); }
-        .log { margin-top: 15px; height: 100px; overflow-y: auto; background: #000; padding: 10px; font-size: 0.8rem; border: 1px solid #333; border-radius: 5px; color: #0f0; font-family: monospace; }
-        .footer-btns { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 20px; }
+        .pts-box { display: flex; justify-content: space-around; margin-top: 15px; padding: 12px; background: #000; border-radius: 8px; border: 1px solid var(--felt); font-weight: bold; color: var(--gold); }
+        .log-container { margin-top: 15px; }
+        .log-controls { display: flex; gap: 5px; margin-bottom: 5px; }
+        .log-controls button { flex: 1; padding: 5px; font-size: 0.7rem; background: #333; color: #fff; border: 1px solid #555; border-radius: 3px; cursor: pointer; }
+        .log { height: 120px; overflow-y: auto; background: #000; padding: 10px; font-size: 0.75rem; border: 1px solid #333; border-radius: 5px; color: #0f0; font-family: monospace; white-space: pre-wrap; }
+        .footer-btns { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px; }
         .footer-btns button { padding: 12px; cursor: pointer; background: #333; color: white; border: none; border-radius: 5px; font-weight: bold; font-size: 0.8rem; }
-        #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; z-index: 100; }
+        #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); justify-content: center; align-items: center; z-index: 100; }
         .m-content { background: var(--card); padding: 20px; border-radius: 15px; border: 2px solid var(--felt); display: grid; grid-template-columns: 1fr; gap: 10px; width: 80%; max-width: 300px; }
     </style>
 </head>
 <body>
 <div class="container">
     <h1>8 Ball 3Pt. Scorekeeper</h1>
-    <div class="header-stats"><span id="matchCount">Match: 1/5</span><span id="race">Race: 2/2</span><span id="totalSl">SLs: H(2) A(2)</span></div>
+    <div class="header-stats"><span>Match: <span id="mNum">1</span>/5</span><span id="race">Race: 2/2</span><span id="totalSl">SLs: 2/2</span></div>
     <div class="row"><input type="text" id="hTeam" placeholder="Home Team"><input type="text" id="aTeam" placeholder="Away Team"></div>
     <div class="row"><div class="lag-btn" id="lH" onclick="setLag('H')">LAG HOME</div><div class="lag-btn" id="lA" onclick="setLag('A')">LAG AWAY</div></div>
     <div class="row"><input type="text" id="hPlayer" placeholder="Home Player"><select id="slH" onchange="initRace()"><option value="2">SL 2</option><option value="3">SL 3</option><option value="4">SL 4</option><option value="5">SL 5</option><option value="6">SL 6</option><option value="7">SL 7</option></select></div>
     <div class="row"><input type="text" id="aPlayer" placeholder="Away Player"><select id="slA" onchange="initRace()"><option value="2">SL 2</option><option value="3">SL 3</option><option value="4">SL 4</option><option value="5">SL 5</option><option value="6">SL 6</option><option value="7">SL 7</option></select></div>
-    
     <div class="score-banner" id="gw">GW 0/2 - 0/2</div>
-    
     <div class="grid">
         <div class="btn-stack">
             <button class="score-btn h-btn" onclick="inc('toH')">TO: <span id="toH">0</span></button>
             <button class="score-btn h-btn" onclick="inc('defH')">DEF: <span id="defH">0</span></button>
-            <button class="score-btn h-btn" onclick="openRack('H')">RACK</button>
+            <button class="score-btn h-btn" id="rackH" onclick="openRack('H')">RACK</button>
         </div>
         <button class="score-btn inn-btn" onclick="inc('inn')">INN<br><span id="inn">0</span></button>
         <div class="btn-stack">
             <button class="score-btn a-btn" onclick="inc('toA')">TO: <span id="toA">0</span></button>
             <button class="score-btn a-btn" onclick="inc('defA')">DEF: <span id="defA">0</span></button>
-            <button class="score-btn a-btn" onclick="openRack('A')">RACK</button>
+            <button class="score-btn a-btn" id="rackA" onclick="openRack('A')">RACK</button>
         </div>
     </div>
-    
     <div class="pts-box"><span>HOME Pts: <span id="ptsH">0</span></span><span>AWAY Pts: <span id="ptsA">0</span></span></div>
-    
-    <div class="footer-btns">
-        <button onclick="resetMatch()" style="background:var(--red)">Reset Match</button>
-        <button onclick="undo()" style="background:#444">Undo Action</button>
+    <div class="log-container">
+        <div class="log-controls"><button onclick="copyLog()">Copy Log</button><button id="editBtn" onclick="toggleEdit()">Edit Log</button></div>
+        <div class="log" id="matchLog" contenteditable="false"></div>
     </div>
-    <div class="log" id="matchLog">LOG: Ready...</div>
+    <div class="footer-btns"><button onclick="resetMatch()" style="background:var(--red)">Reset Match</button><button onclick="undo()" style="background:#444">Undo Action</button></div>
 </div>
-
 <div id="modal"><div class="m-content" id="mBtns"></div></div>
 
 <script>
-// OFFICIAL APA 8-BALL GAMES-MUST-WIN CHART
+// Official APA Games Must Win Chart
 const officialRace = {
-    2: { 2:[2,2], 3:[2,3], 4:[2,4], 5:[2,5], 6:[2,6], 7:[2,7] },
-    3: { 2:[3,2], 3:[2,2], 4:[2,3], 5:[2,4], 6:[2,5], 7:[2,6] },
-    4: { 2:[4,2], 3:[3,2], 4:[3,3], 5:[3,4], 6:[3,5], 7:[3,6] },
-    5: { 2:[5,2], 3:[4,2], 4:[4,3], 5:[4,4], 6:[4,5], 7:[4,6] },
-    6: { 2:[6,2], 3:[5,2], 4:[5,3], 5:[5,4], 6:[5,5], 7:[5,6] },
-    7: { 2:[7,2], 3:[6,2], 4:[6,3], 5:[6,4], 6:[6,5], 7:[7,7] }
+    2: { 2: [2, 2], 3: [2, 3], 4: [2, 4], 5: [2, 5], 6: [2, 6], 7: [2, 7] },
+    3: { 2: [3, 2], 3: [2, 2], 4: [2, 3], 5: [2, 4], 6: [2, 5], 7: [2, 6] },
+    4: { 2: [4, 2], 3: [3, 2], 4: [3, 3], 5: [3, 4], 6: [3, 5], 7: [2, 5] },
+    5: { 2: [5, 2], 3: [4, 2], 4: [4, 3], 5: [4, 4], 6: [4, 5], 7: [3, 6] },
+    6: { 2: [6, 2], 3: [5, 2], 4: [5, 3], 5: [5, 4], 6: [5, 5], 7: [4, 6] },
+    7: { 2: [7, 2], 3: [6, 2], 4: [5, 2], 5: [6, 3], 6: [6, 4], 7: [7, 7] }
 };
 
-let state = { toH:0, toA:0, defH:0, defA:0, inn:0, gwH:0, gwA:0, reqH:2, reqA:2, logs:[] };
+let state = { m:1, g:1, toH:0, toA:0, defH:0, defA:0, inn:0, gwH:0, gwA:0, reqH:2, reqA:2 };
 let history = [];
 
 function initRace() {
@@ -88,8 +85,13 @@ function initRace() {
 
 function inc(key) {
     saveHistory();
+    // Official Coaching (Timeout) limits: SL 2-3 get 2 per game, SL 4-7 get 1
+    if (key.includes('to')) {
+        const sl = parseInt(document.getElementById(key === 'toH' ? 'slH' : 'slA').value);
+        const limit = sl <= 3 ? 2 : 1;
+        if (state[key] >= limit && !confirm(`Player already used ${limit} timeout(s). Allow another?`)) return;
+    }
     state[key]++;
-    logAction(`${key.toUpperCase()} updated to ${state[key]}`);
     updateUI();
 }
 
@@ -99,19 +101,29 @@ function setLag(player) {
 }
 
 function openRack(winner) {
+    // Enforcement: Cannot score more wins than required per race chart
+    if ((winner === 'H' && state.gwH >= state.reqH) || (winner === 'A' && state.gwA >= state.reqA)) return;
+
     const modal = document.getElementById('modal');
     const container = document.getElementById('mBtns');
-    container.innerHTML = `<h3 style="text-align:center">Rack Winner: ${winner}</h3>`;
+    container.innerHTML = `<h3 style="text-align:center; color:var(--gold)">Game ${state.g} Winner: ${winner}</h3>`;
     
-    const wins = ["Normal Win", "8-on-Break", "Break & Run"];
-    wins.forEach(type => {
+    ["Normal Win", "8-on-Break", "Break & Run"].forEach(type => {
         let btn = document.createElement('button');
         btn.className = 'score-btn ' + (winner==='H' ? 'h-btn' : 'a-btn');
         btn.innerText = type;
         btn.onclick = () => {
             saveHistory();
+            const hStatus = winner === 'H' ? 'win' : 'loss';
+            const aStatus = winner === 'A' ? 'win' : 'loss';
+            // Custom Log Format requested: (M1 G1 (H)win 2def 2to (A)loss 2 def 1to inn.4)
+            const entry = `(M${state.m} G${state.g} (H)${hStatus} ${state.defH}def ${state.toH}to (A)${aStatus} ${state.defA}def ${state.toA}to inn.${state.inn})`;
+            document.getElementById('matchLog').innerText += (document.getElementById('matchLog').innerText ? '\n' : '') + entry;
+
             if(winner==='H') state.gwH++; else state.gwA++;
-            logAction(`${winner} won rack (${type})`);
+            state.g++;
+            // Reset per-game stats
+            state.toH = 0; state.toA = 0; state.defH = 0; state.defA = 0; state.inn = 0;
             modal.style.display = 'none';
             updateUI();
         };
@@ -134,28 +146,49 @@ function updateUI() {
     document.getElementById('inn').innerText = state.inn;
     document.getElementById('gw').innerText = `GW ${state.gwH}/${state.reqH} - ${state.gwA}/${state.reqA}`;
     document.getElementById('race').innerText = `Race: ${state.reqH}/${state.reqA}`;
-    document.getElementById('totalSl').innerText = `SLs: H(${document.getElementById('slH').value}) A(${document.getElementById('slA').value})`;
+    document.getElementById('totalSl').innerText = `SLs: ${document.getElementById('slH').value}/${document.getElementById('slA').value}`;
     
-    // APA 3-Point Scoring Logic
+    const isOver = state.gwH >= state.reqH || state.gwA >= state.reqA;
+    document.getElementById('rackH').disabled = isOver;
+    document.getElementById('rackA').disabled = isOver;
+    document.getElementById('rackH').style.opacity = isOver ? "0.3" : "1";
+    document.getElementById('rackA').style.opacity = isOver ? "0.3" : "1";
+
+    // Official 3-Point Scoring System
     let ptsH = 0, ptsA = 0;
     if (state.gwH >= state.reqH) {
-        if (state.gwA === 0) { ptsH = 3; ptsA = 0; } // Shutout
-        else if (state.gwA === state.reqA - 1) { ptsH = 2; ptsA = 1; } // Hill Loss
-        else { ptsH = 2; ptsA = 0; } // Normal Win
+        if (state.gwA === 0) { ptsH = 3; ptsA = 0; } // Shutout (3-0)
+        else if (state.gwA === state.reqA - 1) { ptsH = 2; ptsA = 1; } // Hill Loss (2-1)
+        else { ptsH = 2; ptsA = 0; } // Non-shutout, Non-hill Loss (2-0)
     } else if (state.gwA >= state.reqA) {
         if (state.gwH === 0) { ptsA = 3; ptsH = 0; }
         else if (state.gwH === state.reqH - 1) { ptsA = 2; ptsH = 1; }
         else { ptsA = 2; ptsH = 0; }
     }
-    
     document.getElementById('ptsH').innerText = ptsH;
     document.getElementById('ptsA').innerText = ptsA;
 }
 
+function toggleEdit() {
+    const log = document.getElementById('matchLog');
+    const btn = document.getElementById('editBtn');
+    const isEditing = log.contentEditable === "true";
+    log.contentEditable = !isEditing;
+    btn.innerText = isEditing ? "Edit Log" : "Save Log";
+    btn.style.background = isEditing ? "#333" : "var(--felt)";
+    if(!isEditing) log.focus();
+}
+
+async function copyLog() {
+    try {
+        await navigator.clipboard.writeText(document.getElementById('matchLog').innerText);
+        alert("Log copied to clipboard!");
+    } catch (err) { alert("Failed to copy."); }
+}
+
 function saveHistory() { history.push(JSON.stringify(state)); }
 function undo() { if(history.length > 0) { state = JSON.parse(history.pop()); updateUI(); } }
-function logAction(msg) { state.logs.push(msg); document.getElementById('matchLog').innerText = state.logs.slice(-4).join('\n'); }
-function resetMatch() { if(confirm("Reset current match?")) { state = { ...state, toH:0, toA:0, defH:0, defA:0, inn:0, gwH:0, gwA:0, logs:[] }; updateUI(); } }
+function resetMatch() { if(confirm("Clear and restart this match?")) location.reload(); }
 
 window.onload = initRace;
 </script>
