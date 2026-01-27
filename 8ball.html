@@ -8,7 +8,7 @@
         :root { --bg: #0a0e14; --felt: #0d5a32; --gold: #ffd700; --blue: #1e3a8a; --red: #991b1b; --card: #161b22; }
         body { background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; touch-action: manipulation; }
         .container { max-width: 450px; margin: auto; border: 2px solid var(--felt); padding: 15px; border-radius: 12px; background: var(--card); }
-        h1 { font-size: 1.1rem; text-align: center; color: var(--gold); text-transform: uppercase; margin: 0 0 15px; }
+        h1 { font-size: 1.1rem; text-align: center; color: var(--gold); text-transform: uppercase; margin: 0 0 10px; }
         .row { display: flex; gap: 10px; margin-bottom: 8px; }
         .header-stats { display: flex; justify-content: space-between; font-size: 0.85rem; color: #bbb; margin-bottom: 10px; font-weight: bold; }
         input, select { flex: 1; padding: 10px; border-radius: 5px; border: 1px solid #333; background: #000; color: #fff; font-size: 0.9rem; }
@@ -26,9 +26,14 @@
         .footer-btns button { padding: 12px; cursor: pointer; background: #333; color: white; border: none; border-radius: 5px; font-weight: bold; font-size: 0.8rem; }
         #modal, #historyView { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); justify-content: center; align-items: center; z-index: 100; }
         .m-content { background: var(--card); padding: 20px; border-radius: 15px; border: 2px solid var(--felt); display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 85%; }
+        .m-content button { padding: 18px; background: var(--felt); color: #fff; border: none; border-radius: 8px; font-weight: bold; }
         .history-content { background: var(--card); width: 90%; padding: 20px; border-radius: 10px; color: #fff; max-height: 85vh; overflow-y: auto; border: 1px solid var(--gold); }
-        .hist-item { border-bottom: 1px solid #444; padding: 10px 0; display: flex; justify-content: space-between; align-items: center; }
-        .edit-btn { background: var(--gold); color: #000; border: none; padding: 5px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
+        .hist-item { border-bottom: 1px solid #444; padding: 15px 0; flex-direction: column; display: flex; gap: 10px; }
+        .hist-controls { display: flex; gap: 5px; flex-wrap: wrap; }
+        .edit-btn { background: var(--gold); color: #000; border: none; padding: 6px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; cursor: pointer; }
+        .show-btn { background: var(--blue); color: #fff; border: none; padding: 6px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; cursor: pointer; }
+        .copy-btn { background: var(--felt); color: #fff; border: none; padding: 6px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; cursor: pointer; }
+        .match-detail-log { display: none; background: #000; color: #0f0; padding: 8px; font-size: 0.75rem; border-radius: 4px; margin-top: 5px; font-family: monospace; white-space: pre-wrap; }
     </style>
 </head>
 <body>
@@ -62,10 +67,10 @@
 </div>
 
 <div id="modal"><div class="m-content" id="mBtns"></div></div>
-<div id="historyView"><div class="history-content"><h2 style="color:var(--gold)">Session Summary</h2><div id="historyList"></div><div id="sessionTotal" style="margin:15px 0; font-weight:bold; color:var(--gold); border-top:1px solid #444; padding-top:10px;"></div><button onclick="closeHistory()" style="width:100%; padding:12px; background:#555; color:#fff; border:none; border-radius:5px; margin-bottom:10px;">Back</button><button onclick="clearSession()" style="width:100%; padding:12px; background:var(--red); color:#fff; border:none; border-radius:5px;">Reset All</button></div></div>
+<div id="historyView"><div class="history-content"><h2 style="color:var(--gold)">Session Summary</h2><div id="historyList"></div><div id="sessionTotal" style="margin:15px 0; font-weight:bold; color:var(--gold); border-top: 1px solid #444; padding-top:10px;"></div><button onclick="closeHistory()" style="width:100%; padding:12px; background:#555; color:#fff; border:none; border-radius:5px; margin-bottom:10px;">Back</button><button onclick="clearSession()" style="width:100%; padding:12px; background:var(--red); color:#fff; border:none; border-radius:5px;">Reset All (New Night)</button></div></div>
 
 <script>
-const officialRace = { 2: {2:[2,2], 3:[2,2], 4:[2,3], 5:[2,4], 6:[2,5], 7:[2,6]}, 3: {2:[2,2], 3:[2,2], 4:[2,3], 5:[2,4], 6:[2,5], 7:[2,6]}, 4: {2:[3,2], 3:[3,2], 4:[3,3], 5:[3,4], 6:[3,5], 7:[2,5]}, 5: {2:[4,2], 3:[4,2], 4:[4,3], 5:[4,4], 6:[4,5], 7:[3,5]}, 6: {2:[5,2], 3:[5,2], 4:[5,3], 5:[5,4], 6:[5,5], 7:[4,5]}, 7: {2:[6,2], 3:[6,2], 4:[5,2], 5:[5,3], 6:[5,4], 7:[5,5]} };
+const officialRace = { 2: {2:, 3:, 4:, 5:, 6:, 7:}, 3: {2:, 3:, 4:, 5:, 6:, 7:}, 4: {2:, 3:, 4:, 5:, 6:, 7:}, 5: {2:, 3:, 4:, 5:, 6:, 7:}, 6: {2:, 3:, 4:, 5:, 6:, 7:}, 7: {2:, 3:, 4:, 5:, 6:, 7:} };
 let data = { toH:0, toA:0, defH:0, defA:0, inn:0, gwH:0, gwA:0, reqH:2, reqA:2, logs: [], totDefH:0, totDefA:0, totInn:0 };
 let session = JSON.parse(localStorage.getItem('apa_session')) || [];
 let clickTimer = null;
@@ -134,24 +139,62 @@ function endMatch() {
     if (data.gwH < data.reqH && data.gwA < data.reqA) return alert("Match not finished.");
     if (session.length >= 5) return alert("Session Full.");
     const pts = calcMatchPts();
-    session.push({ h: document.getElementById('hPlayer').value || "H", a: document.getElementById('aPlayer').value || "A", score: `${data.gwH}-${data.gwA}`, pts: pts, logs: [...data.logs] });
+    session.push({ 
+        h: document.getElementById('hPlayer').value || "H", 
+        a: document.getElementById('aPlayer').value || "A", 
+        score: `${data.gwH}-${data.gwA}`, 
+        pts: pts, 
+        logs: [...data.logs],
+        teams: `${document.getElementById('hTeam').value || 'Home'} vs ${document.getElementById('aTeam').value || 'Away'}`
+    });
     localStorage.setItem('apa_session', JSON.stringify(session));
-    location.reload();
+    data.gwH = 0; data.gwA = 0; data.logs = []; data.totDefH=0; data.totDefA=0; data.totInn=0;
+    document.getElementById('hPlayer').value = ''; document.getElementById('aPlayer').value = '';
+    initRace();
 }
 
-function resetMatch() { if(confirm("Reset current match?")) { data.gwH = 0; data.gwA = 0; data.logs = []; updateUI(); } }
+function resetMatch() { if(confirm("Reset player stats for this match?")) { data.gwH = 0; data.gwA = 0; data.logs = []; data.totDefH=0; data.totDefA=0; data.totInn=0; updateUI(); } }
+
 function viewAll() { document.getElementById('historyView').style.display = 'flex'; renderHistory(); }
-function closeHistory() { document.getElementById('historyView').style.display = 'none'; }
+
 function renderHistory() {
     let th = 0, ta = 0;
     document.getElementById('historyList').innerHTML = session.map((m,i)=>{
-        th += m.pts[0]; ta += m.pts[1];
-        return `<div class="hist-item"><div><b>M${i+1}: ${m.h} vs ${m.a}</b><br>Score: ${m.score} | Pts: ${m.pts[0]}-${m.pts[1]}</div><button class="edit-btn" onclick="editMatchInHistory(${i})">Edit</button></div>`;
+        th += m.pts; ta += m.pts;
+        return `<div class="hist-item">
+            <div><b>M${i+1}: ${m.h} vs ${m.a}</b><br><small>${m.teams}</small><br>Score: ${m.score} | Pts: ${m.pts}-${m.pts}</div>
+            <div class="hist-controls">
+                <button class="show-btn" onclick="toggleMatchLog(${i})">Show Log</button>
+                <button class="edit-btn" onclick="editMatchInHistory(${i})">Edit</button>
+                <button class="copy-btn" onclick="copyMatchLog(${i})">Copy</button>
+            </div>
+            <div id="hist-log-${i}" class="match-detail-log">${m.logs.join('\n')}</div>
+        </div>`;
     }).join('') || "No matches yet.";
     document.getElementById('sessionTotal').innerText = `SESSION TOTAL: Home ${th} | Away ${ta}`;
 }
-function editMatchInHistory(idx) { let n = prompt("Edit Log (comma separated):", session[idx].logs.join(', ')); if(n) { session[idx].logs = n.split(',').map(s=>s.trim()); localStorage.setItem('apa_session', JSON.stringify(session)); renderHistory(); } }
-function clearSession() { if(confirm("Clear ALL data?")) { localStorage.clear(); location.reload(); } }
+
+function toggleMatchLog(idx) {
+    const el = document.getElementById(`hist-log-${idx}`);
+    el.style.display = el.style.display === 'block' ? 'none' : 'block';
+}
+
+function copyMatchLog(idx) {
+    const m = session[idx];
+    const text = `APA Match ${idx+1}: ${m.h} vs ${m.a}\nScore: ${m.score}\nPts: ${m.pts}-${m.pts}\nLogs:\n${m.logs.join('\n')}`;
+    navigator.clipboard.writeText(text).then(() => alert("Match log copied to clipboard!"));
+}
+
+function editMatchInHistory(idx) { 
+    let n = prompt("Edit Log (comma separated):", session[idx].logs.join(', ')); 
+    if(n) { 
+        session[idx].logs = n.split(',').map(s=>s.trim()); 
+        localStorage.setItem('apa_session', JSON.stringify(session)); 
+        renderHistory(); 
+    } 
+}
+
+function clearSession() { if(confirm("Clear ALL data?")) { localStorage.clear(); document.getElementById('hTeam').value = ''; document.getElementById('aTeam').value = ''; location.reload(); } }
 function setLag(s) { document.getElementById('lH').className = s === 'H' ? 'lag-btn active' : 'lag-btn'; document.getElementById('lA').className = s === 'A' ? 'lag-btn active' : 'lag-btn'; }
 initRace();
 </script>
