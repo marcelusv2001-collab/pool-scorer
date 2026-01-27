@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>8 Ball 3Pt. Offline Scorekeeper</title>
+    <title>8 Ball 3Pt. Scorekeeper</title>
     <style>
         :root { --bg: #0a0e14; --felt: #0d5a32; --gold: #ffd700; --blue: #1e3a8a; --red: #991b1b; --card: #161b22; }
         body { background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; touch-action: manipulation; }
@@ -22,18 +22,23 @@
         .inn-btn { background: #333; border: 2px solid var(--gold); height: 100%; color: var(--gold); }
         .pts-box { display: flex; justify-content: space-around; margin-top: 20px; padding: 12px; background: #000; border-radius: 8px; border: 1px solid var(--felt); font-weight: bold; color: var(--gold); }
         .log { margin-top: 15px; height: 140px; overflow-y: auto; background: #000; padding: 10px; font-size: 0.8rem; border: 1px solid #333; border-radius: 5px; color: #0f0; font-family: monospace; }
-        .footer-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; }
-        .footer-btns button { padding: 10px; cursor: pointer; background: #333; color: white; border: none; border-radius: 5px; font-weight: bold; font-size: 0.7rem; }
+        .footer-btns { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 20px; }
+        .footer-btns button { padding: 12px; cursor: pointer; background: #333; color: white; border: none; border-radius: 5px; font-weight: bold; font-size: 0.8rem; }
         #modal, #historyView { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); justify-content: center; align-items: center; z-index: 100; }
         .m-content { background: var(--card); padding: 20px; border-radius: 15px; border: 2px solid var(--felt); display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 85%; }
-        .m-content button { padding: 18px; background: var(--felt); color: #fff; border: none; border-radius: 8px; font-weight: bold; }
-        .history-content { background: var(--card); width: 90%; padding: 20px; border-radius: 10px; color: #fff; max-height: 80vh; overflow-y: auto; }
+        .history-content { background: var(--card); width: 90%; padding: 20px; border-radius: 10px; color: #fff; max-height: 85vh; overflow-y: auto; border: 1px solid var(--gold); }
+        .hist-item { border-bottom: 1px solid #444; padding: 10px 0; display: flex; justify-content: space-between; align-items: center; }
+        .edit-btn { background: var(--gold); color: #000; border: none; padding: 5px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
     </style>
 </head>
 <body>
 <div class="container">
     <h1>8 Ball 3Pt. Scorekeeper</h1>
-    <div class="header-stats"><span id="race">Race: 2/2</span><span id="totalSl">SLs: H(0) A(0)</span></div>
+    <div class="header-stats">
+        <span id="matchCount">Match: 1/5</span>
+        <span id="race">Race: 2/2</span>
+        <span id="totalSl">SLs: H(2) A(2)</span>
+    </div>
     <div class="row"><input type="text" id="hTeam" placeholder="Home Team"><input type="text" id="aTeam" placeholder="Away Team"></div>
     <div class="row"><div class="lag-btn" id="lH" onclick="setLag('H')">LAG HOME</div><div class="lag-btn" id="lA" onclick="setLag('A')">LAG AWAY</div></div>
     <div class="row"><input type="text" id="hPlayer" placeholder="Home Player"><select id="slH" onchange="initRace()"><option value="2">SL 2</option><option value="3">SL 3</option><option value="4">SL 4</option><option value="5">SL 5</option><option value="6">SL 6</option><option value="7">SL 7</option></select></div>
@@ -54,26 +59,18 @@
     </div>
     <div class="pts-box"><span>HOME Pts: <span id="ptsH">0</span></span><span>AWAY Pts: <span id="ptsA">0</span></span></div>
     <div class="footer-btns">
-        <button onclick="endMatch()">End Match</button><button onclick="editMatch()">Edit</button><button onclick="resetMatch()">Reset</button>
-        <button onclick="viewAll()" style="grid-column: span 3; background: var(--felt); border: 1px solid var(--gold);">View All Session Summary</button>
+        <button onclick="endMatch()" style="background:var(--felt)">End Match</button>
+        <button onclick="resetMatch()" style="background:var(--red)">Reset Match</button>
+        <button onclick="viewAll()" style="grid-column: span 2; border: 1px solid var(--gold);">View All & Session Summary</button>
     </div>
-    <div class="log" id="matchLog">MATCH LOG: Ready...</div>
+    <div class="log" id="matchLog">LOG: Ready...</div>
 </div>
 
 <div id="modal"><div class="m-content" id="mBtns"></div></div>
-<div id="historyView"><div class="history-content"><h2 style="color:var(--gold)">Session Results</h2><div id="historyList"></div><div id="sessionTotal" style="margin:15px 0; font-weight:bold; color:var(--gold)"></div><button onclick="closeHistory()" style="width:100%; padding:10px; background:#555; color:#fff; border:none; border-radius:5px;">Close</button><button onclick="clearSession()" style="margin-top:10px; width:100%; padding:10px; background:var(--red); color:#fff; border:none; border-radius:5px;">Reset All Matches</button></div></div>
+<div id="historyView"><div class="history-content"><h2 style="color:var(--gold)">Session Summary</h2><div id="historyList"></div><div id="sessionTotal" style="margin:15px 0; font-weight:bold; color:var(--gold); border-top: 1px solid #444; padding-top:10px;"></div><button onclick="closeHistory()" style="width:100%; padding:12px; background:#555; color:#fff; border:none; border-radius:5px; margin-bottom:10px;">Back to Match</button><button onclick="clearSession()" style="width:100%; padding:12px; background:var(--red); color:#fff; border:none; border-radius:5px;">Reset All Matches</button></div></div>
 
 <script>
-// Official APA Race Chart [Games Needed H, Games Needed A]
-const officialRace = { 
-    2: {2:[2,2], 3:[2,2], 4:[2,3], 5:[2,4], 6:[2,5], 7:[2,6]},
-    3: {2:[2,2], 3:[2,2], 4:[2,3], 5:[2,4], 6:[2,5], 7:[2,6]},
-    4: {2:[3,2], 3:[3,2], 4:[3,3], 5:[3,4], 6:[3,5], 7:[2,5]},
-    5: {2:[4,2], 3:[4,2], 4:[4,3], 5:[4,4], 6:[4,5], 7:[3,5]},
-    6: {2:[5,2], 3:[5,2], 4:[5,3], 5:[5,4], 6:[5,5], 7:[4,5]},
-    7: {2:[6,2], 3:[6,2], 4:[5,2], 5:[5,3], 6:[5,4], 7:[5,5]}
-};
-
+const officialRace = { 2: {2:, 3:, 4:, 5:, 6:, 7:}, 3: {2:, 3:, 4:, 5:, 6:, 7:}, 4: {2:, 3:, 4:, 5:, 6:, 7:}, 5: {2:, 3:, 4:, 5:, 6:, 7:}, 6: {2:, 3:, 4:, 5:, 6:, 7:}, 7: {2:, 3:, 4:, 5:, 6:, 7:} };
 let data = { toH:0, toA:0, defH:0, defA:0, inn:0, gwH:0, gwA:0, reqH:2, reqA:2, logs: [], totDefH:0, totDefA:0, totInn:0 };
 let session = JSON.parse(localStorage.getItem('apa_session')) || [];
 let clickTimer = null;
@@ -83,6 +80,7 @@ function initRace() {
     [data.reqH, data.reqA] = officialRace[h][a];
     document.getElementById('race').innerText = `Race: ${data.reqH}/${data.reqA}`;
     document.getElementById('totalSl').innerText = `SLs: H(${h}) A(${a})`;
+    document.getElementById('matchCount').innerText = `Match: ${session.length + 1}/5`;
     updateUI();
 }
 
@@ -90,8 +88,7 @@ function handle(e, key) {
     e.preventDefault();
     if (key.includes('to')) {
         const sl = parseInt(document.getElementById(key === 'toH' ? 'slH' : 'slA').value);
-        const limit = sl <= 3 ? 2 : 1;
-        if (clickTimer === null && data[key] >= limit) return alert(`Limit ${limit} reached for this game!`);
+        if (clickTimer === null && data[key] >= (sl <= 3 ? 2 : 1)) return alert("Timeout limit reached!");
     }
     if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; data[key] = Math.max(0, data[key] - 1); } 
     else {
@@ -103,22 +100,23 @@ function handle(e, key) {
 }
 
 function openRack(side) {
-    data.activeSide = side; document.getElementById('modal').style.display = 'flex';
-    document.getElementById('mBtns').innerHTML = ['Win','8BB','B&R','WP','E8','S8','CANCEL'].map(opt => 
-        `<button onclick="submitRack('${opt}')">${opt}</button>`).join('');
+    if (side === 'H' && data.gwH >= data.reqH) return alert("Home player finished.");
+    if (side === 'A' && data.gwA >= data.reqA) return alert("Away player finished.");
+    data.activeSide = side; 
+    document.getElementById('modal').style.display = 'flex';
+    document.getElementById('mBtns').innerHTML = ['Win','8BB','B&R','WP','E8','S8','CANCEL'].map(opt => `<button onclick="submitRack('${opt}')">${opt}</button>`).join('');
 }
 
 function submitRack(type) {
     if(type === 'CANCEL') return document.getElementById('modal').style.display = 'none';
     let markedInn = (type === '8BB' || type === 'B&R') ? 0 : data.inn;
     if(data.activeSide === 'H') data.gwH++; else data.gwA++;
-    
     data.totDefH += data.defH; data.totDefA += data.defA; data.totInn += markedInn;
-    data.logs.push(`G${data.gwH+data.gwA} (${data.activeSide}): ${type} TO:${data.toH}/${data.toA} D:${data.defH}/${data.defA} INN:${markedInn}`);
-    
+    data.logs.push(`G${data.gwH+data.gwA}(${data.activeSide}):${type} I:${markedInn} D:${data.defH}/${data.defA}`);
     data.defH = 0; data.defA = 0; data.inn = 0; data.toH = 0; data.toA = 0;
     calcMatchPts(); updateUI();
     document.getElementById('modal').style.display = 'none';
+    if(data.gwH === data.reqH || data.gwA === data.reqA) setTimeout(() => alert("Match Point! End Match to save."), 300);
 }
 
 function calcMatchPts() {
@@ -135,33 +133,49 @@ function calcMatchPts() {
 function updateUI() {
     ['toH','toA','defH','defA','inn'].forEach(k => document.getElementById(k).innerText = data[k]);
     document.getElementById('gw').innerText = `GW ${data.gwH}/${data.reqH} - ${data.gwA}/${data.reqA}`;
-    const logHead = `D:${data.totDefH}/${data.totDefA} INN:${data.totInn}<br>`;
-    document.getElementById('matchLog').innerHTML = logHead + data.logs.join('<br>');
+    document.getElementById('matchLog').innerHTML = `T-Def: ${data.totDefH}/${data.totDefA} | T-Inn: ${data.totInn}<br>` + data.logs.join('<br>');
 }
-
-function setLag(s) { document.getElementById('lH').className = s === 'H' ? 'lag-btn active' : 'lag-btn'; document.getElementById('lA').className = s === 'A' ? 'lag-btn active' : 'lag-btn'; }
 
 function endMatch() {
-    if (session.length >= 5) return alert("Match limit (5) reached.");
+    if (data.gwH < data.reqH && data.gwA < data.reqA) return alert("Match not finished.");
+    if (session.length >= 5) return alert("Session Full.");
     const pts = calcMatchPts();
-    session.push({ h: document.getElementById('hPlayer').value, a: document.getElementById('aPlayer').value, score: `${data.gwH}-${data.gwA}`, pts: pts });
+    session.push({ h: document.getElementById('hPlayer').value || "Home", a: document.getElementById('aPlayer').value || "Away", score: `${data.gwH}-${data.gwA}`, pts: pts, logs: [...data.logs] });
     localStorage.setItem('apa_session', JSON.stringify(session));
-    alert("Match Saved!"); location.reload();
+    location.reload();
 }
 
-function resetMatch() { if(confirm("Reset current match?")) { data.gwH = 0; data.gwA = 0; data.logs = []; data.totDefH=0; data.totDefA=0; data.totInn=0; updateUI(); } }
-function editMatch() { let n = prompt("Edit Log (comma split):", data.logs.join(', ')); if(n) { data.logs = n.split(',').map(s=>s.trim()); updateUI(); } }
+function resetMatch() { if(confirm("Reset this match?")) { data.gwH = 0; data.gwA = 0; data.logs = []; data.totDefH=0; data.totDefA=0; data.totInn=0; updateUI(); } }
+
 function viewAll() {
     document.getElementById('historyView').style.display = 'flex';
+    renderHistory();
+}
+
+function renderHistory() {
     let th = 0, ta = 0;
     document.getElementById('historyList').innerHTML = session.map((m,i)=>{
         th += m.pts; ta += m.pts;
-        return `<div>Match ${i+1}: ${m.h} vs ${m.a} (${m.score}) - Pts: ${m.pts}-${m.pts}</div>`;
-    }).join('') || "No matches saved.";
-    document.getElementById('sessionTotal').innerText = `Total Session Points: H(${th}) A(${ta})`;
+        return `<div class="hist-item">
+            <div><b>M${i+1}: ${m.h} vs ${m.a}</b><br>Score: ${m.score} | Pts: ${m.pts}-${m.pts}</div>
+            <button class="edit-btn" onclick="editMatchInHistory(${i})">Edit Log</button>
+        </div>`;
+    }).join('') || "No matches yet.";
+    document.getElementById('sessionTotal').innerText = `SESSION TOTAL: Home ${th} | Away ${ta}`;
 }
+
+function editMatchInHistory(index) {
+    let n = prompt("Edit Log for Match " + (index+1) + " (comma separated):", session[index].logs.join(', '));
+    if(n !== null) {
+        session[index].logs = n.split(',').map(s=>s.trim());
+        localStorage.setItem('apa_session', JSON.stringify(session));
+        renderHistory();
+    }
+}
+
+function setLag(s) { document.getElementById('lH').className = s === 'H' ? 'lag-btn active' : 'lag-btn'; document.getElementById('lA').className = s === 'A' ? 'lag-btn active' : 'lag-btn'; }
 function closeHistory() { document.getElementById('historyView').style.display = 'none'; }
-function clearSession() { if(confirm("This wipes the entire session. Continue?")) { localStorage.clear(); location.reload(); } }
+function clearSession() { if(confirm("Clear ALL session data?")) { localStorage.clear(); location.reload(); } }
 initRace();
 </script>
 </body>
