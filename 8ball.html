@@ -2,247 +2,141 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>8 Ball 3Pt. Offline Scorekeeper</title>
     <style>
-        :root {
-            --bg-color: #0a0e14;
-            --felt-green: #0d5a32;
-            --text-gold: #ffd700;
-            --button-blue: #1e3a8a;
-            --button-red: #991b1b;
-            --card-bg: #161b22;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: #fff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 10px;
-            user-select: none;
-        }
-
-        .container { max-width: 500px; margin: auto; border: 2px solid var(--felt-green); padding: 15px; border-radius: 12px; background: var(--card-bg); }
-        h1 { font-size: 1.2rem; text-align: center; color: var(--text-gold); margin: 0 0 10px 0; }
-        
-        .header-stats { display: flex; justify-content: space-between; font-size: 0.9rem; color: #aaa; margin-bottom: 10px; }
-        .row { display: flex; gap: 10px; margin-bottom: 10px; }
-        input, select { flex: 1; padding: 8px; border-radius: 5px; border: 1px solid #333; background: #000; color: #fff; }
-
-        .lag-section { display: flex; justify-content: center; gap: 20px; margin-bottom: 10px; }
-        .lag-btn { padding: 5px 15px; border-radius: 20px; border: 2px solid #444; cursor: pointer; }
-        .lag-btn.active { border-color: var(--text-gold); background: var(--felt-green); }
-
-        .score-display { text-align: center; font-size: 1.1rem; font-weight: bold; margin: 10px 0; color: var(--text-gold); }
-
-        .button-grid { display: grid; grid-template-columns: 1fr 80px 1fr; gap: 10px; align-items: center; }
-        .btn-col { display: flex; flex-direction: column; gap: 10px; }
-        
-        .score-btn { padding: 20px 10px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; touch-action: manipulation; }
-        .home-btn { background: var(--button-blue); }
-        .away-btn { background: var(--button-red); }
-        .inn-btn { background: #444; height: 100%; border: 2px solid var(--text-gold); }
-        
-        .match-points { display: flex; justify-content: space-around; margin-top: 15px; padding: 10px; background: #000; border-radius: 8px; border: 1px solid var(--felt-green); }
-        .log-section { margin-top: 15px; font-family: monospace; font-size: 0.85rem; height: 100px; overflow-y: auto; background: #000; padding: 10px; border: 1px solid #333; }
-
-        .footer-btns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-top: 15px; }
-        .footer-btns button { padding: 10px; cursor: pointer; background: #333; color: white; border: none; border-radius: 5px; }
-        
-        /* Modal for Rack Options */
-        #rackModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; }
-        .modal-content { background: var(--card-bg); padding: 20px; border-radius: 10px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .modal-content button { padding: 15px; background: var(--felt-green); color: white; border: none; border-radius: 5px; }
+        :root { --bg: #0a0e14; --felt: #0d5a32; --gold: #ffd700; --blue: #1e3a8a; --red: #991b1b; --card: #161b22; }
+        body { background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; touch-action: manipulation; }
+        .container { max-width: 450px; margin: auto; border: 2px solid var(--felt); padding: 15px; border-radius: 12px; background: var(--card); box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        h1 { font-size: 1.1rem; text-align: center; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; margin: 0 0 15px; }
+        .row { display: flex; gap: 10px; margin-bottom: 8px; }
+        .header-stats { display: flex; justify-content: space-between; font-size: 0.85rem; color: #bbb; margin-bottom: 10px; font-weight: bold; }
+        input, select { flex: 1; padding: 10px; border-radius: 5px; border: 1px solid #333; background: #000; color: #fff; font-size: 0.9rem; }
+        .lag-btn { flex: 1; padding: 8px; text-align: center; border: 2px solid #444; border-radius: 20px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
+        .lag-btn.active { background: var(--felt); border-color: var(--gold); color: #fff; }
+        .score-banner { text-align: center; font-size: 1.3rem; font-weight: 800; margin: 15px 0; color: var(--gold); border-top: 1px solid #333; padding-top: 10px; }
+        .grid { display: grid; grid-template-columns: 1fr 80px 1fr; gap: 12px; }
+        .btn-stack { display: flex; flex-direction: column; gap: 10px; }
+        .score-btn { padding: 22px 5px; border: none; border-radius: 8px; color: white; font-weight: bold; font-size: 1rem; cursor: pointer; box-shadow: 0 4px #000; }
+        .h-btn { background: var(--blue); } .a-btn { background: var(--red); }
+        .inn-btn { background: #333; border: 2px solid var(--gold); height: 100%; color: var(--gold); }
+        .pts-box { display: flex; justify-content: space-around; margin-top: 20px; padding: 12px; background: #000; border-radius: 8px; border: 1px solid var(--felt); font-weight: bold; color: var(--gold); }
+        .log { margin-top: 15px; height: 140px; overflow-y: auto; background: #000; padding: 10px; font-size: 0.8rem; border: 1px solid #333; border-radius: 5px; line-height: 1.4; color: #0f0; font-family: monospace; }
+        #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; z-index: 100; }
+        .m-content { background: var(--card); padding: 20px; border-radius: 15px; border: 2px solid var(--felt); display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 80%; }
+        .m-content button { padding: 18px; background: var(--felt); color: #fff; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; }
     </style>
 </head>
 <body>
-
-<div class="container" id="matchWindow">
-    <h1>8 Ball 3Pt. Offline Scorekeeper</h1>
-    
-    <div class="header-stats">
-        <span id="raceLabel">(Race 0/0)</span>
-        <span id="totalSlLabel">H(0) A(0)</span>
-    </div>
-
-    <div class="row">
-        <input type="text" id="homeTeam" placeholder="Home Team">
-        <input type="text" id="awayTeam" placeholder="Away Team">
-    </div>
-
-    <div class="lag-section">
-        <div class="lag-btn" onclick="toggleLag('H')" id="lagH">Lag H</div>
-        <div class="lag-btn" onclick="toggleLag('A')" id="lagA">Lag A</div>
-    </div>
-
-    <div class="row">
-        <input type="text" id="homePlayer" placeholder="Home Player">
-        <select id="slH" onchange="calculateRace()"><option value="2">SL 2</option><option value="3">SL 3</option><option value="4">SL 4</option><option value="5">SL 5</option><option value="6">SL 6</option><option value="7">SL 7</option></select>
-    </div>
-    <div class="row">
-        <input type="text" id="awayPlayer" placeholder="Away Player">
-        <select id="slA" onchange="calculateRace()"><option value="2">SL 2</option><option value="3">SL 3</option><option value="4">SL 4</option><option value="5">SL 5</option><option value="6">SL 6</option><option value="7">SL 7</option></select>
-    </div>
-
-    <div class="score-display" id="gwLabel">gw 0/0</div>
-
-    <div class="button-grid">
-        <div class="btn-col">
-            <button class="score-btn home-btn" onmousedown="handlePress(event, 'toH')" ontouchstart="handlePress(event, 'toH')">TO: <span id="toH">0</span></button>
-            <button class="score-btn home-btn" onmousedown="handlePress(event, 'defH')" ontouchstart="handlePress(event, 'defH')">DEF: <span id="defH">0</span></button>
-            <button class="score-btn home-btn" onclick="openRack('H')">RACK</button>
+<div class="container">
+    <h1>8 Ball 3Pt. Scorekeeper</h1>
+    <div class="header-stats"><span id="race">Race: 2/2</span><span id="totalSl">SL Sum: 4</span></div>
+    <div class="row"><input type="text" id="hTeam" placeholder="Home Team"><input type="text" id="aTeam" placeholder="Away Team"></div>
+    <div class="row"><div class="lag-btn" id="lH" onclick="setLag('H')">LAG HOME</div><div class="lag-btn" id="lA" onclick="setLag('A')">LAG AWAY</div></div>
+    <div class="row"><input type="text" id="hPlayer" placeholder="Home Player"><select id="slH" onchange="initRace()"><option value="2">SL 2</option><option value="3">SL 3</option><option value="4">SL 4</option><option value="5">SL 5</option><option value="6">SL 6</option><option value="7">SL 7</option></select></div>
+    <div class="row"><input type="text" id="aPlayer" placeholder="Away Player"><select id="slA" onchange="initRace()"><option value="2">SL 2</option><option value="3">SL 3</option><option value="4">SL 4</option><option value="5">SL 5</option><option value="6">SL 6</option><option value="7">SL 7</option></select></div>
+    <div class="score-banner" id="gw">GW 0/2 - 0/2</div>
+    <div class="grid">
+        <div class="btn-stack">
+            <button class="score-btn h-btn" onmousedown="handle(event, 'toH')" ontouchstart="handle(event, 'toH')">TO: <span id="toH">0</span></button>
+            <button class="score-btn h-btn" onmousedown="handle(event, 'defH')" ontouchstart="handle(event, 'defH')">DEF: <span id="defH">0</span></button>
+            <button class="score-btn h-btn" onclick="openRack('H')">RACK</button>
         </div>
-        
-        <button class="score-btn inn-btn" onmousedown="handlePress(event, 'inn')" ontouchstart="handlePress(event, 'inn')">INN<br><span id="inn">0</span></button>
-
-        <div class="btn-col">
-            <button class="score-btn away-btn" onmousedown="handlePress(event, 'toA')" ontouchstart="handlePress(event, 'toA')">TO: <span id="toA">0</span></button>
-            <button class="score-btn away-btn" onmousedown="handlePress(event, 'defA')" ontouchstart="handlePress(event, 'defA')">DEF: <span id="defA">0</span></button>
-            <button class="score-btn away-btn" onclick="openRack('A')">RACK</button>
+        <button class="score-btn inn-btn" onmousedown="handle(event, 'inn')" ontouchstart="handle(event, 'inn')">INN<br><span id="inn">0</span></button>
+        <div class="btn-stack">
+            <button class="score-btn a-btn" onmousedown="handle(event, 'toA')" ontouchstart="handle(event, 'toA')">TO: <span id="toA">0</span></button>
+            <button class="score-btn a-btn" onmousedown="handle(event, 'defA')" ontouchstart="handle(event, 'defA')">DEF: <span id="defA">0</span></button>
+            <button class="score-btn a-btn" onclick="openRack('A')">RACK</button>
         </div>
     </div>
-
-    <div class="match-points">
-        <span>Home Pts: <span id="matchPtsH">0</span></span>
-        <span>Away Pts: <span id="matchPtsA">0</span></span>
-    </div>
-
-    <div class="footer-btns">
-        <button onclick="endMatch()">End Match</button>
-        <button onclick="editMatch()">Edit</button>
-        <button onclick="resetMatch()">Reset</button>
-        <button onclick="viewAll()" style="grid-column: span 3; background: var(--felt-green);">View All & Start Another</button>
-    </div>
-
-    <div class="log-section" id="matchLog">Match Log empty...</div>
+    <div class="pts-box"><span>HOME PTS: <span id="ptsH">0</span></span><span>AWAY PTS: <span id="ptsA">0</span></span></div>
+    <div class="log" id="matchLog">MATCH LOG: Ready...</div>
 </div>
-
-<div id="rackModal">
-    <div class="modal-content">
-        <button onclick="submitRack('8BB')">8BB</button>
-        <button onclick="submitRack('B&R')">B&R</button>
-        <button onclick="submitRack('WP')">WP</button>
-        <button onclick="submitRack('E8')">E8</button>
-        <button onclick="submitRack('S8')">S8</button>
-        <button onclick="closeRack()" style="background: #333;">X</button>
-    </div>
-</div>
+<div id="modal"><div class="m-content" id="mBtns"></div></div>
 
 <script>
-    // Data State
-    let state = {
-        toH: 0, toA: 0, defH: 0, defA: 0, inn: 0, gwH: 0, gwA: 0,
-        needsH: 2, needsA: 2, matchPtsH: 0, matchPtsA: 0,
-        gameCount: 1, currentRackSide: 'H'
-    };
+// FULL CORRECTED APA GAMES MUST WIN CHART
+const officialRace = {
+    2: {2:[2,2], 3:[2,2], 4:[2,3], 5:[2,4], 6:[2,5], 7:[2,6]},
+    3: {2:[2,2], 3:[2,2], 4:[2,3], 5:[2,4], 6:[2,5], 7:[2,6]},
+    4: {2:[3,2], 3:[3,2], 4:[3,3], 5:[3,4], 6:[3,5], 7:[2,5]},
+    5: {2:[4,2], 3:[4,2], 4:[4,3], 5:[4,4], 6:[4,5], 7:[3,5]},
+    6: {2:[5,2], 3:[5,2], 4:[5,3], 5:[5,4], 6:[5,5], 7:[4,5]},
+    7: {2:[6,2], 3:[6,2], 4:[5,2], 5:[5,3], 6:[5,4], 7:[5,5]}
+};
 
-    // APA 8-Ball Race Chart
-    const raceChart = {
-        "2": { "2": 2, "3": 2, "4": 2, "5": 2, "6": 2, "7": 2 },
-        "3": { "2": 2, "3": 2, "4": 2, "5": 2, "6": 2, "7": 2 },
-        "4": { "2": 3, "3": 3, "4": 3, "5": 3, "6": 3, "7": 2 },
-        "5": { "2": 4, "3": 4, "4": 4, "5": 4, "6": 3, "7": 3 },
-        "6": { "2": 5, "3": 5, "4": 5, "5": 4, "6": 4, "7": 4 },
-        "7": { "2": 6, "3": 6, "4": 5, "5": 5, "6": 5, "7": 5 }
-    };
+let data = { toH:0, toA:0, defH:0, defA:0, inn:0, gwH:0, gwA:0, reqH:2, reqA:2, activeSide:'' };
+let clickTimer = null;
 
-    function calculateRace() {
-        const h = document.getElementById('slH').value;
-        const a = document.getElementById('slA').value;
-        state.needsH = raceChart[h][a];
-        state.needsA = raceChart[a][h];
-        updateUI();
+function initRace() {
+    const slH = parseInt(document.getElementById('slH').value), slA = parseInt(document.getElementById('slA').value);
+    [data.reqH, data.reqA] = officialRace[slH][slA];
+    document.getElementById('race').innerText = `Race: ${data.reqH}/${data.reqA}`;
+    document.getElementById('totalSl').innerText = `SL Sum: ${slH + slA}`;
+    updateUI();
+}
+
+function handle(e, key) {
+    e.preventDefault();
+    if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; data[key] = Math.max(0, data[key] - 1); } 
+    else {
+        const lp = setTimeout(() => { data[key] = 0; updateUI(); clickTimer = null; }, 600);
+        clickTimer = setTimeout(() => { if (clickTimer) { data[key]++; updateUI(); clickTimer = null; } }, 250);
+        e.target.onmouseup = e.target.ontouchend = () => clearTimeout(lp);
     }
+    updateUI();
+}
 
-    // 3-Function Logic
-    let timer = null;
-    function handlePress(e, id) {
-        e.preventDefault();
-        if (e.detail === 2) { // Double tap
-            clearTimeout(timer);
-            state[id] = Math.max(0, state[id] - 1);
-        } else {
-            const longPress = setTimeout(() => {
-                state[id] = 0;
-                updateUI();
-            }, 600);
-            
-            e.target.onmouseup = e.target.ontouchend = () => {
-                clearTimeout(longPress);
-                if (e.detail === 1) state[id]++;
-                updateUI();
-            };
-        }
-        updateUI();
-    }
+function openRack(side) {
+    data.activeSide = side; document.getElementById('modal').style.display = 'flex';
+    document.getElementById('mBtns').innerHTML = ['8BB','B&R','WP','E8','S8','CANCEL'].map(opt => 
+        `<button onclick="submitRack('${opt}')">${opt}</button>`).join('');
+}
 
-    function toggleLag(side) {
-        document.getElementById('lagH').classList.toggle('active', side === 'H');
-        document.getElementById('lagA').classList.toggle('active', side === 'A');
-    }
-
-    function openRack(side) { 
-        state.currentRackSide = side;
-        document.getElementById('rackModal').style.display = 'flex'; 
-    }
+function submitRack(type) {
+    if(type === 'CANCEL') { document.getElementById('modal').style.display = 'none'; return; }
     
-    function closeRack() { document.getElementById('rackModal').style.display = 'none'; }
+    // Per APA Rule: 8BB and B&R racks do not mark an inning
+    let currentInns = (type === '8BB' || type === 'B&R') ? 0 : data.inn;
+    
+    if(data.activeSide === 'H') data.gwH++; else data.gwA++;
+    const log = document.getElementById('matchLog');
+    if(log.innerText.includes('Ready')) log.innerHTML = '';
+    log.innerHTML += `> G${data.gwH+data.gwA}: (${data.activeSide}) ${type} | INN:${currentInns} | DEF:${data.defH}/${data.defA}<br>`;
+    
+    data.defH = 0; data.defA = 0; data.inn = 0; 
+    calcMatchPts(); 
+    updateUI();
+    document.getElementById('modal').style.display = 'none';
+}
 
-    function submitRack(type) {
-        const side = state.currentRackSide;
-        if (side === 'H') state.gwH++; else state.gwA++;
-        
-        // Log game
-        const log = document.getElementById('matchLog');
-        if (log.innerHTML.includes('empty')) log.innerHTML = '';
-        log.innerHTML += `G${state.gameCount} (${side}) ${type} TO:${state.toH}/${state.toA} D:${state.defH}/${state.defA} INN:${state.inn}<br>`;
-        
-        state.gameCount++;
-        state.defH = 0; state.defA = 0; state.inn = 0; // Reset for next rack
-        
-        checkMatchEnd();
-        closeRack();
-        updateUI();
+function calcMatchPts() {
+    let pH = 0, pA = 0;
+    // 3-Point Scoring System
+    if (data.gwH >= data.reqH) {
+        if (data.gwA === 0) { pH = 3; pA = 0; } 
+        else if (data.gwA === data.reqA - 1) { pH = 2; pA = 1; } 
+        else { pH = 2; pA = 0; }
+    } else if (data.gwA >= data.reqA) {
+        if (data.gwH === 0) { pA = 3; pH = 0; }
+        else if (data.gwH === data.reqH - 1) { pA = 2; pH = 1; }
+        else { pA = 2; pH = 0; }
     }
+    document.getElementById('ptsH').innerText = pH; 
+    document.getElementById('ptsA').innerText = pA;
+}
 
-    function checkMatchEnd() {
-        if (state.gwH >= state.needsH || state.gwA >= state.needsA) {
-            calculateMatchPoints();
-            alert("Match complete! Please click End Match to save.");
-        }
-    }
+function setLag(s) { 
+    document.getElementById('lH').classList.remove('active'); 
+    document.getElementById('lA').classList.remove('active'); 
+    document.getElementById('l' + s).classList.add('active'); 
+}
 
-    function calculateMatchPoints() {
-        // Simple 3-point logic placeholder
-        if (state.gwH >= state.needsH) { state.matchPtsH = 3; state.matchPtsA = 0; }
-        else if (state.gwA >= state.needsA) { state.matchPtsA = 3; state.matchPtsH = 0; }
-    }
-
-    function updateUI() {
-        document.getElementById('toH').innerText = state.toH;
-        document.getElementById('toA').innerText = state.toA;
-        document.getElementById('defH').innerText = state.defH;
-        document.getElementById('defA').innerText = state.defA;
-        document.getElementById('inn').innerText = state.inn;
-        document.getElementById('raceLabel').innerText = `(Race ${state.needsH}/${state.needsA})`;
-        document.getElementById('gwLabel').innerText = `gw ${state.gwH}/${state.gwA}`;
-        document.getElementById('matchPtsH').innerText = state.matchPtsH;
-        document.getElementById('matchPtsA').innerText = state.matchPtsA;
-    }
-
-    function resetMatch() {
-        if(confirm("Reset current match?")) location.reload();
-    }
-
-    function endMatch() {
-        alert("Match data recorded. Ready for next match.");
-        location.reload();
-    }
-
-    function viewAll() {
-        alert("View All Mode: Current Stats and Match Logs summary would be displayed here.");
-    }
+function updateUI() {
+    ['toH','toA','defH','defA','inn'].forEach(k => document.getElementById(k).innerText = data[k]);
+    document.getElementById('gw').innerText = `GW ${data.gwH}/${data.reqH} - ${data.gwA}/${data.reqA}`;
+}
+initRace();
 </script>
 </body>
 </html>
