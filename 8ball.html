@@ -21,6 +21,7 @@
         .h-btn { background: var(--blue); } .a-btn { background: var(--red); }
         .inn-btn { background: #333; border: 2px solid var(--gold); height: 100%; color: var(--gold); }
         .pts-box { display: flex; justify-content: space-around; margin-top: 15px; padding: 12px; background: #000; border-radius: 8px; border: 1px solid var(--felt); font-weight: bold; color: var(--gold); }
+        .total-pts-box { display: flex; justify-content: space-around; margin-top: 5px; padding: 8px; background: #0a0e14; border-radius: 8px; border: 1px solid #333; font-size: 0.85rem; }
         .log-container { margin-top: 15px; }
         .log-controls { display: flex; gap: 5px; margin-bottom: 5px; }
         .log-controls button { flex: 1; padding: 5px; font-size: 0.7rem; background: #333; color: #fff; border: 1px solid #555; border-radius: 3px; cursor: pointer; }
@@ -28,23 +29,26 @@
         .footer-btns { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px; }
         .footer-btns button { padding: 12px; cursor: pointer; background: #333; color: white; border: none; border-radius: 5px; font-weight: bold; font-size: 0.8rem; }
         #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); justify-content: center; align-items: center; z-index: 100; }
-        .m-content { background: var(--card); padding: 20px; border-radius: 15px; border: 2px solid var(--felt); display: grid; grid-template-columns: 1fr; gap: 10px; width: 80%; max-width: 300px; }
+        .m-content { background: var(--card); padding: 20px; border-radius: 15px; border: 2px solid var(--felt); display: grid; grid-template-columns: 1fr; gap: 10px; width: 85%; max-width: 350px; max-height: 90vh; overflow-y: auto; }
     </style>
 </head>
 <body>
 <div class="container">
     <h1>8 Ball 3Pt. Scorekeeper</h1>
     <div class="header-stats">
-        <span>Match: <select id="mSelect" style="display:inline; width:auto; padding:2px; font-size:0.8rem;" onchange="state.m = this.value">
+        <span>Match: <select id="mSelect" style="display:inline; width:auto; padding:2px;" onchange="state.m = this.value">
             <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
         </select>/5</span>
         <span id="race">Race: 2/2</span>
-        <span id="totalSl">SLs: 2/2</span>
+        <span id="totalSl">SLs: H(2) A(2)</span>
     </div>
     <div class="row"><input type="text" id="hTeam" placeholder="Home Team"><input type="text" id="aTeam" placeholder="Away Team"></div>
     <div class="row"><div class="lag-btn" id="lH" onclick="setLag('H')">LAG HOME</div><div class="lag-btn" id="lA" onclick="setLag('A')">LAG AWAY</div></div>
-    <div class="row"><input type="text" id="hPlayer" placeholder="Home Player"><select id="slH" onchange="initRace()"><option value="2">SL 2</option><option value="3">SL 3</option><option value="4">SL 4</option><option value="5">SL 5</option><option value="6">SL 6</option><option value="7">SL 7</option></select></div>
-    <div class="row"><input type="text" id="aPlayer" placeholder="Away Player"><select id="slA" onchange="initRace()"><option value="2">SL 2</option><option value="3">SL 3</option><option value="4">SL 4</option><option value="5">SL 5</option><option value="6">SL 6</option><option value="7">SL 7</option></select></div>
+    <div class="row"><input type="text" id="hPlayer" placeholder="Home Player"><input type="text" id="aPlayer" placeholder="Away Player"></div>
+    <div class="row">
+        <select id="slH" onchange="initRace()"><option value="2">H-SL 2</option><option value="3">H-SL 3</option><option value="4">H-SL 4</option><option value="5">H-SL 5</option><option value="6">H-SL 6</option><option value="7">H-SL 7</option></select>
+        <select id="slA" onchange="initRace()"><option value="2">A-SL 2</option><option value="3">A-SL 3</option><option value="4">A-SL 4</option><option value="5">A-SL 5</option><option value="6">A-SL 6</option><option value="7">A-SL 7</option></select>
+    </div>
     <div class="score-banner" id="gw">GW 0/2 - 0/2</div>
     <div class="grid">
         <div class="btn-stack">
@@ -59,14 +63,19 @@
             <button class="score-btn a-btn" id="rackA" onclick="openRack('A')">RACK</button>
         </div>
     </div>
-    <div class="pts-box"><span>HOME Pts: <span id="ptsH">0</span></span><span>AWAY Pts: <span id="ptsA">0</span></span></div>
+    <div class="pts-box"><span>HOME Match: <span id="ptsH">0</span></span><span>AWAY Match: <span id="ptsA">0</span></span></div>
+    <div class="total-pts-box"><span>HOME Session: <span id="totalPtsH">0</span></span><span>AWAY Session: <span id="totalPtsA">0</span></span></div>
     <div class="log-container">
         <div class="log-controls"><button onclick="copyLog()">Copy Log</button><button id="editBtn" onclick="toggleEdit()">Edit Log</button></div>
         <div class="log" id="matchLog" contenteditable="false"></div>
     </div>
-    <div class="footer-btns"><button onclick="endMatch()" style="background:var(--felt)">End Match</button><button onclick="undo()" style="background:#444">Undo</button></div>
+    <div class="footer-btns">
+        <button onclick="endMatch()" style="background:var(--felt)">End Match</button>
+        <button onclick="resetSession()" style="background:var(--red)">Reset Session</button>
+        <button onclick="undo()" style="background:#444; grid-column: span 2;">Undo Last Action</button>
+    </div>
 </div>
-<div id="modal"><div class="m-content" id="mBtns"></div></div>
+<div id="modal" onclick="if(event.target==this)this.style.display='none'"><div class="m-content" id="mBtns"></div></div>
 
 <script>
 // Official APA Games Must Win Chart
@@ -79,14 +88,14 @@ const officialRace = {
     7: { 2:7, 3:6, 4:6, 5:5, 6:5, 7:4 }
 };
 
-let state = { m:1, g:1, toH:0, toA:0, defH:0, defA:0, inn:0, gwH:0, gwA:0, reqH:2, reqA:2, isMatchLogged: false };
-let history = [];
+let state = { m:1, g:1, toH:0, toA:0, defH:0, defA:0, inn:0, gwH:0, gwA:0, reqH:2, reqA:2, isMatchLogged: false, sesH: 0, sesA: 0, lagWinner: '' };
+let historyStack = [];
 
 function initRace() {
     const slH = parseInt(document.getElementById('slH').value);
     const slA = parseInt(document.getElementById('slA').value);
     state.reqH = officialRace[slH][slA];
-    state.reqA = officialRace[slA][slH]; // Symmetric lookup
+    state.reqA = officialRace[slA][slH];
     updateUI();
 }
 
@@ -94,45 +103,52 @@ function inc(key) {
     saveHistory();
     if (key.includes('to')) {
         const sl = parseInt(document.getElementById(key === 'toH' ? 'slH' : 'slA').value);
-        const limit = sl <= 3 ? 2 : 1;
-        if (state[key] >= limit && !confirm(`Exceed coaching limit (${limit})?`)) return;
+        const limit = sl <= 3 ? 2 : 1; // APA Coaching Rules
+        if (state[key] >= limit && !confirm(`Player already reached the ${limit} timeout limit. Allow?`)) return;
     }
-    state[key]++;
-    updateUI();
+    state[key]++; updateUI();
 }
 
 function setLag(p) { 
-    document.getElementById('lH').classList.toggle('active', p==='H'); 
-    document.getElementById('lA').classList.toggle('active', p==='A'); 
+    state.lagWinner = p; 
+    document.querySelectorAll('.lag-btn').forEach(b => b.classList.remove('active')); 
+    document.getElementById('l'+p).classList.add('active'); 
 }
 
 function openRack(winner) {
     if ((winner === 'H' && state.gwH >= state.reqH) || (winner === 'A' && state.gwA >= state.reqA)) return;
-    
+    const hp = document.getElementById('hPlayer').value, ap = document.getElementById('aPlayer').value;
+    if (!hp || !ap || !state.lagWinner) return alert("Required: Mandatory Names & Lag Winner!");
+
     if (!state.isMatchLogged) {
-        const hp = document.getElementById('hPlayer').value || "Home";
-        const ap = document.getElementById('aPlayer').value || "Away";
-        const mHeader = `(M${state.m} ${hp}(H) Vs. ${ap}(A))`;
-        document.getElementById('matchLog').innerText += (document.getElementById('matchLog').innerText ? '\n' : '') + mHeader;
+        document.getElementById('matchLog').innerText += `\n(M${state.m} ${hp}(H) Vs. ${ap}(A) Lag:${state.lagWinner})`;
         state.isMatchLogged = true;
     }
 
-    const modal = document.getElementById('modal');
-    const container = document.getElementById('mBtns');
-    container.innerHTML = `<h3 style="text-align:center; color:var(--gold)">Game ${state.g} Winner: ${winner}</h3>`;
+    const modal = document.getElementById('modal'), container = document.getElementById('mBtns');
+    container.innerHTML = `<h3 style="text-align:center;color:var(--gold);margin-top:0">Game ${state.g} Winner: ${winner}</h3>`;
     
-    ["Normal Win", "8-on-Break", "Break & Run"].forEach(type => {
+    // Official Win/Loss Scenarios
+    const options = [
+        { label: "Normal Win", tag: "Win" },
+        { label: "Break & Run (BR)", tag: "BR" },
+        { label: "8-on-Break (OB)", tag: "OB" },
+        { label: "Opponent WP (Wrong Pocket)", tag: "WP" },
+        { label: "Opponent S8 (Scratch on 8)", tag: "S8" },
+        { label: "Opponent E8 (Early 8)", tag: "E8" }
+    ];
+
+    options.forEach(opt => {
         let btn = document.createElement('button');
         btn.className = 'score-btn ' + (winner==='H' ? 'h-btn' : 'a-btn');
-        btn.innerText = type;
+        btn.style.padding = "15px 5px";
+        btn.innerText = opt.label;
         btn.onclick = () => {
             saveHistory();
-            const hRes = winner === 'H' ? 'win' : 'loss';
-            const aRes = winner === 'A' ? 'win' : 'loss';
-            const entry = `(M${state.m} G${state.g} (H)${hRes} ${state.defH}def ${state.toH}to (A)${aRes} ${state.defA}def ${state.toA}to inn.${state.inn})`;
+            const entry = `(M${state.m} G${state.g} (H)${winner==='H'?'win':'loss'} ${state.defH}def ${state.toH}to (A)${winner==='A'?'win':'loss'} ${state.defA}def ${state.toA}to inn.${state.inn} [${opt.tag}])`;
             document.getElementById('matchLog').innerText += '\n' + entry;
-            if(winner==='H') state.gwH++; else state.gwA++;
-            state.g++; state.toH = 0; state.toA = 0; state.defH = 0; state.defA = 0; state.inn = 0;
+            winner==='H' ? state.gwH++ : state.gwA++;
+            state.g++; state.toH=0; state.toA=0; state.defH=0; state.defA=0; state.inn=0;
             modal.style.display = 'none'; updateUI();
         };
         container.appendChild(btn);
@@ -141,59 +157,54 @@ function openRack(winner) {
 }
 
 function updateUI() {
-    document.getElementById('toH').innerText = state.toH;
-    document.getElementById('toA').innerText = state.toA;
-    document.getElementById('defH').innerText = state.defH;
-    document.getElementById('defA').innerText = state.defA;
+    document.getElementById('toH').innerText = state.toH; document.getElementById('toA').innerText = state.toA;
+    document.getElementById('defH').innerText = state.defH; document.getElementById('defA').innerText = state.defA;
     document.getElementById('inn').innerText = state.inn;
     document.getElementById('gw').innerText = `GW ${state.gwH}/${state.reqH} - ${state.gwA}/${state.reqA}`;
     document.getElementById('race').innerText = `Race: ${state.reqH}/${state.reqA}`;
+    document.getElementById('totalSl').innerText = `SLs: H(${document.getElementById('slH').value}) A(${document.getElementById('slA').value})`;
     
-    const isOver = state.gwH >= state.reqH || state.gwA >= state.reqA;
-    document.getElementById('rackH').disabled = isOver;
-    document.getElementById('rackA').disabled = isOver;
-    document.getElementById('rackH').style.opacity = isOver ? "0.3" : "1";
-    document.getElementById('rackA').style.opacity = isOver ? "0.3" : "1";
-
+    // Official 3-Point System Calculation
     let ptsH = 0, ptsA = 0;
     if (state.gwH >= state.reqH) {
-        if (state.gwA === 0) ptsH = 3; 
-        else if (state.gwA === state.reqA - 1) { ptsH = 2; ptsA = 1; } // Hill Loss (2-1)
-        else ptsH = 2; // Normal Loss (2-0)
+        if (state.gwA === 0) ptsH = 3; // Shutout
+        else if (state.gwA === state.reqH - 1 || state.gwA >= state.reqA - 1) ptsH = 2, ptsA = 1; // Hill Loss
+        else ptsH = 2; // Normal Loss
     } else if (state.gwA >= state.reqA) {
-        if (state.gwH === 0) ptsA = 3; 
-        else if (state.gwH === state.reqH - 1) { ptsA = 2; ptsH = 1; } 
+        if (state.gwH === 0) ptsA = 3;
+        else if (state.gwH === state.reqA - 1 || state.gwH >= state.reqH - 1) ptsA = 2, ptsH = 1; // Hill Loss
         else ptsA = 2;
     }
-    document.getElementById('ptsH').innerText = ptsH;
-    document.getElementById('ptsA').innerText = ptsA;
+    document.getElementById('ptsH').innerText = ptsH; document.getElementById('ptsA').innerText = ptsA;
+    document.getElementById('totalPtsH').innerText = state.sesH + ptsH; document.getElementById('totalPtsA').innerText = state.sesA + ptsA;
 }
 
 function endMatch() {
-    if(!confirm("Start next match? Teams and logs persist.")) return;
-    state.g = 1; state.toH = 0; state.toA = 0; state.defH = 0; state.defA = 0; 
-    state.inn = 0; state.gwH = 0; state.gwA = 0; state.isMatchLogged = false;
-    document.getElementById('hPlayer').value = ""; document.getElementById('aPlayer').value = "";
-    let next = Math.min(5, parseInt(state.m) + 1);
-    state.m = next; document.getElementById('mSelect').value = next;
+    if(!confirm("Next Match? Current totals will be saved to Session.")) return;
+    state.sesH += parseInt(document.getElementById('ptsH').innerText);
+    state.sesA += parseInt(document.getElementById('ptsA').innerText);
+    state.g=1; state.gwH=0; state.gwA=0; state.isMatchLogged=false; state.lagWinner='';
+    document.getElementById('hPlayer').value=""; document.getElementById('aPlayer').value="";
+    document.querySelectorAll('.lag-btn').forEach(b => b.classList.remove('active'));
+    state.m = Math.min(5, parseInt(state.m)+1); document.getElementById('mSelect').value = state.m;
     updateUI();
 }
 
+function resetSession() { if(confirm("WARNING: Wipe everything for the night?")) location.reload(); }
+
 function toggleEdit() {
-    const log = document.getElementById('matchLog');
-    const isEditing = log.contentEditable === "true";
-    log.contentEditable = !isEditing;
-    document.getElementById('editBtn').innerText = isEditing ? "Edit Log" : "Save Log";
-    document.getElementById('editBtn').style.background = isEditing ? "#333" : "var(--felt)";
+    const log = document.getElementById('matchLog'), btn = document.getElementById('editBtn');
+    const isEd = log.contentEditable === "true"; log.contentEditable = !isEd;
+    btn.innerText = isEd ? "Edit Log" : "Save Log"; btn.style.background = isEd ? "#333" : "var(--felt)";
 }
 
 async function copyLog() {
     try { await navigator.clipboard.writeText(document.getElementById('matchLog').innerText); alert("Log Copied!"); } catch(e) {}
 }
 
-function saveHistory() { history.push(JSON.stringify(state)); }
-function undo() { if(history.length > 0) { state = JSON.parse(history.pop()); updateUI(); } }
-function resetMatch() { if(confirm("Clear current score?")) { state.g=1; state.gwH=0; state.gwA=0; updateUI(); } }
+function saveHistory() { historyStack.push(JSON.stringify(state)); }
+function undo() { if(historyStack.length > 0) { state = JSON.parse(historyStack.pop()); updateUI(); } }
+
 window.onload = initRace;
 </script>
 </body>
