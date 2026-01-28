@@ -21,7 +21,10 @@
             cursor: pointer; transition: transform 0.2s; text-transform: uppercase;
         }
         .btn-8 { background: #2d5a27; color: white; border-bottom: 5px solid #1e3d1a; }
+        /* NEW BUTTON COLOR */
+        .btn-18 { background: #2980b9; color: white; border-bottom: 5px solid #1c5982; }
         .btn-9 { background: #f1c40f; color: #333; border-bottom: 5px solid #c29d0b; }
+        
         .choice-btn:active { transform: scale(0.95); }
     </style>
 </head>
@@ -33,11 +36,12 @@
     
     <div class="menu-container">
         <button class="choice-btn btn-8" onclick="location.href='8ball.html'">8-Ball 3 Points</button>
+        <!-- NEW APP BUTTON -->
+        <button class="choice-btn btn-18" onclick="location.href='8ball-18.html'">8-Ball 18 Points</button>
         <button class="choice-btn btn-9" onclick="location.href='9ball.html'">9-Ball 20 Points</button>
     </div>
 
     <script>
-        // THIS CODE ACTIVATES OFFLINE MODE
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
@@ -47,7 +51,4 @@
         }
     </script>
 </body>
-
 </html>
-
-
