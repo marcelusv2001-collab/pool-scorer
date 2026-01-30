@@ -4,14 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MVP TV Hub</title>
+    <!-- manifest.json is required for "Add to Home Screen" -->
     <link rel="manifest" href="manifest.json">
+    <!-- Sleeker font import -->
+    <link href="https://fonts.googleapis.com" rel="stylesheet">
     <style>
         body { 
             font-family: 'Inter', sans-serif; background: #1a1a1a; 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
             height: 100vh; margin: 0; color: white;
         }
-        .logo-box { background: white; padding: 10px 20px; border-radius: 15px; margin-bottom: 30px; }
+        .logo-box { background: white; padding: 10px 20px; border-radius: 15px; margin-bottom: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
         .logo-mvp { color:#00FF00; font-size: 40px; font-weight: 900; }
         .logo-tv { color:#FF0000; font-size: 50px; font-style: italic; font-weight: 900; font-family: 'Brush Script MT', cursive; margin-left: -5px; }
         
@@ -20,33 +23,36 @@
         .choice-btn { 
             padding: 15px; border: none; border-radius: 8px; 
             color: white; font-weight: bold; cursor: pointer; transition: 0.2s;
+            text-decoration: none; text-align: center; display: block;
         }
+        .choice-btn:hover { filter: brightness(1.2); transform: translateY(-2px); }
+        .choice-btn:active { transform: scale(0.95); }
+
         .btn-8 { background: #444; }
         .btn-9 { background: #555; }
         .btn-10 { background: #666; }
         .btn-18 { background: #777; }
-
-        .choice-btn:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
 
     <div class="logo-box">
-        <span class="logo-mvp">MVP</span><span class="logo-tv">TV ToolBox</span>
+        <span class="logo-mvp">MVP</span><span class="logo-tv">ToolBox</span>
     </div>
     
     <div class="menu-container">
-        <a href="8ball.html"><button class="choice-btn btn-8" style="width: 100%;">8 Ball 3PT</button></a>
-        <a href="9ball.html"><button class="choice-btn btn-9" style="width: 100%;">9 Ball 20PT</button></a>
-        <a href="8ball-10pt.html"><button class="choice-btn btn-10" style="width: 100%;">8 Ball 10PT</button></a>
-        <a href="8ball-18.html"><button class="choice-btn btn-18" style="width: 100%;">8 Ball 18 Games</button></a>
+        <a href="8ball.html" class="choice-btn btn-8">8 Ball 3PT</a>
+        <a href="9ball.html" class="choice-btn btn-9">9 Ball 20PT</a>
+        <a href="8ball-10pt.html" class="choice-btn btn-10">8 Ball 10PT</a>
+        <a href="8ball-18.html" class="choice-btn btn-18">8 Ball 18 Games</a>
     </div>
 
     <script>
+        // Registering the Service Worker for offline support
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
-                .then(reg => console.log('Offline Engine Ready!'))
+                .then(reg => console.log('Offline Engine Ready!', reg.scope))
                 .catch(err => console.log('Offline Engine Failed', err));
             });
         }
