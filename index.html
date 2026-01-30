@@ -15,16 +15,26 @@
         .logo-mvp { color:#00FF00; font-size: 40px; font-weight: 900; }
         .logo-tv { color:#FF0000; font-size: 50px; font-style: italic; font-weight: 900; font-family: 'Brush Script MT', cursive; margin-left: -5px; }
         
-        .menu-container { display: grid; gap: 20px; width: 90%; max-width: 400px; }
-        .choice-btn { 
-            padding: 25px; border: none; border-radius: 15px; font-size: 1.5rem; font-weight: 900; 
-            cursor: pointer; transition: transform 0.2s; text-transform: uppercase;
-        }
-        /* Button Styles */
-        .btn-8 { background: #2d5a27; color: white; border-bottom: 5px solid #1e3d1a; }
-        .btn-10 { background: #e67e22; color: white; border-bottom: 5px solid #d35400; }
-        .btn-9 { background: #f1c40f; color: #333; border-bottom: 5px solid #c29d0b; }
-        .btn-18 { background: #2980b9; color: white; border-bottom: 5px solid #1c5982; }
+           <div class="menu-container">
+        <!-- Links matched to your GitHub file names -->
+        <a href="8ball.html" style="text-decoration: none;">
+            <button class="choice-btn btn-8" style="width: 100%;">8 Ball 3PT</button>
+        </a>
+        
+        <a href="9ball.html" style="text-decoration: none;">
+            <button class="choice-btn btn-9" style="width: 100%;">9 Ball 20PT</button>
+        </a>
+
+        <!-- Note: Verify if you have an 8ball-10pt.html file, GitHub only shows a .png -->
+        <a href="8ball-10pt.html" style="text-decoration: none;">
+            <button class="choice-btn btn-10" style="width: 100%;">8 Ball 10PT</button>
+        </a>
+
+        <a href="8ball-18.html" style="text-decoration: none;">
+            <button class="choice-btn btn-18" style="width: 100%;">8 Ball 18 Games</button>
+        </a>
+    </div>
+
         
         .choice-btn:active { transform: scale(0.95); }
     </style>
@@ -54,6 +64,7 @@
     </script>
 </body>
 </html>
+
 
 
 
