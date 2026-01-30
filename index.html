@@ -15,27 +15,17 @@
         .logo-mvp { color:#00FF00; font-size: 40px; font-weight: 900; }
         .logo-tv { color:#FF0000; font-size: 50px; font-style: italic; font-weight: 900; font-family: 'Brush Script MT', cursive; margin-left: -5px; }
         
-           <div class="menu-container">
-        <!-- Links matched to your GitHub file names -->
-        <a href="8ball.html" style="text-decoration: none;">
-            <button class="choice-btn btn-8" style="width: 100%;">8 Ball 3PT</button>
-        </a>
+        .menu-container { display: flex; flex-direction: column; gap: 15px; width: 250px; }
         
-        <a href="9ball.html" style="text-decoration: none;">
-            <button class="choice-btn btn-9" style="width: 100%;">9 Ball 20PT</button>
-        </a>
+        .choice-btn { 
+            padding: 15px; border: none; border-radius: 8px; 
+            color: white; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        .btn-8 { background: #444; }
+        .btn-9 { background: #555; }
+        .btn-10 { background: #666; }
+        .btn-18 { background: #777; }
 
-        <!-- Note: Verify if you have an 8ball-10pt.html file, GitHub only shows a .png -->
-        <a href="8ball-10pt.html" style="text-decoration: none;">
-            <button class="choice-btn btn-10" style="width: 100%;">8 Ball 10PT</button>
-        </a>
-
-        <a href="8ball-18.html" style="text-decoration: none;">
-            <button class="choice-btn btn-18" style="width: 100%;">8 Ball 18 Games</button>
-        </a>
-    </div>
-
-        
         .choice-btn:active { transform: scale(0.95); }
     </style>
 </head>
@@ -46,12 +36,11 @@
     </div>
     
     <div class="menu-container">
-        <!-- Added missing button elements -->
-        <button class="choice-btn btn-8">8 Ball 3PT</button>
-        <button class="choice-btn btn-9">9 Ball 20PT</button>
-        <button class="choice-btn btn-10">8 Ball 10PT</button>
-        <button class="choice-btn btn-18">8 Ball 18 Games</button>
-    </div> <!-- Corrected missing div closure -->
+        <a href="8ball.html"><button class="choice-btn btn-8" style="width: 100%;">8 Ball 3PT</button></a>
+        <a href="9ball.html"><button class="choice-btn btn-9" style="width: 100%;">9 Ball 20PT</button></a>
+        <a href="8ball-10pt.html"><button class="choice-btn btn-10" style="width: 100%;">8 Ball 10PT</button></a>
+        <a href="8ball-18.html"><button class="choice-btn btn-18" style="width: 100%;">8 Ball 18 Games</button></a>
+    </div>
 
     <script>
         if ('serviceWorker' in navigator) {
@@ -64,13 +53,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
