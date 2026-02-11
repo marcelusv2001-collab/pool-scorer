@@ -6,6 +6,7 @@ const ASSETS = [
   './8ball.html',
   './9ball.html',
   './8ball-18.html', // Added your new 18-point app
+  './8ball-10 PT.html',
   './manifest.json',
   './sw.js',         // Cache the service worker itself
   'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'
@@ -41,3 +42,4 @@ self.addEventListener('fetch', (e) => {
     })
   );
 });
+
