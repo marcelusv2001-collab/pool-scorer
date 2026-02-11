@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>8 ball 10 pts Scorekeeper</title>
+    <style>
+        :root {
+            --lime: #CCFF00; --bg: #050505; --home: #00E5FF; --away: #FF007F; --card: #121212;
+        }
+        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body {
+            background: var(--bg); color: #fff; margin: 0; padding: 4px;
+            height: 100vh; display: flex; flex-direction: column;
+            border: 4px solid var(--lime); overflow: hidden;
+        }
+        .series-header {
+            background: #1a1a1a; border-bottom: 2px solid var(--lime);
+            display: flex; justify-content: space-around; align-items: center;
+            padding: 4px; border-radius: 0 0 10px 10px; flex-shrink: 0;
+        }
+        .match-score { font-size: 2rem; font-weight: 900; display: flex; align-items: center; gap: 10px; }
+        .match-box { background: #000; padding: 0px 10px; border-radius: 6px; border: 1px solid #333; }
+        .main-content { flex: 1; display: flex; flex-direction: column; gap: 4px; overflow: hidden; padding: 2px 0; }
+        .team-zone { background: var(--card); border-radius: 10px; padding: 4px; border: 1px solid #222; flex: 1; display: flex; flex-direction: column; }
+        .h-accent { border-top: 4px solid var(--home); }
+        .a-accent { border-top: 4px solid var(--away); }
+        .team-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+        .team-name { background: transparent; border: none; font-size: 1rem; color: #fff; font-weight: 800; flex: 1; }
+        .four-round-total { color: var(--lime); font-weight: 900; font-size: 0.8rem; }
+        
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; flex: 1; }
+        th { color: var(--lime); font-size: 0.5rem; text-transform: uppercase; }
+        td { padding: 1px; vertical-align: middle; }
+        
+        .player-input { background: #222; border: 1px solid #333; color: #fff; width: 100%; padding: 4px; border-radius: 4px; font-size: 0.7rem; }
+        .voice-btn { background: #333; border: none; color: #fff; padding: 2px 4px; border-radius: 4px; font-size: 0.7rem; flex-shrink: 0; }
+        
+        select { background: #333; color: #fff; border: 1px solid #444; width: 100%; padding: 4px 0; border-radius: 4px; font-size: 0.8rem; font-weight: 700; text-align: center; }
+        .total-row { border-top: 1px solid #444; font-weight: 900; color: var(--lime); font-size: 0.7rem; text-align: center; }
+        .badge-row { display: flex; gap: 1px; margin-top: 1px; }
+        .badge-btn { flex: 1; font-size: 0.45rem; padding: 1px; border: none; border-radius: 2px; background: #222; color: #FFFFFF; font-weight: 800; }
+        .badge-btn.active { background: var(--lime); color: #000; }
+        .hp-val-text { font-weight: 900; color: #FFFFFF; text-align: center; font-size: 0.8rem; }
+        
+        .footer { border-top: 2px solid var(--lime); padding: 6px; display: flex; justify-content: space-between; align-items: center; background: #000; flex-shrink: 0; }
+        .submit-btn { background: var(--lime); color: #000; padding: 8px 20px; border: none; border-radius: 20px; font-size: 0.9rem; font-weight: 900; }
+        
+        /* Summary Overlay */
+        #summary-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: none; z-index: 1000; padding: 10px; flex-direction: column; }
+        #tsv-text { flex: 1; background: #111; color: #0f0; border: 1px solid var(--lime); font-family: monospace; font-size: 0.7rem; padding: 10px; margin-bottom: 10px; white-space: pre; overflow: auto; }
+        .summary-actions { display: flex; gap: 10px; }
+        .summary-actions button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: 900; font-size: 0.8rem; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="series-header">
+    <div style="text-align:center"><div id="h-label" style="color:var(--home); font-size:0.6rem">HOME</div><div class="match-box" id="h-series" style="color:var(--home)">0</div></div>
+    <div class="match-score" style="color:var(--lime)">:</div>
+    <div style="text-align:center"><div id="a-label" style="color:var(--away); font-size:0.6rem">AWAY</div><div class="match-box" id="a-series" style="color:var(--away)">0</div></div>
+</div>
+
+<div class="main-content">
+    <div class="team-zone h-accent">
+        <div class="team-header-row">
+            <button class="voice-btn" onclick="startVoice('h-title', 'h-label')">🎙️</button>
+            <input type="text" class="team-name" id="h-title" placeholder="HOME" oninput="document.getElementById('h-label').innerText = this.value">
+            <div class="four-round-total">4-RD: <span id="h-4rd-total">0</span></div>
+        </div>
+        <table>
+            <thead><tr><th style="width:18%">P</th><th style="width:12%">SL</th><th>R1</th><th>R2</th><th>R3</th><th style="width:12%">HP</th></tr></thead>
+            <tbody id="h-body"></tbody>
+            <tfoot>
+                <tr class="total-row"><td colspan="2">HP</td><td id="h-hpt-1">0</td><td id="h-hpt-2">0</td><td id="h-hpt-3">0</td><td id="h-hp-grand">0</td></tr>
+                <tr class="total-row"><td colspan="2">TOTAL</td><td id="h-rt-1">0</td><td id="h-rt-2">0</td><td id="h-rt-3">0</td><td></td></tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <div class="team-zone a-accent">
+        <div class="team-header-row">
+            <button class="voice-btn" onclick="startVoice('a-title', 'a-label')">🎙️</button>
+            <input type="text" class="team-name" id="a-title" placeholder="AWAY" oninput="document.getElementById('a-label').innerText = this.value">
+            <div class="four-round-total">4-RD: <span id="a-4rd-total">0</span></div>
+        </div>
+        <table>
+            <thead><tr><th style="width:18%">P</th><th style="width:12%">SL</th><th>R1</th><th>R2</th><th>R3</th><th style="width:12%">HP</th></tr></thead>
+            <tbody id="a-body"></tbody>
+            <tfoot>
+                <tr class="total-row"><td colspan="2">HP</td><td id="a-hpt-1">0</td><td id="a-hpt-2">0</td><td id="a-hpt-3">0</td><td id="a-hp-grand">0</td></tr>
+                <tr class="total-row"><td colspan="2">TOTAL</td><td id="a-rt-1">0</td><td id="a-rt-2">0</td><td id="a-rt-3">0</td><td></td></tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+<div class="footer">
+    <button onclick="location.reload()" style="background:#333; color:#fff; border:none; padding:6px; border-radius:6px; font-size:0.7rem">RESET</button>
+    <div class="grand-total-display">
+        <div style="font-size: 0.6rem; color: var(--lime);">Grand Totals:</div>
+        <div id="live-totals" style="font-weight:900; font-size: 1rem; color: #FFF;">0-0</div>
+    </div>
+    <button class="submit-btn" onclick="processMatch()">SUBMIT</button>
+</div>
+
+<div id="summary-layer">
+    <div id="tsv-text"></div>
+    <div class="summary-actions">
+        <button style="background:#333; color:#fff;" onclick="document.getElementById('summary-layer').style.display='none'">BACK</button>
+        <button style="background:var(--home); color:#000;" onclick="sendSms()">TEXT MSG</button>
+        <button style="background:var(--lime); color:#000;" onclick="saveFile()">SAVE .TXT</button>
+    </div>
+</div>
+
+<script>
+    function startVoice(t, l) {
+        const r = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        r.lang = 'en-US'; r.start();
+        r.onresult = (e) => { 
+            const res = e.results[0][0].transcript.toUpperCase(); 
+            document.getElementById(t).value = res; 
+            if (l) document.getElementById(l).innerText = res; 
+        };
+    }
+
+    const mpt = () => { let s=""; for(let i=0; i<=10; i++) { if(i===8 || i===9) continue; s+=`<option value="${i}">${i}</option>`; } return s; };
+    const msl = () => { let s=""; for(let i=0; i<=10; i++) s+=`<option value="${i}">${i}</option>`; return s; };
+
+    function createUI(side) {
+        let rows = ""; let slO = msl(), ptO = mpt();
+        for(let i=1; i<=5; i++) {
+            rows += `<tr>
+                <td style="position:relative"><div style="display:flex; gap:1px"><button class="voice-btn" onclick="startVoice('${side}-n-${i}')">🎙️</button><input type="text" class="player-input" placeholder="P${i}" id="${side}-n-${i}"></div></td>
+                <td><select id="${side}-sl-${i}" onchange="calcHandicap()">${slO}</select></td>
+                ${[1,2,3].map(r => `<td>
+                    <select class="${side}-r${r}" id="${side}-r${r}-${i}" onchange="handleScoreChange('${side}', ${r}, ${i}, this.value)">${ptO}</select>
+                    <div class="badge-row">
+                        <button class="badge-btn b8" onclick="toggleBadge(this, '${side}-r${r}-${i}', '${side}', ${r}, ${i})">8BB</button>
+                        <button class="badge-btn be" onclick="toggleBadge(this, '${side}-r${r}-${i}', '${side}', ${r}, ${i})">ERO</button>
+                    </div>
+                </td>`).join('')}
+                <td id="${side}-hp-${i}" class="hp-val-text">0</td>
+            </tr>`;
+        }
+        document.getElementById(side+'-body').innerHTML = rows;
+    }
+
+    function toggleBadge(btn, selId, side, round, index) {
+        const row = btn.parentElement;
+        const isAct = btn.classList.contains('active');
+        row.querySelectorAll('.badge-btn').forEach(b => b.classList.remove('active'));
+        if (!isAct) {
+            btn.classList.add('active');
+            document.getElementById(selId).value = 10;
+            handleScoreChange(side, round, index, 10);
+        }
+    }
+
+    function handleScoreChange(side, round, index, value) {
+        const val = parseInt(value); const oppSide = side === 'h' ? 'a' : 'h';
+        const oppEl = document.getElementById(`${oppSide}-r${round}-${index}`);
+        if (val === 10) {
+            if (parseInt(oppEl.value) === 10) {
+                if (confirm("Switch win?")) { oppEl.value = 0; } else { document.getElementById(`${side}-r${round}-${index}`).value = 0; }
+            }
+        } else if (val >= 0 && val <= 7) { oppEl.value = 10; }
+        updateLiveTotals();
+    }
+
+    function calcHandicap() {
+        for(let i=1; i<=5; i++) {
+            let h = parseInt(document.getElementById(`h-sl-${i}`).value), a = parseInt(document.getElementById(`a-sl-${i}`).value);
+            let d = h - a;
+            document.getElementById(`h-hp-${i}`).innerText = d < 0 ? Math.min(Math.abs(d), 3) : "0";
+            document.getElementById(`a-hp-${i}`).innerText = d > 0 ? Math.min(d, 3) : "0";
+        }
+        ['h','a'].forEach(p => {
+            let pHP = 0; for(let i=1; i<=5; i++) pHP += parseInt(document.getElementById(`${p}-hp-${i}`).innerText);
+            [1,2,3].forEach(r => document.getElementById(`${p}-hpt-${r}`).innerText = pHP);
+            document.getElementById(`${p}-hp-grand`).innerText = pHP * 3;
+        });
+        updateLiveTotals();
+    }
+
+    function updateLiveTotals() {
+        let hRW = 0, aRW = 0;
+        ['h','a'].forEach(p => {
+            let rT = [0, 0, 0];
+            for(let r=1; r<=3; r++) {
+                rT[r-1] = [...document.querySelectorAll(`.${p}-r${r}`)].reduce((a,b)=>a+parseInt(b.value),0);
+                document.getElementById(`${p}-rt-${r}`).innerText = rT[r-1];
+            }
+            let hpG = parseInt(document.getElementById(`${p}-hp-grand`).innerText) || 0;
+            document.getElementById(`${p}-4rd-total`).innerText = rT.reduce((a,b)=>a+b, 0) + hpG;
+        });
+
+        for(let r=1; r<=3; r++) {
+            let hR = parseInt(document.getElementById(`h-rt-${r}`).innerText);
+            let aR = parseInt(document.getElementById(`a-rt-${r}`).innerText);
+            if(hR > 0 || aR > 0) { // Only count if round is being scored
+                if(hR > aR) hRW++; else if (aR > hR) aRW++;
+            }
+        }
+        const hG = parseInt(document.getElementById('h-4rd-total').innerText);
+        const aG = parseInt(document.getElementById('a-4rd-total').innerText);
+        if(hG !== aG) (hG > aG) ? hRW++ : aRW++;
+
+        document.getElementById('h-series').innerText = hRW;
+        document.getElementById('a-series').innerText = aRW;
+        document.getElementById('live-totals').innerText = `${hG}-${aG}`;
+    }
+
+    function getPlayerData(side) {
+        let lines = "PLAYER\tPTS\tGMS\t8BB\tERO\tWINS\t10-0\n";
+        for(let i=1; i<=5; i++) {
+            let name = document.getElementById(`${side}-n-${i}`).value || `P${i}`;
+            let pts = 0, b8 = 0, ero = 0, wins = 0, shutouts = 0;
+            for(let r=1; r<=3; r++) {
+                let v = parseInt(document.getElementById(`${side}-r${r}-${i}`).value);
+                let oppV = parseInt(document.getElementById(`${(side==='h'?'a':'h')}-r${r}-${i}`).value);
+                pts += v;
+                if(v === 10) { wins++; if(oppV === 0) shutouts++; }
+                const cell = document.getElementById(`${side}-r${r}-${i}`).parentElement;
+                if(cell.querySelector('.b8.active')) b8++;
+                if(cell.querySelector('.be.active')) ero++;
+            }
+            lines += `${name}\t${pts}\t3\t${b8}\t${ero}\t${wins}\t${shutouts}\n`;
+        }
+        return lines;
+    }
+
+    function processMatch() {
+        const hName = document.getElementById('h-title').value || "HOME";
+        const aName = document.getElementById('a-title').value || "AWAY";
+        const hG = document.getElementById('h-4rd-total').innerText;
+        const aG = document.getElementById('a-4rd-total').innerText;
+        const hRW = document.getElementById('h-series').innerText;
+        const aRW = document.getElementById('a-series').innerText;
+        
+        let hGames = 0, aGames = 0;
+        for(let r=1; r<=3; r++) {
+            for(let i=1; i<=5; i++) {
+                if(parseInt(document.getElementById(`h-r${r}-${i}`).value) === 10) hGames++;
+                if(parseInt(document.getElementById(`a-r${r}-${i}`).value) === 10) aGames++;
+            }
+        }
+
+        let report = `--- TEAM SUMMARY ---\n`;
+        report += `TEAM\tRD_WON\tGM_WON\tPTS\tRD_PLAY\tGM_PLAY\n`;
+        report += `${hName}\t${hRW}\t${hGames}\t${hG}\t4\t15\n`;
+        report += `${aName}\t${aRW}\t${aGames}\t${aG}\t4\t15\n\n`;
+        report += `--- ${hName} PLAYERS ---\n` + getPlayerData('h') + "\n";
+        report += `--- ${aName} PLAYERS ---\n` + getPlayerData('a');
+
+        document.getElementById('tsv-text').innerText = report;
+        document.getElementById('summary-layer').style.display = 'flex';
+    }
+
+    function sendSms() {
+        const text = encodeURIComponent(document.getElementById('tsv-text').innerText);
+        window.location.href = `sms:?&body=${text}`;
+    }
+
+    function saveFile() {
+        const text = document.getElementById('tsv-text').innerText;
+        const blob = new Blob([text], {type: "text/plain"});
+        const anchor = document.createElement("a");
+        anchor.download = "match_summary.txt";
+        anchor.href = window.URL.createObjectURL(blob);
+        anchor.click();
+    }
+
+    createUI('h'); createUI('a');
+</script>
+</body>
+</html>
