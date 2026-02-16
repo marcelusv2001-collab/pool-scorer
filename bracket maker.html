@@ -5,82 +5,67 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bracket Maker TV</title>
     <style>
-        :root { --primary: #00cc66; --bg: #0a0a0a; --surface: #1a1a1a; --text: #fff; --accent: #ffcc00; --border-thick: 4px; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; overflow-x: hidden; transition: font-size 0.3s ease; }
-        body.tv-mode { font-size: 28px; }
-        body.mobile-mode { font-size: 16px; }
-        .container { padding: 20px; max-width: 1200px; margin: auto; }
+        :root { --primary: #00cc66; --bg: #0a0a0a; --surface: #1a1a1a; --text: #fff; --accent: #ffcc00; --border-thick: 6px; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; overflow-x: hidden; }
+        .tv-mode { font-size: 32px; }
+        .container { padding: 20px; max-width: 1400px; margin: auto; }
         
-        /* WELL DEFINED BORDERS FOR TV VISIBILITY */
-        .focusable, .player, .chip-card, input, select, textarea, .btn, .match { 
-            border: var(--border-thick) solid #444; 
+        /* THE CRITICAL PIECE: FORCING THE BORDER VISIBILITY */
+        .focusable, .player, .chip-card, button, input, select, textarea { 
+            border: var(--border-thick) solid #444 !important; 
             box-sizing: border-box;
+            cursor: pointer;
+            outline: none; /* Hide default browser outline to use our own */
         }
 
-        /* THICK HIGHLIGHT FOR TV FOCUS */
-        .focusable:focus, .player:focus, .chip-card:focus, input:focus, select:focus, textarea:focus, .btn:focus { 
-            outline: 10px solid var(--accent) !important; 
+        /* HIGH-CONTRAST FOCUS STATE FOR TV BRIGHTNESS */
+        :focus { 
+            outline: 12px solid var(--accent) !important; 
             border-color: var(--accent) !important;
             background: var(--primary) !important; 
             color: #000 !important; 
-            transform: scale(1.05);
-            z-index: 99;
+            transform: scale(1.08);
+            z-index: 999;
         }
 
-        .header { display: flex; justify-content: space-between; padding: 20px; background: var(--surface); border-bottom: 6px solid var(--primary); align-items: center; }
-        .setup-box { background: var(--surface); padding: 25px; border-radius: 10px; margin-bottom: 20px; border: var(--border-thick) solid var(--primary); }
-        .bracket-scroll { display: flex; overflow-x: auto; gap: 40px; padding: 20px; scroll-behavior: smooth; }
-        .round { display: flex; flex-direction: column; justify-content: space-around; min-width: 250px; }
-        .match { background: #262626; margin: 15px 0; border-radius: 8px; border-left: 12px solid var(--accent); }
-        .player { padding: 14px; cursor: pointer; display: flex; justify-content: space-between; border-bottom: 2px solid #444; }
-        .winner-highlight { background: var(--primary) !important; color: #000; font-weight: bold; border-color: #fff !important; }
-        
-        table { width: 100%; border-collapse: collapse; background: var(--surface); margin-top: 20px; }
-        th, td { border: var(--border-thick) solid #444; padding: 15px; text-align: center; }
-        th { background: #333; color: var(--accent); }
+        .header { display: flex; justify-content: space-between; padding: 20px; background: var(--surface); border-bottom: 8px solid var(--primary); align-items: center; }
+        .setup-box { background: var(--surface); padding: 25px; border-radius: 15px; border: var(--border-thick) solid var(--primary); }
+        .bracket-scroll { display: flex; overflow-x: auto; gap: 50px; padding: 40px; }
+        .round { display: flex; flex-direction: column; justify-content: space-around; min-width: 300px; }
+        .match { background: #262626; margin: 20px 0; border-radius: 10px; border-left: 15px solid var(--accent); border-top: 2px solid #444; border-right: 2px solid #444; border-bottom: 2px solid #444; }
+        .player { padding: 20px; display: flex; justify-content: space-between; background: #1a1a1a; }
+        .winner-highlight { background: var(--primary) !important; color: #000 !important; font-weight: 900; }
         
         .chip-layout { display: grid; grid-template-columns: 1.5fr 1fr; gap: 30px; }
-        .tables-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .match-area { background: #222; padding: 15px; border-radius: 10px; border: var(--border-thick) solid var(--primary); text-align: center; position: relative; }
-        .chip-card { background: #333; padding: 10px; margin: 5px 0; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9em; cursor: pointer; }
-        .chip-val { background: var(--accent); color: #000; padding: 2px 8px; border-radius: 4px; font-weight: bold; border: 2px solid #000; }
+        .tables-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .match-area { background: #222; padding: 20px; border-radius: 12px; border: var(--border-thick) solid var(--primary); text-align: center; }
         
-        .upcoming-match { background: #2a2a2a; border: var(--border-thick) solid #444; border-radius: 8px; margin-bottom: 10px; padding: 10px; }
-        .player-row { display: flex; gap: 10px; margin-bottom: 5px; }
-        input, textarea, select { background: #2a2a2a; color: white; padding: 12px; border-radius: 8px; font-size: inherit; }
-        
-        #winner-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
+        input, textarea, select { background: #2a2a2a; color: white; padding: 15px; border-radius: 10px; font-size: 1em; width: 100%; }
+        .btn { padding: 20px; font-weight: bold; border-radius: 10px; text-transform: uppercase; background: #444; color: white; }
         .hidden { display: none !important; }
-        .btn { padding: 15px 30px; cursor: pointer; font-weight: bold; border-radius: 8px; text-transform: uppercase; font-size: inherit; }
-        .reset-badge { font-size: 0.5em; background: #ff4444; color: white; padding: 2px 10px; border-radius: 10px; margin-bottom: 5px; display: inline-block; border: 2px solid #fff; }
-        .counter-box { background: var(--primary); color: #000; padding: 8px 20px; border-radius: 20px; font-weight: bold; border: 3px solid #000; }
+        #winner-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.98); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10000; }
+        .reset-badge { font-size: 0.6em; background: #ff4444; color: white; padding: 5px 15px; border-radius: 10px; border: 3px solid #fff; }
     </style>
 </head>
 <body class="tv-mode">
 
 <div id="winner-overlay" class="hidden">
-    <div style="font-size: 150px;">🏆</div>
-    <div id="champion-display" style="font-size: 80px; font-weight: bold; color: var(--primary); text-align: center;">WINNER</div>
-    <button class="btn focusable" tabindex="0" role="button" style="margin-top: 50px; background: var(--accent); color: black;" onclick="location.reload()">NEW TOURNAMENT</button>
+    <div style="font-size: 200px;">🏆</div>
+    <div id="champion-display" style="font-size: 100px; font-weight: bold; color: var(--primary);">WINNER</div>
+    <button class="btn focusable" tabindex="0" style="margin-top: 50px; background: var(--accent); color: black;" onclick="location.reload()">NEW TOURNAMENT</button>
 </div>
 
 <div class="header">
-    <div style="font-weight: bold; letter-spacing: 2px;">🎱 BRACKET MAKER TV</div>
-    <div style="display: flex; gap: 10px;">
-        <button id="undo-chip-btn" class="btn focusable hidden" tabindex="0" role="button" onclick="undoChipAction()" style="background: var(--accent); color: black;">⏪ UNDO</button>
-        <button class="btn focusable" tabindex="0" role="button" onclick="toggleDisplayMode()" style="background: #444;">🖥️ TV/MOBILE</button>
-        <button class="btn focusable" tabindex="0" role="button" onclick="location.reload()" style="background:#ff4444">RESET</button>
+    <div style="font-weight: 900; letter-spacing: 3px;">🎱 BRACKET MAKER TV</div>
+    <div style="display: flex; gap: 15px;">
+        <button id="undo-chip-btn" class="btn focusable hidden" tabindex="0" onclick="undoChipAction()" style="background: var(--accent); color: black;">⏪ UNDO</button>
+        <button class="btn focusable" tabindex="0" onclick="location.reload()" style="background:#ff4444">RESET</button>
     </div>
 </div>
 
 <div class="container">
     <div id="setup-view" class="setup-box">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2>Tournament Setup</h2>
-            <div class="counter-box">Players: <span id="player-count-display">0</span></div>
-        </div>
-        
-        <select id="tourney-type" class="focusable" tabindex="0" style="margin-bottom: 20px; width: 100%; height: 70px;" onchange="toggleSetupMode()">
+        <select id="tourney-type" class="focusable" tabindex="0" style="height: 100px; margin-bottom: 30px;" onchange="toggleSetupMode()">
             <option value="single">Single Elimination</option>
             <option value="double">Double Elimination</option>
             <option value="round">Round Robin (League)</option>
@@ -88,42 +73,29 @@
         </select>
 
         <div id="bulk-names">
-            <textarea id="name-list" class="focusable" tabindex="0" rows="8" style="width: 100%;" placeholder="Enter Names (One per line)" oninput="updateCount()"></textarea>
-            <button class="btn focusable" tabindex="0" role="button" style="background: var(--accent); color:black; width: 100%; margin-top: 15px;" onclick="randomizeNames()">🎲 RANDOM DRAW</button>
+            <textarea id="name-list" class="focusable" tabindex="0" rows="6" placeholder="Enter Names (One per line)" oninput="updateCount()"></textarea>
+            <button class="btn focusable" tabindex="0" style="background: var(--accent); color:black; width: 100%; margin-top: 20px;" onclick="randomizeNames()">🎲 RANDOM DRAW</button>
         </div>
 
         <div id="individual-names" class="hidden">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-                <select id="global-chip-count" class="focusable" tabindex="0" onchange="syncChips()">
-                    <option value="3" selected>3 Chips</option><option value="5">5 Chips</option>
-                </select>
-                <select id="slot-count" class="focusable" tabindex="0" onchange="handleSlotChange()">
-                    <option value="4">4 Slots</option><option value="8">8 Slots</option><option value="16">16 Slots</option><option value="custom">Custom</option>
-                </select>
-            </div>
             <div id="player-rows-container"></div>
-            <button id="add-btn" class="btn focusable hidden" tabindex="0" role="button" onclick="addPlayerRow()" style="background:#444; width:100%; margin-top:10px;">+ Add Player</button>
+            <button id="add-btn" class="btn focusable hidden" tabindex="0" onclick="addPlayerRow()" style="width:100%; margin-top:20px;">+ Add Player</button>
         </div>
-        <button class="btn focusable" tabindex="0" role="button" style="background: var(--primary); width: 100%; margin-top: 25px; height: 80px;" onclick="startTourney()">START</button>
+        <button class="btn focusable" tabindex="0" style="background: var(--primary); width: 100%; margin-top: 40px; height: 120px; font-size: 1.5em;" onclick="startTourney()">START TOURNAMENT</button>
     </div>
 
     <div id="bracket-view" class="hidden">
         <div id="bracket-render" class="bracket-scroll"></div>
         <div id="losers-section" class="hidden">
-            <h2 style="color:var(--accent); margin-left: 20px;">Losers Bracket</h2>
+            <h2 style="color:var(--accent); margin-left: 40px;">Losers Bracket</h2>
             <div id="losers-render" class="bracket-scroll"></div>
         </div>
-    </div>
-
-    <div id="rr-view" class="hidden">
-        <div id="rr-render"></div>
-        <button class="btn focusable" tabindex="0" role="button" style="background: var(--accent); color: black; margin-top: 20px; width:100%;" onclick="endRoundRobin()">FINALIZE WINNER</button>
     </div>
 
     <div id="chip-view" class="hidden">
         <div class="chip-layout">
             <div id="chip-tables-container" class="tables-grid"></div>
-            <div id="chip-queue-render" style="background: var(--surface); padding: 20px; border-radius: 10px; overflow-y: auto; max-height: 80vh; border: var(--border-thick) solid #444;"></div>
+            <div id="chip-queue-render" style="background: var(--surface); padding: 20px; border-radius: 15px; border: var(--border-thick) solid #444;"></div>
         </div>
     </div>
 </div>
@@ -135,33 +107,22 @@
     function updateCount() {
         const type = document.getElementById('tourney-type').value;
         let count = type === 'chip' ? document.querySelectorAll('.player-row').length : document.getElementById('name-list').value.split('\n').filter(n => n.trim()).length;
-        document.getElementById('player-count-display').innerText = count;
-    }
-
-    function handleSlotChange() {
-        const val = document.getElementById('slot-count').value;
-        const container = document.getElementById('player-rows-container');
-        container.innerHTML = '';
-        if (val === 'custom') { document.getElementById('add-btn').classList.remove('hidden'); updateCount(); return; }
-        document.getElementById('add-btn').classList.add('hidden');
-        for (let i = 0; i < parseInt(val); i++) addPlayerRow();
-        updateCount();
-    }
-
-    function addPlayerRow() {
-        const div = document.createElement('div'); div.className = 'player-row';
-        div.innerHTML = `<input type="text" class="focusable" tabindex="0" placeholder="Name" style="flex:2" oninput="updateCount()"> 
-                         <input type="number" class="focusable" tabindex="0" value="${document.getElementById('global-chip-count').value}" style="width:100px">`;
-        document.getElementById('player-rows-container').appendChild(div);
-        updateCount();
     }
 
     function toggleSetupMode() {
         const type = document.getElementById('tourney-type').value;
         document.getElementById('bulk-names').classList.toggle('hidden', type === 'chip');
         document.getElementById('individual-names').classList.toggle('hidden', type !== 'chip');
-        if(type === 'chip' && !document.getElementById('player-rows-container').children.length) handleSlotChange();
-        updateCount();
+        if(type === 'chip' && !document.getElementById('player-rows-container').children.length) {
+            for(let i=0; i<8; i++) addPlayerRow();
+        }
+    }
+
+    function addPlayerRow() {
+        const div = document.createElement('div'); div.className = 'player-row'; div.style.display = "flex"; div.style.gap = "10px"; div.style.marginBottom = "10px";
+        div.innerHTML = `<input type="text" class="focusable" tabindex="0" placeholder="Name" style="flex:2"> 
+                         <input type="number" class="focusable" tabindex="0" value="3" style="width:120px">`;
+        document.getElementById('player-rows-container').appendChild(div);
     }
 
     function startTourney() {
@@ -177,12 +138,12 @@
             refreshChipUI();
         } else {
             document.getElementById('name-list').value.split('\n').filter(n => n.trim()).forEach(n => {
-                players.push({ name: n.trim(), wins: 0, losses: 0, id: Math.random() });
+                players.push({ name: n.trim(), id: Math.random() });
             });
-            if(mode === 'round') { document.getElementById('rr-view').classList.remove('hidden'); renderRoundRobin(); }
-            else { document.getElementById('bracket-view').classList.remove('hidden'); setupBrackets(); }
+            document.getElementById('bracket-view').classList.remove('hidden'); setupBrackets();
         }
         document.getElementById('setup-view').classList.add('hidden');
+        setTimeout(initNavigation, 500); // Re-scan for Tizen
     }
 
     function setupBrackets() {
@@ -192,11 +153,10 @@
             document.getElementById('losers-section').classList.remove('hidden'); 
             renderBracket('losers-render', 'L', rounds); 
             const gf = document.createElement('div'); gf.className = 'round';
-            gf.innerHTML = `<h3 style="text-align:center; color:var(--accent)">GRAND FINAL</h3>
-                <div class="match" id="GF-match">
-                    <div id="gf-status" class="reset-badge">MATCH 1</div>
-                    <div class="player focusable" tabindex="0" role="button" onclick="advBr('GF',0,0,0)">Winner Champ</div>
-                    <div class="player focusable" tabindex="0" role="button" onclick="advBr('GF',0,0,1)">Loser Champ</div>
+            gf.innerHTML = `<div class="match" id="GF-match">
+                    <div id="gf-status" class="reset-badge">GRAND FINAL</div>
+                    <div class="player focusable" tabindex="0" onclick="advBr('GF',0,0,0)">Winner Champ</div>
+                    <div class="player focusable" tabindex="0" onclick="advBr('GF',0,0,1)">Loser Champ</div>
                 </div>`;
             document.getElementById('bracket-render').appendChild(gf);
         }
@@ -211,8 +171,8 @@
             let mCount = Math.pow(2, rounds - r - 1);
             for(let m=0; m<mCount; m++) {
                 rd.innerHTML += `<div class="match" id="${prefix}-r${r}-m${m}">
-                    <div class="player focusable" tabindex="0" role="button" onclick="advBr('${prefix}',${r},${m},0)">TBD</div>
-                    <div class="player focusable" tabindex="0" role="button" onclick="advBr('${prefix}',${r},${m},1)">TBD</div></div>`;
+                    <div class="player focusable" tabindex="0" onclick="advBr('${prefix}',${r},${m},0)">TBD</div>
+                    <div class="player focusable" tabindex="0" onclick="advBr('${prefix}',${r},${m},1)">TBD</div></div>`;
             }
             cont.appendChild(rd);
         }
@@ -224,33 +184,15 @@
         const win = pEls[sIdx]; const lose = pEls[sIdx === 0 ? 1 : 0];
         if(win.innerText === 'TBD') return;
 
-        // Grand Final Logic for Double Elimination
-        if(br === 'GF') {
-            if(sIdx === 1 && !grandFinalsReset) {
-                grandFinalsReset = true;
-                document.getElementById('gf-status').innerText = "MATCH 2 (RESET)";
-                pEls[0].classList.remove('winner-highlight');
-                pEls[1].classList.remove('winner-highlight');
-                pEls[0].style.opacity = "1";
-                pEls[1].style.opacity = "1";
-                return;
-            }
+        if(br === 'GF' && sIdx === 1 && !grandFinalsReset) {
+            grandFinalsReset = true;
+            document.getElementById('gf-status').innerText = "MATCH 2 (RESET)";
+            pEls.forEach(p => { p.classList.remove('winner-highlight'); p.style.opacity = "1"; });
+            return;
         }
 
-        if(win.classList.contains('winner-highlight')) {
-            const nameToClear = win.dataset.name;
-            win.classList.remove('winner-highlight'); lose.style.opacity = "1";
-            clearNext(br, r, m, nameToClear); return;
-        }
-        if(lose.classList.contains('winner-highlight')) { 
-            const nameToClear = lose.dataset.name;
-            lose.classList.remove('winner-highlight'); win.style.opacity = "1"; 
-            clearNext(br, r, m, nameToClear);
-        }
-        win.classList.add('winner-highlight'); lose.style.opacity = "0.5";
-        
-        if (mode === 'double' && br === 'W') scrubFromLosers(win.dataset.name);
-        if(mode === 'double' && br === 'W' && lose.dataset.name) {
+        win.classList.add('winner-highlight'); lose.style.opacity = "0.3";
+        if (mode === 'double' && br === 'W') {
             const lSlots = document.querySelectorAll('#losers-render .round:first-child .player');
             for(let s of lSlots) { if(s.innerText === 'TBD') { s.dataset.name = lose.dataset.name; s.innerText = lose.innerText; break; } }
         }
@@ -260,126 +202,71 @@
             const t = nr.querySelectorAll('.player')[m%2]; 
             t.dataset.name = win.dataset.name; t.innerText = win.innerText; 
         } else if (br === 'W' && mode === 'double') { 
-            const p = document.querySelectorAll('#GF-match .player')[0];
-            p.innerText = win.innerText; p.dataset.name = win.dataset.name; 
+            const p = document.querySelectorAll('#GF-match .player')[0]; p.innerText = win.innerText; p.dataset.name = win.dataset.name; 
         } else if (br === 'L' && mode === 'double') { 
-            const p = document.querySelectorAll('#GF-match .player')[1];
-            p.innerText = win.innerText; p.dataset.name = win.dataset.name; 
+            const p = document.querySelectorAll('#GF-match .player')[1]; p.innerText = win.innerText; p.dataset.name = win.dataset.name; 
         } else if (mode === 'single' || br === 'GF') showChamp(win.dataset.name);
-    }
-
-    function scrubFromLosers(name) {
-        document.querySelectorAll('#losers-render .player, #GF-match .player:last-child').forEach(p => {
-            if (p.dataset.name === name) {
-                p.innerText = p.closest('#GF-match') ? "Loser Champ" : "TBD";
-                p.dataset.name = ""; p.classList.remove('winner-highlight'); p.style.opacity = "1";
-            }
-        });
-    }
-
-    function clearNext(br, r, m, name) {
-        const nr = document.getElementById(`${br}-r${r+1}-m${Math.floor(m/2)}`);
-        if(nr) { 
-            const t = nr.querySelectorAll('.player')[m%2]; 
-            if(t.dataset.name === name) {
-                t.innerText = "TBD"; t.dataset.name = "";
-                t.classList.remove('winner-highlight'); t.style.opacity = "1";
-                clearNext(br, r+1, Math.floor(m/2), name); 
-            }
-        }
-        if(mode === 'double' && br === 'W') {
-            document.querySelectorAll('#losers-render .player').forEach(p => {
-                if(p.dataset.name === name) {
-                    p.innerText = "TBD"; p.dataset.name = "";
-                    p.classList.remove('winner-highlight'); p.style.opacity = "1";
-                }
-            });
-            const pW = document.querySelectorAll('#GF-match .player')[0];
-            if(pW && pW.dataset.name === name) { pW.innerText = "Winner Champ"; pW.dataset.name = ""; pW.classList.remove('winner-highlight'); }
-        } else if (br === 'L' && mode === 'double') {
-            const pL = document.querySelectorAll('#GF-match .player')[1];
-            if(pL && pL.dataset.name === name) { pL.innerText = "Loser Champ"; pL.dataset.name = ""; pL.classList.remove('winner-highlight'); }
-        }
     }
 
     function refreshChipUI() {
         const grid = document.getElementById('chip-tables-container');
         for(let i=0; i<5; i++) { while(activeMatches[i].length < 2 && queue.length > 0) activeMatches[i].push(queue.shift()); }
-        if(players.filter(p => p.chips > 0).length === 1 && activeMatches.every(m => m.length < 2)) { showChamp(players.find(p => p.chips > 0).name); return; }
         grid.innerHTML = activeMatches.map((m, idx) => `
             <div class="match-area">Table ${idx+1}
                 ${m.length === 2 ? `
-                <div class="chip-card focusable" tabindex="0" role="button" onclick="chipWinner(${idx},0)"><span>${m[0].name} (${m[0].streak}/3)</span><span class="chip-val">${m[0].chips}</span></div>
-                <div class="chip-card focusable" tabindex="0" role="button" onclick="chipWinner(${idx},1)"><span>${m[1].name} (${m[1].streak}/3)</span><span class="chip-val">${m[1].chips}</span></div>` : '<div>Waiting...</div>'}
+                <div class="chip-card focusable" tabindex="0" onclick="chipWinner(${idx},0)"><span>${m[0].name}</span> <span style="color:var(--accent)">[${m[0].chips}]</span></div>
+                <div class="chip-card focusable" tabindex="0" onclick="chipWinner(${idx},1)"><span>${m[1].name}</span> <span style="color:var(--accent)">[${m[1].chips}]</span></div>` : '<div>Waiting...</div>'}
             </div>`).join('');
-        document.getElementById('chip-queue-render').innerHTML = `<h3>Queue</h3>` + queue.map(p => `<div class="upcoming-match">${p.name} (${p.chips})</div>`).join('');
+        document.getElementById('chip-queue-render').innerHTML = `<h3>Queue</h3>` + queue.map(p => `<div>${p.name} (${p.chips} chips)</div>`).join('');
+        initNavigation();
     }
 
     function chipWinner(tIdx, wIdx) {
-        chipHistory.push(JSON.parse(JSON.stringify({ players, queue, activeMatches })));
-        const m = activeMatches[tIdx]; const w = players.find(p => p.id === m[wIdx].id); const l = players.find(p => p.id === m[wIdx===0?1:0].id);
-        l.chips--; l.streak = 0; if(l.chips > 0) queue.push(l);
+        const m = activeMatches[tIdx]; const w = m[wIdx]; const l = m[wIdx===0?1:0];
+        l.chips--; if(l.chips > 0) queue.push(l);
         w.streak++; if(w.streak >= 3) { w.streak = 0; queue.push(w); activeMatches[tIdx] = []; } else activeMatches[tIdx] = [w];
         refreshChipUI();
     }
 
-    function undoChipAction() { if(!chipHistory.length) return; const s = chipHistory.pop(); players = s.players; queue = s.queue; activeMatches = s.activeMatches; refreshChipUI(); }
     function showChamp(n) { document.getElementById('champion-display').innerText = n; document.getElementById('winner-overlay').classList.remove('hidden'); }
-    function randomizeNames() { let l = document.getElementById('name-list').value.split('\n').filter(n => n.trim()); l.sort(() => Math.random() - 0.5); document.getElementById('name-list').value = l.join('\n'); updateCount(); }
-    function toggleDisplayMode() { document.body.classList.toggle('tv-mode'); document.body.classList.toggle('mobile-mode'); }
-    function syncChips() { const val = document.getElementById('global-chip-count').value; document.querySelectorAll('.player-row input[type="number"]').forEach(input => input.value = val); }
+    function randomizeNames() { let l = document.getElementById('name-list').value.split('\n').filter(n => n.trim()); l.sort(() => Math.random() - 0.5); document.getElementById('name-list').value = l.join('\n'); }
 
-    /* TV NAVIGATION ENGINE (TIZEN COMPATIBLE) */
-    (function() {
-        function getFocusables() {
-            return Array.from(document.querySelectorAll('button, input, select, textarea, .focusable, .player, .chip-card, [tabindex="0"]'))
-                .filter(el => {
-                    const style = window.getComputedStyle(el);
-                    return style.display !== 'none' && style.visibility !== 'hidden' && el.offsetWidth > 0;
-                });
+    /* ULTRA-ROBUST TV ENGINE */
+    function initNavigation() {
+        const elements = document.querySelectorAll('button, input, select, textarea, .player, .chip-card, [tabindex="0"]');
+        elements.forEach(el => {
+            el.classList.add('focusable');
+            if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
+        });
+    }
+
+    window.addEventListener('keydown', (e) => {
+        const active = document.activeElement;
+        const focusables = Array.from(document.querySelectorAll('.focusable')).filter(el => el.offsetParent !== null);
+        let index = focusables.indexOf(active);
+
+        if (index === -1) { focusables[0]?.focus(); return; }
+
+        // Enter Key
+        if (e.keyCode === 13) {
+            if (active.tagName === 'TEXTAREA') return;
+            active.click();
+            return;
         }
 
-        document.addEventListener('keydown', function(e) {
-            const focusables = getFocusables();
-            let currentIndex = focusables.indexOf(document.activeElement);
-            
-            if (currentIndex === -1) { 
-                if (focusables.length > 0) focusables[0].focus(); 
-                return; 
-            }
+        // Arrow Key Navigation
+        let next;
+        if (e.keyCode === 39 || e.keyCode === 40) next = focusables[index + 1]; // Right or Down
+        if (e.keyCode === 37 || e.keyCode === 38) next = focusables[index - 1]; // Left or Up
 
-            const key = e.keyCode || e.which;
+        if (next) {
+            e.preventDefault();
+            next.focus();
+            next.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
 
-            if (key === 13) { 
-                if (document.activeElement.tagName === 'TEXTAREA') return; 
-                document.activeElement.click();
-                e.preventDefault();
-                return;
-            }
-
-            let nextIndex = -1;
-            // Support for D-Pad Arrows
-            if (key === 38 || key === 37) nextIndex = currentIndex - 1; 
-            if (key === 40 || key === 39) nextIndex = currentIndex + 1; 
-
-            if (nextIndex >= 0 && nextIndex < focusables.length) {
-                e.preventDefault();
-                focusables[nextIndex].focus();
-                focusables[nextIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        });
-
-        const observer = new MutationObserver(() => {
-            setTimeout(() => {
-                if (!document.activeElement || document.activeElement === document.body) {
-                    const visible = getFocusables();
-                    if (visible.length > 0) visible[0].focus();
-                }
-            }, 200);
-        });
-        observer.observe(document.body, { attributes: true, subtree: true, childList: true });
-        window.onload = () => { if(getFocusables().length > 0) getFocusables()[0].focus(); };
-    })();
+    window.onload = () => { initNavigation(); document.querySelector('.focusable')?.focus(); };
 </script>
 </body>
 </html>
