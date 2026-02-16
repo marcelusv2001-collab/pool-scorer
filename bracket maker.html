@@ -6,13 +6,12 @@
     <title>Bracket Maker TV</title>
     <style>
         :root { --primary: #00cc66; --bg: #0a0a0a; --surface: #1a1a1a; --text: #fff; --accent: #ffcc00; --border-thick: 6px; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; overflow: hidden; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; overflow-x: hidden; }
         
-        /* MODES */
         body.tv-mode { font-size: 28px; }
         body.mobile-mode { font-size: 16px; }
 
-        /* UNIVERSAL FOCUSABLE ELEMENTS */
+        /* INTERACTIVE ELEMENTS */
         button, input, textarea, select { 
             border: var(--border-thick) solid #444 !important; 
             background: #222; 
@@ -25,28 +24,25 @@
             box-sizing: border-box;
         }
 
-        /* HIGH-VISIBILITY FOCUS */
+        /* TV FOCUS STATE */
         button:focus, input:focus, textarea:focus, select:focus { 
             outline: none !important;
             border-color: var(--accent) !important;
             background: var(--primary) !important; 
             color: #000 !important;
-            transform: scale(1.05);
+            transform: scale(1.03);
             box-shadow: 0 0 25px var(--accent);
             z-index: 10;
         }
 
-        .tab-bar { display: flex; background: #000; padding: 10px; gap: 10px; border-bottom: 5px solid var(--primary); }
-        .tab-btn { width: auto; flex: 1; background: #333; font-weight: bold; }
-
-        .header { padding: 15px 25px; background: var(--surface); display: flex; justify-content: space-between; align-items: center; }
-        .container { padding: 25px; height: 75vh; overflow-y: auto; scroll-behavior: smooth; }
+        .header { padding: 20px 30px; background: var(--surface); display: flex; justify-content: space-between; align-items: center; border-bottom: 5px solid var(--primary); }
+        .container { padding: 30px; max-width: 1400px; margin: auto; }
         
-        .counter-box { background: var(--primary); color: #000; padding: 5px 20px; border-radius: 20px; font-weight: bold; border: 3px solid #000; }
+        .counter-box { background: var(--primary); color: #000; padding: 5px 25px; border-radius: 25px; font-weight: bold; border: 3px solid #000; }
         
         /* BRACKET */
-        .bracket-scroll { display: flex; gap: 40px; padding: 20px; }
-        .round { display: flex; flex-direction: column; justify-content: space-around; min-width: 280px; }
+        .bracket-scroll { display: flex; gap: 40px; padding: 20px; overflow-x: auto; }
+        .round { display: flex; flex-direction: column; justify-content: space-around; min-width: 300px; }
         .match { background: #262626; margin: 15px 0; border-radius: 12px; border-left: 15px solid var(--accent); overflow: hidden; }
         .player-btn { text-align: left; border: none !important; border-bottom: 2px solid #444 !important; border-radius: 0; }
         .winner-highlight { background: var(--primary) !important; color: #000 !important; font-weight: 900; }
@@ -69,15 +65,9 @@
     <button style="width: 400px; background: var(--accent); color: #000; margin-top: 40px;" onclick="location.reload()">NEW TOURNAMENT</button>
 </div>
 
-<div class="tab-bar">
-    <button class="tab-btn" onclick="switchView('setup-view')">1. SETUP</button>
-    <button class="tab-btn" onclick="switchView('bracket-view')">2. BRACKET</button>
-    <button class="tab-btn" onclick="switchView('chip-view')">3. CHIPS</button>
-</div>
-
 <div class="header">
     <div style="font-weight: 900; letter-spacing: 2px;">🎱 BRACKET MAKER TV</div>
-    <div style="display: flex; gap: 10px; align-items: center;">
+    <div style="display: flex; gap: 15px; align-items: center;">
         <button id="undo-chip-btn" class="hidden" style="width: auto; background: var(--accent); color: #000;" onclick="undoChipAction()">⏪ UNDO</button>
         <button style="width: auto; background: #444;" onclick="toggleDisplayMode()">🖥️ TV/MOBILE</button>
         <button style="width: auto; background: #ff4444;" onclick="location.reload()">RESET</button>
@@ -97,29 +87,30 @@
             <option value="chip">Chip Tournament (Queue)</option>
         </select>
 
-        <div id="bulk-names" style="margin-top: 20px;">
-            <textarea id="name-list" rows="6" placeholder="Enter Names (One per line)" oninput="updateCount()"></textarea>
-            <button style="margin-top: 15px; background: var(--accent); color: #000;" onclick="randomizeNames()">🎲 RANDOM DRAW</button>
+        <div id="bulk-names" style="margin-top: 25px;">
+            <label style="display:block; margin-bottom:10px;">Enter Names (One per line):</label>
+            <textarea id="name-list" rows="10" placeholder="Player 1&#10;Player 2&#10;Player 3" oninput="updateCount()"></textarea>
+            <button style="margin-top: 20px; background: var(--accent); color: #000;" onclick="randomizeNames()">🎲 RANDOM DRAW / SHUFFLE</button>
         </div>
 
-        <div id="individual-names" class="hidden" style="margin-top: 20px;">
+        <div id="individual-names" class="hidden" style="margin-top: 25px;">
             <div id="player-rows-container"></div>
         </div>
 
-        <button style="margin-top: 40px; background: var(--primary); height: 100px; font-weight: bold;" onclick="startTourney()">START</button>
+        <button style="margin-top: 40px; background: var(--primary); height: 110px; font-weight: bold; font-size: 1.2em;" onclick="startTourney()">START TOURNAMENT</button>
     </div>
 
     <div id="bracket-view" class="hidden">
         <div id="bracket-render" class="bracket-scroll"></div>
         <div id="losers-section" class="hidden">
-            <h2 style="color:var(--accent); margin-left: 20px; border-top: 1px solid #333; padding-top: 20px;">Losers Bracket</h2>
+            <h2 style="color:var(--accent); margin-top: 40px; border-top: 2px solid #333; padding-top: 20px;">Losers Bracket</h2>
             <div id="losers-render" class="bracket-scroll"></div>
         </div>
     </div>
 
     <div id="chip-view" class="hidden">
         <div class="chip-grid" id="chip-tables-container"></div>
-        <div id="chip-queue-render" style="margin-top: 30px; background: #111; padding: 20px; border-radius: 10px; border: 2px dashed #444;"></div>
+        <div id="chip-queue-render" style="margin-top: 30px; background: #111; padding: 25px; border-radius: 15px; border: 2px dashed #444;"></div>
     </div>
 </div>
 
@@ -132,12 +123,6 @@
     function updateCount() {
         const count = document.getElementById('name-list').value.split('\n').filter(n => n.trim()).length;
         document.getElementById('player-count').innerText = count;
-    }
-
-    function switchView(id) {
-        ['setup-view', 'bracket-view', 'chip-view'].forEach(v => document.getElementById(v).classList.add('hidden'));
-        document.getElementById(id).classList.remove('hidden');
-        setTimeout(() => document.querySelector(`#${id} button, #${id} select, #${id} textarea`)?.focus(), 50);
     }
 
     function toggleSetupMode() {
@@ -164,13 +149,18 @@
             });
             queue = [...players];
             document.getElementById('undo-chip-btn').classList.remove('hidden');
-            refreshChipUI(); switchView('chip-view');
+            refreshChipUI();
+            document.getElementById('setup-view').classList.add('hidden');
+            document.getElementById('chip-view').classList.remove('hidden');
         } else {
             document.getElementById('name-list').value.split('\n').filter(n => n.trim()).forEach(n => {
                 players.push({ name: n.trim(), id: Math.random() });
             });
-            setupBrackets(); switchView('bracket-view');
+            setupBrackets();
+            document.getElementById('setup-view').classList.add('hidden');
+            document.getElementById('bracket-view').classList.remove('hidden');
         }
+        setTimeout(() => document.querySelector('button:not(.hidden)')?.focus(), 100);
     }
 
     function setupBrackets() {
@@ -272,20 +262,26 @@
     function showChamp(n) { document.getElementById('champion-display').innerText = n; document.getElementById('winner-overlay').classList.remove('hidden'); document.querySelector('#winner-overlay button').focus(); }
     function randomizeNames() { let l = document.getElementById('name-list').value.split('\n').filter(n => n.trim()); l.sort(() => Math.random() - 0.5); document.getElementById('name-list').value = l.join('\n'); updateCount(); }
 
-    // UNIVERSAL D-PAD NAVIGATION
+    // D-PAD NAVIGATION ENGINE
     document.addEventListener('keydown', (e) => {
+        const active = document.activeElement;
+        
+        // ALLOW ENTER KEY IN TEXTAREA
+        if (active.tagName === 'TEXTAREA' && e.keyCode === 13) {
+            return; // Don't prevent default, allow new line
+        }
+
         const focusables = Array.from(document.querySelectorAll('button, input, textarea, select')).filter(el => el.offsetParent !== null);
-        let index = focusables.indexOf(document.activeElement);
+        let index = focusables.indexOf(active);
+
         if (e.keyCode === 37 || e.keyCode === 38) { // Up/Left
             e.preventDefault();
             const next = index > 0 ? index - 1 : focusables.length - 1;
             focusables[next].focus();
-            focusables[next].scrollIntoView({ behavior: 'smooth', block: 'center' });
         } else if (e.keyCode === 39 || e.keyCode === 40) { // Down/Right
             e.preventDefault();
             const next = index < focusables.length - 1 ? index + 1 : 0;
             focusables[next].focus();
-            focusables[next].scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
     });
 
