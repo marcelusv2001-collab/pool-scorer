@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Billiard Pro Master</title>
+    <title>Bracket Maker TV</title>
     <style>
         :root { --primary: #00cc66; --bg: #0a0a0a; --surface: #1a1a1a; --text: #fff; --accent: #ffcc00; --border-thick: 4px; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; overflow-x: hidden; transition: font-size 0.3s ease; }
@@ -65,7 +65,7 @@
 </div>
 
 <div class="header">
-    <div style="font-weight: bold; letter-spacing: 2px;">🎱 BILLIARD MASTER</div>
+    <div style="font-weight: bold; letter-spacing: 2px;">🎱 BRACKET MAKER TV</div>
     <div style="display: flex; gap: 10px;">
         <button id="undo-chip-btn" class="btn focusable hidden" onclick="undoChipAction()" style="background: var(--accent); color: black;">⏪ UNDO</button>
         <button class="btn focusable" onclick="toggleDisplayMode()" style="background: #444;">🖥️ TV/MOBILE</button>
@@ -224,6 +224,20 @@
         const pEls = matchEl.querySelectorAll('.player');
         const win = pEls[sIdx]; const lose = pEls[sIdx === 0 ? 1 : 0];
         if(win.innerText === 'TBD') return;
+
+        // Reset logic for Grand Finals
+        if(br === 'GF') {
+            if(sIdx === 1 && !grandFinalsReset) {
+                grandFinalsReset = true;
+                document.getElementById('gf-status').innerText = "MATCH 2 (RESET)";
+                pEls[0].classList.remove('winner-highlight');
+                pEls[1].classList.remove('winner-highlight');
+                pEls[0].style.opacity = "1";
+                pEls[1].style.opacity = "1";
+                return;
+            }
+        }
+
         if(win.classList.contains('winner-highlight')) {
             const nameToClear = win.dataset.name;
             win.classList.remove('winner-highlight'); lose.style.opacity = "1";
@@ -320,38 +334,41 @@
     /* TV NAVIGATION ENGINE */
     (function() {
         function getFocusables() {
-            return Array.from(document.querySelectorAll('.focusable, input, select, textarea, .player, .chip-card, .btn'))
+            // Broadened selector to ensure TV browsers recognize all clickable elements
+            return Array.from(document.querySelectorAll('button, input, select, textarea, .focusable, .player, .chip-card'))
                 .filter(el => {
                     const style = window.getComputedStyle(el);
-                    return style.display !== 'none' && style.visibility !== 'hidden' && el.offsetParent !== null;
+                    return style.display !== 'none' && style.visibility !== 'hidden' && el.offsetWidth > 0;
                 });
         }
 
         document.addEventListener('keydown', function(e) {
             const focusables = getFocusables();
             let currentIndex = focusables.indexOf(document.activeElement);
-            if (currentIndex === -1) { if (focusables.length > 0) focusables[0].focus(); return; }
+            
+            // If nothing is focused, start at the first element
+            if (currentIndex === -1) { 
+                if (focusables.length > 0) focusables[0].focus(); 
+                return; 
+            }
 
-            let nextIndex = -1;
             const key = e.keyCode || e.which;
 
-            if (key === 38 || key === 37) nextIndex = currentIndex - 1; // Up or Left
-            if (key === 40 || key === 39) nextIndex = currentIndex + 1; // Down or Right
-            
             if (key === 13) { // Enter
-                // FIX: Allow enter key to work inside Textarea for new lines
-                if (document.activeElement.tagName === 'TEXTAREA') {
-                    return; 
-                }
+                if (document.activeElement.tagName === 'TEXTAREA') return; 
                 document.activeElement.click();
                 e.preventDefault();
                 return;
             }
 
+            let nextIndex = -1;
+            if (key === 38 || key === 37) nextIndex = currentIndex - 1; // Up/Left
+            if (key === 40 || key === 39) nextIndex = currentIndex + 1; // Down/Right
+
             if (nextIndex >= 0 && nextIndex < focusables.length) {
                 e.preventDefault();
                 focusables[nextIndex].focus();
-                focusables[nextIndex].scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+                focusables[nextIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         });
 
