@@ -5,44 +5,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Billiard Pro Master</title>
     <style>
-        :root { --primary: #00cc66; --bg: #0a0a0a; --surface: #1a1a1a; --text: #fff; --accent: #ffcc00; }
+        :root { --primary: #00cc66; --bg: #0a0a0a; --surface: #1a1a1a; --text: #fff; --accent: #ffcc00; --border-thick: 4px; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; overflow-x: hidden; transition: font-size 0.3s ease; }
         body.tv-mode { font-size: 28px; }
         body.mobile-mode { font-size: 16px; }
         .container { padding: 20px; max-width: 1200px; margin: auto; }
         
-        /* UPDATED FOCUS STATE FOR TV REMOTES */
-        .focusable:focus, .player:focus, .chip-card:focus, input:focus, select:focus, textarea:focus { 
-            outline: 8px solid var(--accent) !important; 
+        /* WELL DEFINED BORDERS FOR ALL INTERACTIVE ELEMENTS */
+        .focusable, .player, .chip-card, input, select, textarea, .btn, .match { 
+            border: var(--border-thick) solid #444; 
+            box-sizing: border-box;
+        }
+
+        /* THICK HIGHLIGHT FOR TV FOCUS */
+        .focusable:focus, .player:focus, .chip-card:focus, input:focus, select:focus, textarea:focus, .btn:focus { 
+            outline: 10px solid var(--accent) !important; 
+            border-color: var(--accent) !important;
             background: var(--primary) !important; 
             color: #000 !important; 
             transform: scale(1.05);
-            z-index: 10;
+            z-index: 99;
         }
 
-        .header { display: flex; justify-content: space-between; padding: 20px; background: var(--surface); border-bottom: 3px solid var(--primary); align-items: center; }
-        .setup-box { background: var(--surface); padding: 25px; border-radius: 10px; margin-bottom: 20px; }
+        .header { display: flex; justify-content: space-between; padding: 20px; background: var(--surface); border-bottom: 6px solid var(--primary); align-items: center; }
+        .setup-box { background: var(--surface); padding: 25px; border-radius: 10px; margin-bottom: 20px; border: var(--border-thick) solid var(--primary); }
         .bracket-scroll { display: flex; overflow-x: auto; gap: 40px; padding: 20px; scroll-behavior: smooth; }
         .round { display: flex; flex-direction: column; justify-content: space-around; min-width: 250px; }
-        .match { background: #262626; margin: 15px 0; border-radius: 8px; border-left: 6px solid var(--accent); }
-        .player { padding: 14px; cursor: pointer; display: flex; justify-content: space-between; border-bottom: 1px solid #333; }
-        .winner-highlight { background: var(--primary) !important; color: #000; font-weight: bold; }
+        .match { background: #262626; margin: 15px 0; border-radius: 8px; border-left: 12px solid var(--accent); }
+        .player { padding: 14px; cursor: pointer; display: flex; justify-content: space-between; border-bottom: 2px solid #444; }
+        .winner-highlight { background: var(--primary) !important; color: #000; font-weight: bold; border-color: #fff !important; }
+        
         table { width: 100%; border-collapse: collapse; background: var(--surface); margin-top: 20px; }
-        th, td { border: 1px solid #444; padding: 15px; text-align: center; }
+        th, td { border: var(--border-thick) solid #444; padding: 15px; text-align: center; }
         th { background: #333; color: var(--accent); }
+        
         .chip-layout { display: grid; grid-template-columns: 1.5fr 1fr; gap: 30px; }
         .tables-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .match-area { background: #222; padding: 15px; border-radius: 10px; border: 2px solid var(--primary); text-align: center; position: relative; }
+        .match-area { background: #222; padding: 15px; border-radius: 10px; border: var(--border-thick) solid var(--primary); text-align: center; position: relative; }
         .chip-card { background: #333; padding: 10px; margin: 5px 0; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9em; cursor: pointer; }
-        .chip-val { background: var(--accent); color: #000; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
-        .upcoming-match { background: #2a2a2a; border: 1px solid #444; border-radius: 8px; margin-bottom: 10px; padding: 10px; }
+        .chip-val { background: var(--accent); color: #000; padding: 2px 8px; border-radius: 4px; font-weight: bold; border: 2px solid #000; }
+        
+        .upcoming-match { background: #2a2a2a; border: var(--border-thick) solid #444; border-radius: 8px; margin-bottom: 10px; padding: 10px; }
         .player-row { display: flex; gap: 10px; margin-bottom: 5px; }
-        input, textarea, select { background: #2a2a2a; color: white; border: 1px solid #444; padding: 8px; border-radius: 4px; font-size: inherit; }
+        input, textarea, select { background: #2a2a2a; color: white; padding: 12px; border-radius: 8px; font-size: inherit; }
+        
         #winner-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
         .hidden { display: none !important; }
-        .btn { padding: 12px 24px; cursor: pointer; font-weight: bold; border: none; border-radius: 5px; text-transform: uppercase; font-size: inherit; }
-        .reset-badge { font-size: 0.5em; background: #ff4444; color: white; padding: 2px 10px; border-radius: 10px; margin-bottom: 5px; display: inline-block; }
-        .counter-box { background: var(--primary); color: #000; padding: 5px 15px; border-radius: 20px; font-weight: bold; }
+        .btn { padding: 15px 30px; cursor: pointer; font-weight: bold; border-radius: 8px; text-transform: uppercase; font-size: inherit; }
+        .reset-badge { font-size: 0.5em; background: #ff4444; color: white; padding: 2px 10px; border-radius: 10px; margin-bottom: 5px; display: inline-block; border: 2px solid #fff; }
+        .counter-box { background: var(--primary); color: #000; padding: 8px 20px; border-radius: 20px; font-weight: bold; border: 3px solid #000; }
     </style>
 </head>
 <body class="tv-mode">
@@ -69,7 +80,7 @@
             <div class="counter-box">Players: <span id="player-count-display">0</span></div>
         </div>
         
-        <select id="tourney-type" class="focusable" style="margin-bottom: 20px; width: 100%; height: 60px;" onchange="toggleSetupMode()">
+        <select id="tourney-type" class="focusable" style="margin-bottom: 20px; width: 100%; height: 70px;" onchange="toggleSetupMode()">
             <option value="single">Single Elimination</option>
             <option value="double">Double Elimination</option>
             <option value="round">Round Robin (League)</option>
@@ -78,7 +89,7 @@
 
         <div id="bulk-names">
             <textarea id="name-list" class="focusable" rows="8" style="width: 100%;" placeholder="Enter Names (One per line)" oninput="updateCount()"></textarea>
-            <button class="btn focusable" style="background: var(--accent); color:black; width: 100%; margin-top: 10px;" onclick="randomizeNames()">🎲 RANDOM DRAW</button>
+            <button class="btn focusable" style="background: var(--accent); color:black; width: 100%; margin-top: 15px;" onclick="randomizeNames()">🎲 RANDOM DRAW</button>
         </div>
 
         <div id="individual-names" class="hidden">
@@ -93,7 +104,7 @@
             <div id="player-rows-container"></div>
             <button id="add-btn" class="btn focusable hidden" onclick="addPlayerRow()" style="background:#444; width:100%; margin-top:10px;">+ Add Player</button>
         </div>
-        <button class="btn focusable" style="background: var(--primary); width: 100%; margin-top: 20px;" onclick="startTourney()">START</button>
+        <button class="btn focusable" style="background: var(--primary); width: 100%; margin-top: 25px; height: 80px;" onclick="startTourney()">START</button>
     </div>
 
     <div id="bracket-view" class="hidden">
@@ -112,7 +123,7 @@
     <div id="chip-view" class="hidden">
         <div class="chip-layout">
             <div id="chip-tables-container" class="tables-grid"></div>
-            <div id="chip-queue-render" style="background: var(--surface); padding: 20px; border-radius: 10px; overflow-y: auto; max-height: 80vh;"></div>
+            <div id="chip-queue-render" style="background: var(--surface); padding: 20px; border-radius: 10px; overflow-y: auto; max-height: 80vh; border: var(--border-thick) solid #444;"></div>
         </div>
     </div>
 </div>
@@ -141,7 +152,7 @@
     function addPlayerRow() {
         const div = document.createElement('div'); div.className = 'player-row';
         div.innerHTML = `<input type="text" class="focusable" placeholder="Name" style="flex:2" oninput="updateCount()"> 
-                         <input type="number" class="focusable" value="${document.getElementById('global-chip-count').value}" style="width:80px">`;
+                         <input type="number" class="focusable" value="${document.getElementById('global-chip-count').value}" style="width:100px">`;
         document.getElementById('player-rows-container').appendChild(div);
         updateCount();
     }
@@ -344,7 +355,6 @@
             }
         });
 
-        // Ensure focus is kept when screen changes
         const observer = new MutationObserver(() => {
             setTimeout(() => {
                 if (!document.activeElement || document.activeElement === document.body) {
