@@ -10,7 +10,16 @@
         body.tv-mode { font-size: 28px; }
         body.mobile-mode { font-size: 16px; }
         .container { padding: 20px; max-width: 1200px; margin: auto; }
-        .focusable:focus { outline: 5px solid var(--accent); background: var(--primary) !important; color: #000; transform: scale(1.02); }
+        
+        /* UPDATED FOCUS STATE FOR TV REMOTES */
+        .focusable:focus, .player:focus, .chip-card:focus, input:focus, select:focus, textarea:focus { 
+            outline: 8px solid var(--accent) !important; 
+            background: var(--primary) !important; 
+            color: #000 !important; 
+            transform: scale(1.05);
+            z-index: 10;
+        }
+
         .header { display: flex; justify-content: space-between; padding: 20px; background: var(--surface); border-bottom: 3px solid var(--primary); align-items: center; }
         .setup-box { background: var(--surface); padding: 25px; border-radius: 10px; margin-bottom: 20px; }
         .bracket-scroll { display: flex; overflow-x: auto; gap: 40px; padding: 20px; scroll-behavior: smooth; }
@@ -109,6 +118,7 @@
 </div>
 
 <script>
+    /* CORE LOGIC RETAINED */
     let players = []; let queue = []; let activeMatches = [[], [], [], [], []];
     let mode = 'single'; let grandFinalsReset = false; let chipHistory = [];
 
@@ -175,8 +185,8 @@
             gf.innerHTML = `<h3 style="text-align:center; color:var(--accent)">GRAND FINAL</h3>
                 <div class="match" id="GF-match">
                     <div id="gf-status" class="reset-badge">MATCH 1</div>
-                    <div class="player focusable" onclick="advBr('GF',0,0,0)">Winner Champ</div>
-                    <div class="player focusable" onclick="advBr('GF',0,0,1)">Loser Champ</div>
+                    <div class="player focusable" tabindex="0" onclick="advBr('GF',0,0,0)">Winner Champ</div>
+                    <div class="player focusable" tabindex="0" onclick="advBr('GF',0,0,1)">Loser Champ</div>
                 </div>`;
             document.getElementById('bracket-render').appendChild(gf);
         }
@@ -191,8 +201,8 @@
             let mCount = Math.pow(2, rounds - r - 1);
             for(let m=0; m<mCount; m++) {
                 rd.innerHTML += `<div class="match" id="${prefix}-r${r}-m${m}">
-                    <div class="player focusable" onclick="advBr('${prefix}',${r},${m},0)">TBD</div>
-                    <div class="player focusable" onclick="advBr('${prefix}',${r},${m},1)">TBD</div></div>`;
+                    <div class="player focusable" tabindex="0" onclick="advBr('${prefix}',${r},${m},0)">TBD</div>
+                    <div class="player focusable" tabindex="0" onclick="advBr('${prefix}',${r},${m},1)">TBD</div></div>`;
             }
             cont.appendChild(rd);
         }
@@ -202,48 +212,35 @@
         const matchEl = br === 'GF' ? document.getElementById('GF-match') : document.getElementById(`${br}-r${r}-m${m}`);
         const pEls = matchEl.querySelectorAll('.player');
         const win = pEls[sIdx]; const lose = pEls[sIdx === 0 ? 1 : 0];
-
         if(win.innerText === 'TBD') return;
-
         if(win.classList.contains('winner-highlight')) {
             const nameToClear = win.dataset.name;
             win.classList.remove('winner-highlight'); lose.style.opacity = "1";
             clearNext(br, r, m, nameToClear); return;
         }
-        
         if(lose.classList.contains('winner-highlight')) { 
             const nameToClear = lose.dataset.name;
             lose.classList.remove('winner-highlight'); win.style.opacity = "1"; 
             clearNext(br, r, m, nameToClear);
         }
-
         win.classList.add('winner-highlight'); lose.style.opacity = "0.5";
-
-        // Logic: Scrub winner from Losers bracket to ensure they aren't in two places at once
-        if (mode === 'double' && br === 'W') {
-            scrubFromLosers(win.dataset.name);
-        }
-
+        if (mode === 'double' && br === 'W') scrubFromLosers(win.dataset.name);
         if(mode === 'double' && br === 'W' && lose.dataset.name) {
             const lSlots = document.querySelectorAll('#losers-render .round:first-child .player');
             for(let s of lSlots) { if(s.innerText === 'TBD') { s.dataset.name = lose.dataset.name; s.innerText = lose.innerText; break; } }
         }
-
         const nr = document.getElementById(`${br}-r${r+1}-m${Math.floor(m/2)}`);
         if(nr) { 
             const t = nr.querySelectorAll('.player')[m%2]; 
             t.dataset.name = win.dataset.name; 
             t.innerText = win.innerText; 
-        }
-        else if (br === 'W' && mode === 'double') { 
+        } else if (br === 'W' && mode === 'double') { 
             const p = document.querySelectorAll('#GF-match .player')[0];
             p.innerText = win.innerText; p.dataset.name = win.dataset.name; 
-        }
-        else if (br === 'L' && mode === 'double') { 
+        } else if (br === 'L' && mode === 'double') { 
             const p = document.querySelectorAll('#GF-match .player')[1];
             p.innerText = win.innerText; p.dataset.name = win.dataset.name; 
-        }
-        else if (mode === 'single' || br === 'GF') showChamp(win.dataset.name);
+        } else if (mode === 'single' || br === 'GF') showChamp(win.dataset.name);
     }
 
     function scrubFromLosers(name) {
@@ -289,8 +286,8 @@
         grid.innerHTML = activeMatches.map((m, idx) => `
             <div class="match-area">Table ${idx+1}
                 ${m.length === 2 ? `
-                <div class="chip-card focusable" onclick="chipWinner(${idx},0)"><span>${m[0].name} (${m[0].streak}/3)</span><span class="chip-val">${m[0].chips}</span></div>
-                <div class="chip-card focusable" onclick="chipWinner(${idx},1)"><span>${m[1].name} (${m[1].streak}/3)</span><span class="chip-val">${m[1].chips}</span></div>` : '<div>Waiting...</div>'}
+                <div class="chip-card focusable" tabindex="0" onclick="chipWinner(${idx},0)"><span>${m[0].name} (${m[0].streak}/3)</span><span class="chip-val">${m[0].chips}</span></div>
+                <div class="chip-card focusable" tabindex="0" onclick="chipWinner(${idx},1)"><span>${m[1].name} (${m[1].streak}/3)</span><span class="chip-val">${m[1].chips}</span></div>` : '<div>Waiting...</div>'}
             </div>`).join('');
         document.getElementById('chip-queue-render').innerHTML = `<h3>Queue</h3>` + queue.map(p => `<div class="upcoming-match">${p.name} (${p.chips})</div>`).join('');
     }
@@ -308,6 +305,53 @@
     function randomizeNames() { let l = document.getElementById('name-list').value.split('\n').filter(n => n.trim()); l.sort(() => Math.random() - 0.5); document.getElementById('name-list').value = l.join('\n'); updateCount(); }
     function toggleDisplayMode() { document.body.classList.toggle('tv-mode'); document.body.classList.toggle('mobile-mode'); }
     function syncChips() { const val = document.getElementById('global-chip-count').value; document.querySelectorAll('.player-row input[type="number"]').forEach(input => input.value = val); }
+
+    /* TV NAVIGATION ENGINE */
+    (function() {
+        function getFocusables() {
+            return Array.from(document.querySelectorAll('.focusable, input, select, textarea, .player, .chip-card, .btn'))
+                .filter(el => {
+                    const style = window.getComputedStyle(el);
+                    return style.display !== 'none' && style.visibility !== 'hidden' && el.offsetParent !== null;
+                });
+        }
+
+        document.addEventListener('keydown', function(e) {
+            const focusables = getFocusables();
+            let currentIndex = focusables.indexOf(document.activeElement);
+            if (currentIndex === -1) { if (focusables.length > 0) focusables[0].focus(); return; }
+
+            let nextIndex = -1;
+            const key = e.keyCode || e.which;
+
+            if (key === 38 || key === 37) nextIndex = currentIndex - 1; // Up or Left
+            if (key === 40 || key === 39) nextIndex = currentIndex + 1; // Down or Right
+            
+            if (key === 13) { // Enter
+                document.activeElement.click();
+                e.preventDefault();
+                return;
+            }
+
+            if (nextIndex >= 0 && nextIndex < focusables.length) {
+                e.preventDefault();
+                focusables[nextIndex].focus();
+                focusables[nextIndex].scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+            }
+        });
+
+        // Ensure focus is kept when screen changes
+        const observer = new MutationObserver(() => {
+            setTimeout(() => {
+                if (!document.activeElement || document.activeElement === document.body) {
+                    const visible = getFocusables();
+                    if (visible.length > 0) visible[0].focus();
+                }
+            }, 200);
+        });
+        observer.observe(document.body, { attributes: true, subtree: true, childList: true });
+        window.onload = () => { if(getFocusables().length > 0) getFocusables()[0].focus(); };
+    })();
 </script>
 </body>
 </html>
