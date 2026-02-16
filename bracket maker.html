@@ -8,32 +8,25 @@
         :root { --primary: #00cc66; --bg: #0a0a0a; --surface: #1a1a1a; --text: #fff; --accent: #ffcc00; --border-thick: 6px; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; overflow-x: hidden; }
         body.tv-mode { font-size: 28px; }
-        body.mobile-mode { font-size: 16px; }
 
-        button, input, textarea, select { 
+        button, input, select { 
             border: var(--border-thick) solid #444 !important; 
             background: #222; color: white; padding: 15px; font-size: 1em; border-radius: 10px; display: block; width: 100%; box-sizing: border-box;
         }
 
-        button:focus, input:focus, textarea:focus, select:focus { 
+        button:focus, input:focus, select:focus { 
             outline: none !important; border-color: var(--accent) !important; background: var(--primary) !important; color: #000 !important; transform: scale(1.03); box-shadow: 0 0 25px var(--accent); z-index: 10;
         }
 
         .header { padding: 20px 30px; background: var(--surface); display: flex; justify-content: space-between; align-items: center; border-bottom: 5px solid var(--primary); }
         .container { padding: 30px; max-width: 1400px; margin: auto; }
         
-        /* Layouts */
-        .bracket-scroll { display: flex; gap: 40px; padding: 20px; overflow-x: auto; }
-        .round { display: flex; flex-direction: column; justify-content: space-around; min-width: 300px; }
-        .match { background: #262626; margin: 15px 0; border-radius: 12px; border-left: 15px solid var(--accent); overflow: hidden; }
-        .player-btn { text-align: left; border: none !important; border-bottom: 2px solid #444 !important; border-radius: 0; }
-        .winner-highlight { background: var(--primary) !important; color: #000 !important; font-weight: 900; }
-        
         /* Chip Tables Layout */
-        .chip-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-        .table-card { background: #222; padding: 15px; border: 4px solid var(--primary); border-radius: 15px; }
-        .win-streak { font-size: 0.7em; background: gold; color: black; padding: 2px 8px; border-radius: 10px; margin-left: 10px; font-weight: bold; }
-
+        .chip-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px; }
+        .table-card { background: #222; padding: 10px; border: 4px solid #444; border-radius: 15px; transition: 0.2s; }
+        .table-card.active-table { border-color: var(--primary); background: #1a1a1a; }
+        
+        .win-streak { font-size: 0.6em; background: gold; color: black; padding: 2px 8px; border-radius: 10px; font-weight: bold; vertical-align: middle; }
         .hidden { display: none !important; }
         #winner-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.97); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
     </style>
@@ -48,201 +41,156 @@
 
 <div class="header">
     <div style="font-weight: 900; letter-spacing: 2px;">🎱 BRACKET MAKER TV</div>
-    <div style="display: flex; gap: 15px;">
-        <button style="width: auto; background: #444;" onclick="toggleDisplayMode()">🖥️ TV/MOBILE</button>
-        <button style="width: auto; background: #ff4444;" onclick="location.reload()">RESET</button>
-    </div>
+    <button style="width: auto; background: #ff4444;" onclick="location.reload()">RESET</button>
 </div>
 
 <div class="container">
     <div id="setup-view">
-        <h2 style="margin-top:0; color: var(--primary);">Tournament Setup</h2>
+        <h2 style="margin-top:0; color: var(--primary);">Chip Tournament Setup</h2>
         
-        <label>1. Select Mode:</label>
-        <select id="tourney-type" onchange="handlePlayerCountChange()">
-            <option value="single">Single Elimination</option>
-            <option value="double" selected>Double Elimination</option>
-            <option value="round">Round Robin (League)</option>
-            <option value="chip">Chip Tournament (Queue + 3-Win Rule)</option>
+        <label>1. Mode Selection:</label>
+        <select id="tourney-type">
+            <option value="chip">Chip Tournament (3-Win Rule)</option>
         </select>
 
-        <label style="margin-top:20px; display:block;">2. Number of Players:</label>
-        <select id="player-count-select" onchange="handlePlayerCountChange()" style="margin-bottom: 20px;">
+        <label style="margin-top:20px; display:block;">2. Number of Tables:</label>
+        <select id="table-count-select" onchange="toggleCustomTables()">
+            <option value="1">1 Table</option>
+            <option value="2">2 Tables</option>
+            <option value="3">3 Tables</option>
+            <option value="4">4 Tables</option>
+            <option value="5" selected>5 Tables</option>
+            <option value="8">8 Tables</option>
+            <option value="10">10 Tables</option>
+            <option value="custom">Custom amount...</option>
+        </select>
+        <input type="number" id="custom-tables" class="hidden" placeholder="How many tables?" style="margin-top:10px;">
+
+        <label style="margin-top:20px; display:block;">3. Number of Players:</label>
+        <select id="player-count-select" onchange="handlePlayerCountChange()">
             <option value="0">-- Select --</option>
             <option value="4">4 Players</option>
             <option value="8">8 Players</option>
+            <option value="12">12 Players</option>
             <option value="16">16 Players</option>
+            <option value="24">24 Players</option>
             <option value="32">32 Players</option>
-            <option value="custom">Custom Amount...</option>
         </select>
 
-        <div id="custom-input-wrap" class="hidden" style="margin-bottom:20px;">
-            <input type="number" id="custom-qty" placeholder="Enter amount" oninput="generatePlayerFields(this.value)">
-        </div>
+        <div id="player-inputs-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-top:20px;"></div>
 
-        <div id="player-names-area">
-            <div id="player-inputs-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px;"></div>
-        </div>
-
-        <button id="shuffle-btn" class="hidden" style="margin-top: 25px; background: var(--accent); color: #000;" onclick="shuffleInputs()">🎲 RANDOM DRAW / SHUFFLE</button>
-        <button id="start-btn" class="hidden" style="margin-top: 20px; background: var(--primary); height: 100px; font-weight: bold;" onclick="startTourney()">START TOURNAMENT</button>
+        <button id="start-btn" class="hidden" style="margin-top: 40px; background: var(--primary); height: 100px; font-weight: bold;" onclick="startTourney()">START TOURNAMENT</button>
     </div>
 
     <div id="chip-view" class="hidden">
         <div id="chip-tables-container" class="chip-grid"></div>
         <div id="chip-queue-render" style="margin-top: 30px; padding: 20px; border: 2px dashed #444; background: #111;"></div>
     </div>
-
-    <div id="bracket-view" class="hidden"><div id="bracket-render" class="bracket-scroll"></div><div id="losers-section" class="hidden"><h2>Losers</h2><div id="losers-render" class="bracket-scroll"></div></div></div>
-    <div id="round-robin-view" class="hidden"><div id="rr-table-render"></div><div id="rr-matches-render"></div></div>
 </div>
 
 <script>
-    let players = []; let queue = []; 
-    let activeMatches = [[], [], [], [], []]; // 5 Slots for 5 Tables
-    let mode = 'single';
+    let players = []; 
+    let queue = []; 
+    let activeMatches = []; 
+    let tableQty = 5;
 
-    function toggleDisplayMode() { document.body.classList.toggle('tv-mode'); document.body.classList.toggle('mobile-mode'); }
+    function toggleCustomTables() {
+        const val = document.getElementById('table-count-select').value;
+        document.getElementById('custom-tables').classList.toggle('hidden', val !== 'custom');
+    }
 
     function handlePlayerCountChange() {
-        const val = document.getElementById('player-count-select').value;
-        if (val === 'custom') {
-            document.getElementById('custom-input-wrap').classList.remove('hidden');
-            document.getElementById('player-inputs-grid').innerHTML = '';
-        } else {
-            document.getElementById('custom-input-wrap').classList.add('hidden');
-            generatePlayerFields(parseInt(val));
-        }
-    }
-
-    function generatePlayerFields(num) {
+        const qty = parseInt(document.getElementById('player-count-select').value);
         const grid = document.getElementById('player-inputs-grid');
-        const modeType = document.getElementById('tourney-type').value;
         grid.innerHTML = '';
-        const qty = parseInt(num) || 0;
         if (qty > 0) {
-            document.getElementById('shuffle-btn').classList.remove('hidden');
             document.getElementById('start-btn').classList.remove('hidden');
-        }
-        for (let i = 0; i < qty; i++) {
-            const div = document.createElement('div');
-            div.style.display = "flex"; div.style.gap = "5px";
-            if (modeType === 'chip') {
-                div.innerHTML = `<input type="text" placeholder="P${i+1} Name" class="p-name"><input type="number" value="3" class="p-chips" style="width:80px">`;
-            } else {
-                div.innerHTML = `<input type="text" placeholder="P${i+1} Name" class="p-name">`;
+            for (let i = 0; i < qty; i++) {
+                grid.innerHTML += `<div style="display:flex; gap:5px;"><input type="text" placeholder="P${i+1} Name" class="p-name"><input type="number" value="3" class="p-chips" style="width:80px"></div>`;
             }
-            grid.appendChild(div);
-        }
-    }
-
-    function shuffleInputs() {
-        const grid = document.getElementById('player-inputs-grid');
-        const inputs = Array.from(grid.children);
-        for (let i = inputs.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            grid.appendChild(inputs[j]);
         }
     }
 
     function startTourney() {
-        mode = document.getElementById('tourney-type').value;
+        const tVal = document.getElementById('table-count-select').value;
+        tableQty = tVal === 'custom' ? parseInt(document.getElementById('custom-tables').value) : parseInt(tVal);
+        
         players = [];
         document.querySelectorAll('#player-inputs-grid > div').forEach(div => {
             const name = div.querySelector('.p-name').value.trim();
-            if (name) {
-                if (mode === 'chip') {
-                    players.push({ name, chips: parseInt(div.querySelector('.p-chips').value), wins: 0, id: Math.random() });
-                } else {
-                    players.push({ name, wins: 0, losses: 0, id: Math.random() });
-                }
-            }
+            if (name) players.push({ name, chips: parseInt(div.querySelector('.p-chips').value), wins: 0, id: Math.random() });
         });
 
-        if (!players.length) return;
+        if (players.length < 2) return;
 
-        if (mode === 'chip') {
-            queue = [...players];
-            activeMatches = [[], [], [], [], []]; // Reset tables
-            refreshChipUI();
-            switchView('chip-view');
-        } else if (mode === 'round') {
-            setupRoundRobin(); switchView('round-robin-view');
-        } else {
-            setupBrackets(); switchView('bracket-view');
-        }
+        queue = [...players];
+        activeMatches = Array.from({ length: tableQty }, () => []);
+        
+        document.getElementById('setup-view').classList.add('hidden');
+        document.getElementById('chip-view').classList.remove('hidden');
+        refreshChipUI();
     }
 
-    function switchView(id) {
-        ['setup-view', 'bracket-view', 'round-robin-view', 'chip-view'].forEach(v => document.getElementById(v).classList.add('hidden'));
-        document.getElementById(id).classList.remove('hidden');
-    }
-
-    // CHIP LOGIC WITH 3-WIN RULE & 5 TABLES
     function refreshChipUI() {
         const container = document.getElementById('chip-tables-container');
-        // Fill 5 tables
-        for(let i=0; i<5; i++) {
+        
+        // Fill empty tables from queue
+        for(let i=0; i < tableQty; i++) {
             while(activeMatches[i].length < 2 && queue.length > 0) {
                 activeMatches[i].push(queue.shift());
             }
         }
 
         container.innerHTML = activeMatches.map((m, idx) => `
-            <div class="table-card">
-                <div style="text-align:center; font-weight:bold; color:var(--accent); margin-bottom:10px">Table ${idx+1}</div>
+            <div class="table-card ${m.length === 2 ? 'active-table' : ''}">
+                <div style="text-align:center; font-weight:bold; color:var(--accent); margin-bottom:5px">Table ${idx+1}</div>
                 ${m.length === 2 ? `
-                    <button class="player-btn" onclick="chipWinner(${idx}, 0)">
-                        ${m[0].name} [Chips: ${m[0].chips}] ${m[0].wins > 0 ? `<span class="win-streak">Wins: ${m[0].wins}</span>` : ''}
+                    <button class="player-btn" onclick="processResult(${idx}, 0)">
+                        ${m[0].name} (${m[0].chips}) ${m[0].wins > 0 ? `<span class="win-streak">${m[0].wins}W</span>` : ''}
                     </button>
-                    <button class="player-btn" onclick="chipWinner(${idx}, 1)">
-                        ${m[1].name} [Chips: ${m[1].chips}] ${m[1].wins > 0 ? `<span class="win-streak">Wins: ${m[1].wins}</span>` : ''}
+                    <button class="player-btn" onclick="processResult(${idx}, 1)" style="margin-top:8px">
+                        ${m[1].name} (${m[1].chips}) ${m[1].wins > 0 ? `<span class="win-streak">${m[1].wins}W</span>` : ''}
                     </button>
-                ` : '<div style="text-align:center; color:#666">Waiting for players...</div>'}
+                ` : '<div style="text-align:center; padding:20px; color:#555">Waiting...</div>'}
             </div>
         `).join('');
 
-        document.getElementById('chip-queue-render').innerHTML = `<b>Queue (${queue.length}):</b> ` + 
-            (queue.length ? queue.map(p => `${p.name}(${p.chips})`).join(', ') : 'Empty');
+        document.getElementById('chip-queue-render').innerHTML = `<b>Queue:</b> ` + 
+            (queue.length ? queue.map(p => `${p.name}`).join(', ') : 'Empty');
     }
 
-    function chipWinner(tableIdx, winnerIdx) {
+    function processResult(tableIdx, winnerIdx) {
         const match = activeMatches[tableIdx];
         const winner = match[winnerIdx];
         const loser = match[winnerIdx === 0 ? 1 : 0];
 
         // Loser Logic
         loser.chips--;
-        loser.wins = 0; // Reset loser streak
-        if (loser.chips > 0) {
-            queue.push(loser);
-        }
+        loser.wins = 0;
+        if (loser.chips > 0) queue.push(loser);
 
         // Winner Logic (3-Win Rule)
         winner.wins++;
         if (winner.wins >= 3) {
-            winner.wins = 0; // Reset streak
+            winner.wins = 0;
             queue.push(winner);
-            activeMatches[tableIdx] = []; // Both leave table
+            activeMatches[tableIdx] = [];
         } else {
-            activeMatches[tableIdx] = [winner]; // Winner stays
+            activeMatches[tableIdx] = [winner]; // Winner stays at the table
         }
 
-        // Check for overall champion (only one person with chips left)
-        const survivors = [...queue, ...activeMatches.flat()];
-        if (survivors.length === 1) {
-            showChamp(survivors[0].name);
+        // Win Condition Check
+        const totalRemaining = [...queue, ...activeMatches.flat()].length;
+        if (totalRemaining === 1) {
+            const champ = queue.length ? queue[0] : activeMatches.flat()[0];
+            document.getElementById('champion-display').innerText = champ.name;
+            document.getElementById('winner-overlay').classList.remove('hidden');
         } else {
             refreshChipUI();
         }
     }
 
-    function showChamp(n) { 
-        document.getElementById('champion-display').innerText = n; 
-        document.getElementById('winner-overlay').classList.remove('hidden'); 
-    }
-
-    // D-PAD
+    // D-PAD NAVIGATION
     document.addEventListener('keydown', (e) => {
         const focusables = Array.from(document.querySelectorAll('button, input, select')).filter(el => el.offsetParent !== null);
         let index = focusables.indexOf(document.activeElement);
@@ -254,7 +202,7 @@
         }
     });
 
-    window.onload = () => document.getElementById('tourney-type').focus();
+    window.onload = () => document.getElementById('table-count-select').focus();
 </script>
 </body>
 </html>
