@@ -328,6 +328,10 @@
             if (key === 40 || key === 39) nextIndex = currentIndex + 1; // Down or Right
             
             if (key === 13) { // Enter
+                // FIX: Allow enter key to work inside Textarea for new lines
+                if (document.activeElement.tagName === 'TEXTAREA') {
+                    return; 
+                }
                 document.activeElement.click();
                 e.preventDefault();
                 return;
