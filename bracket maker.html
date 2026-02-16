@@ -21,7 +21,6 @@
 
         .header { padding: 20px 30px; background: var(--surface); display: flex; justify-content: space-between; align-items: center; border-bottom: 5px solid var(--primary); }
         .container { padding: 30px; max-width: 1400px; margin: auto; }
-        .setup-card { background: var(--surface); padding: 25px; border-radius: 15px; border: 2px solid #333; }
         
         /* Layouts */
         .bracket-scroll { display: flex; gap: 40px; padding: 20px; overflow-x: auto; }
@@ -30,12 +29,12 @@
         .player-btn { text-align: left; border: none !important; border-bottom: 2px solid #444 !important; border-radius: 0; }
         .winner-highlight { background: var(--primary) !important; color: #000 !important; font-weight: 900; }
         
-        table { width: 100%; border-collapse: collapse; background: #222; margin-top: 20px; }
-        th, td { border: 2px solid #444; padding: 15px; text-align: center; }
-        th { background: var(--surface); color: var(--accent); }
+        /* Chip Tables Layout */
+        .chip-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .table-card { background: #222; padding: 15px; border: 4px solid var(--primary); border-radius: 15px; }
+        .win-streak { font-size: 0.7em; background: gold; color: black; padding: 2px 8px; border-radius: 10px; margin-left: 10px; font-weight: bold; }
 
         .hidden { display: none !important; }
-        .reset-badge { font-size: 0.6em; background: #ff4444; color: white; padding: 5px 10px; text-align: center; }
         #winner-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.97); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
     </style>
 </head>
@@ -56,25 +55,24 @@
 </div>
 
 <div class="container">
-    <div id="setup-view" class="setup-card">
+    <div id="setup-view">
         <h2 style="margin-top:0; color: var(--primary);">Tournament Setup</h2>
         
         <label>1. Select Mode:</label>
-        <select id="tourney-type" style="margin-bottom: 20px;">
+        <select id="tourney-type" onchange="handlePlayerCountChange()">
             <option value="single">Single Elimination</option>
             <option value="double" selected>Double Elimination</option>
             <option value="round">Round Robin (League)</option>
-            <option value="chip">Chip Tournament (Queue)</option>
+            <option value="chip">Chip Tournament (Queue + 3-Win Rule)</option>
         </select>
 
-        <label>2. Number of Players:</label>
+        <label style="margin-top:20px; display:block;">2. Number of Players:</label>
         <select id="player-count-select" onchange="handlePlayerCountChange()" style="margin-bottom: 20px;">
             <option value="0">-- Select --</option>
             <option value="4">4 Players</option>
             <option value="8">8 Players</option>
             <option value="16">16 Players</option>
             <option value="32">32 Players</option>
-            <option value="64">64 Players</option>
             <option value="custom">Custom Amount...</option>
         </select>
 
@@ -83,48 +81,36 @@
         </div>
 
         <div id="player-names-area">
-            <div id="player-inputs-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px;">
-                </div>
+            <div id="player-inputs-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px;"></div>
         </div>
 
         <button id="shuffle-btn" class="hidden" style="margin-top: 25px; background: var(--accent); color: #000;" onclick="shuffleInputs()">🎲 RANDOM DRAW / SHUFFLE</button>
         <button id="start-btn" class="hidden" style="margin-top: 20px; background: var(--primary); height: 100px; font-weight: bold;" onclick="startTourney()">START TOURNAMENT</button>
     </div>
 
-    <div id="bracket-view" class="hidden">
-        <div id="bracket-render" class="bracket-scroll"></div>
-        <div id="losers-section" class="hidden">
-            <h2 style="color:var(--accent); margin-top: 40px;">Losers Bracket</h2>
-            <div id="losers-render" class="bracket-scroll"></div>
-        </div>
-    </div>
-
-    <div id="round-robin-view" class="hidden">
-        <h2 style="color:var(--primary)">League Standings</h2>
-        <div id="rr-table-render"></div>
-        <div id="rr-matches-render" style="margin-top: 30px;"></div>
-    </div>
-
     <div id="chip-view" class="hidden">
-        <div id="chip-tables-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;"></div>
-        <div id="chip-queue-render" style="margin-top: 30px; padding: 20px; border: 2px dashed #444;"></div>
+        <div id="chip-tables-container" class="chip-grid"></div>
+        <div id="chip-queue-render" style="margin-top: 30px; padding: 20px; border: 2px dashed #444; background: #111;"></div>
     </div>
+
+    <div id="bracket-view" class="hidden"><div id="bracket-render" class="bracket-scroll"></div><div id="losers-section" class="hidden"><h2>Losers</h2><div id="losers-render" class="bracket-scroll"></div></div></div>
+    <div id="round-robin-view" class="hidden"><div id="rr-table-render"></div><div id="rr-matches-render"></div></div>
 </div>
 
 <script>
-    let players = []; let queue = []; let activeMatches = [[], [], [], [], []];
-    let mode = 'single'; let gfReset = false;
+    let players = []; let queue = []; 
+    let activeMatches = [[], [], [], [], []]; // 5 Slots for 5 Tables
+    let mode = 'single';
 
     function toggleDisplayMode() { document.body.classList.toggle('tv-mode'); document.body.classList.toggle('mobile-mode'); }
 
     function handlePlayerCountChange() {
         const val = document.getElementById('player-count-select').value;
-        const customWrap = document.getElementById('custom-input-wrap');
         if (val === 'custom') {
-            customWrap.classList.remove('hidden');
+            document.getElementById('custom-input-wrap').classList.remove('hidden');
             document.getElementById('player-inputs-grid').innerHTML = '';
         } else {
-            customWrap.classList.add('hidden');
+            document.getElementById('custom-input-wrap').classList.add('hidden');
             generatePlayerFields(parseInt(val));
         }
     }
@@ -134,19 +120,17 @@
         const modeType = document.getElementById('tourney-type').value;
         grid.innerHTML = '';
         const qty = parseInt(num) || 0;
-        
         if (qty > 0) {
             document.getElementById('shuffle-btn').classList.remove('hidden');
             document.getElementById('start-btn').classList.remove('hidden');
         }
-
         for (let i = 0; i < qty; i++) {
             const div = document.createElement('div');
             div.style.display = "flex"; div.style.gap = "5px";
             if (modeType === 'chip') {
-                div.innerHTML = `<input type="text" placeholder="Player ${i+1}" class="p-name"><input type="number" value="3" class="p-chips" style="width:80px">`;
+                div.innerHTML = `<input type="text" placeholder="P${i+1} Name" class="p-name"><input type="number" value="3" class="p-chips" style="width:80px">`;
             } else {
-                div.innerHTML = `<input type="text" placeholder="Player ${i+1}" class="p-name">`;
+                div.innerHTML = `<input type="text" placeholder="P${i+1} Name" class="p-name">`;
             }
             grid.appendChild(div);
         }
@@ -166,18 +150,22 @@
         players = [];
         document.querySelectorAll('#player-inputs-grid > div').forEach(div => {
             const name = div.querySelector('.p-name').value.trim();
-            if (mode === 'chip') {
-                const chips = parseInt(div.querySelector('.p-chips').value);
-                if (name) players.push({ name, chips, id: Math.random() });
-            } else {
-                if (name) players.push({ name, wins: 0, losses: 0, id: Math.random() });
+            if (name) {
+                if (mode === 'chip') {
+                    players.push({ name, chips: parseInt(div.querySelector('.p-chips').value), wins: 0, id: Math.random() });
+                } else {
+                    players.push({ name, wins: 0, losses: 0, id: Math.random() });
+                }
             }
         });
 
-        if (!players.length) return alert("Enter some names first!");
+        if (!players.length) return;
 
         if (mode === 'chip') {
-            queue = [...players]; refreshChipUI(); switchView('chip-view');
+            queue = [...players];
+            activeMatches = [[], [], [], [], []]; // Reset tables
+            refreshChipUI();
+            switchView('chip-view');
         } else if (mode === 'round') {
             setupRoundRobin(); switchView('round-robin-view');
         } else {
@@ -186,121 +174,83 @@
     }
 
     function switchView(id) {
-        ['setup-view', 'bracket-view', 'round-robin-view', 'chip-view'].forEach(v => {
-            const el = document.getElementById(v);
-            if(el) el.classList.add('hidden');
-        });
+        ['setup-view', 'bracket-view', 'round-robin-view', 'chip-view'].forEach(v => document.getElementById(v).classList.add('hidden'));
         document.getElementById(id).classList.remove('hidden');
     }
 
-    // ROUND ROBIN
-    function setupRoundRobin() {
-        const table = document.getElementById('rr-table-render');
-        const matches = document.getElementById('rr-matches-render');
-        table.innerHTML = `<table><thead><tr><th>Player</th><th>W</th><th>L</th></tr></thead><tbody id="rr-body"></tbody></table>`;
-        updateRRTable();
-        matches.innerHTML = "<h3>Matches</h3>";
-        for(let i=0; i<players.length; i++) {
-            for(let j=i+1; j<players.length; j++) {
-                matches.innerHTML += `<div class="match">
-                    <button class="player-btn" onclick="winRR(${i}, ${j})">${players[i].name}</button>
-                    <button class="player-btn" onclick="winRR(${j}, ${i})">${players[j].name}</button>
-                </div>`;
-            }
-        }
-    }
-    function winRR(w, l) { players[w].wins++; players[l].losses++; updateRRTable(); }
-    function updateRRTable() {
-        const body = document.getElementById('rr-body');
-        const sorted = [...players].sort((a,b) => b.wins - a.wins);
-        body.innerHTML = sorted.map(p => `<tr><td>${p.name}</td><td>${p.wins}</td><td>${p.losses}</td></tr>`).join('');
-    }
-
-    // BRACKET
-    function setupBrackets() {
-        const rounds = Math.ceil(Math.log2(players.length));
-        renderBracket('bracket-render', 'W', rounds);
-        if(mode === 'double') {
-            document.getElementById('losers-section').classList.remove('hidden');
-            renderBracket('losers-render', 'L', rounds);
-            const gf = document.createElement('div'); gf.className = 'round';
-            gf.innerHTML = `<div class="match" id="GF-match">
-                <div id="gf-status" class="reset-badge">GRAND FINAL</div>
-                <button class="player-btn" onclick="advBr('GF',0,0,0)">Winner Champ</button>
-                <button class="player-btn" onclick="advBr('GF',0,0,1)">Loser Champ</button>
-            </div>`;
-            document.getElementById('bracket-render').appendChild(gf);
-        }
-        const slots = document.querySelectorAll('#bracket-render .round:first-child .player-btn');
-        players.forEach((p, i) => { if(slots[i]) { slots[i].dataset.name = p.name; slots[i].innerText = p.name; } });
-    }
-
-    function renderBracket(id, prefix, rounds) {
-        const cont = document.getElementById(id); cont.innerHTML = '';
-        for(let r=0; r<rounds; r++) {
-            const rd = document.createElement('div'); rd.className = 'round';
-            let mCount = Math.pow(2, rounds - r - 1);
-            for(let m=0; m<mCount; m++) {
-                rd.innerHTML += `<div class="match" id="${prefix}-r${r}-m${m}">
-                    <button class="player-btn" onclick="advBr('${prefix}',${r},${m},0)">TBD</button>
-                    <button class="player-btn" onclick="advBr('${prefix}',${r},${m},1)">TBD</button>
-                </div>`;
-            }
-            cont.appendChild(rd);
-        }
-    }
-
-    function advBr(br, r, m, sIdx) {
-        const matchEl = br === 'GF' ? document.getElementById('GF-match') : document.getElementById(`${br}-r${r}-m${m}`);
-        const pEls = matchEl.querySelectorAll('.player-btn');
-        const win = pEls[sIdx]; const lose = pEls[sIdx === 0 ? 1 : 0];
-        if(win.innerText === 'TBD') return;
-        if(br === 'GF' && sIdx === 1 && !gfReset) {
-            gfReset = true; document.getElementById('gf-status').innerText = "MATCH 2 (RESET)";
-            pEls.forEach(p => p.classList.remove('winner-highlight')); return;
-        }
-        win.classList.add('winner-highlight'); lose.style.opacity = "0.2";
-        if(mode === 'double' && br === 'W') {
-            const lSlots = document.querySelectorAll('#losers-render .round:first-child .player-btn');
-            for(let s of lSlots) { if(s.innerText === 'TBD') { s.dataset.name = lose.dataset.name; s.innerText = lose.innerText; break; } }
-        }
-        const nr = document.getElementById(`${br}-r${r+1}-m${Math.floor(m/2)}`);
-        if(nr) {
-            const t = nr.querySelectorAll('.player-btn')[m%2]; t.dataset.name = win.dataset.name; t.innerText = win.innerText;
-        } else if(br === 'W' && mode === 'double') {
-            const g = document.querySelectorAll('#GF-match .player-btn')[0]; g.innerText = win.innerText; g.dataset.name = win.dataset.name;
-        } else if(br === 'L' && mode === 'double') {
-            const g = document.querySelectorAll('#GF-match .player-btn')[1]; g.innerText = win.innerText; g.dataset.name = win.dataset.name;
-        } else if(mode === 'single' || br === 'GF') showChamp(win.dataset.name);
-    }
-
-    // CHIPS
+    // CHIP LOGIC WITH 3-WIN RULE & 5 TABLES
     function refreshChipUI() {
-        const grid = document.getElementById('chip-tables-container');
-        for(let i=0; i<4; i++) { while(activeMatches[i].length < 2 && queue.length > 0) activeMatches[i].push(queue.shift()); }
-        grid.innerHTML = activeMatches.map((m, idx) => `
+        const container = document.getElementById('chip-tables-container');
+        // Fill 5 tables
+        for(let i=0; i<5; i++) {
+            while(activeMatches[i].length < 2 && queue.length > 0) {
+                activeMatches[i].push(queue.shift());
+            }
+        }
+
+        container.innerHTML = activeMatches.map((m, idx) => `
             <div class="table-card">
-                <div style="text-align:center; font-weight:bold; margin-bottom:10px">Table ${idx+1}</div>
-                ${m.length === 2 ? `<button class="player-btn" onclick="chipWinner(${idx},0)">${m[0].name} [${m[0].chips}]</button>
-                <button class="player-btn" onclick="chipWinner(${idx},1)">${m[1].name} [${m[1].chips}]</button>` : '<div>Waiting...</div>'}
-            </div>`).join('');
-        document.getElementById('chip-queue-render').innerHTML = "Queue: " + queue.map(p => p.name).join(', ');
-    }
-    function chipWinner(t, w) {
-        const m = activeMatches[t]; const l = m[w===0?1:0]; l.chips--; 
-        if(l.chips > 0) queue.push(l); activeMatches[t] = [m[w]]; refreshChipUI();
+                <div style="text-align:center; font-weight:bold; color:var(--accent); margin-bottom:10px">Table ${idx+1}</div>
+                ${m.length === 2 ? `
+                    <button class="player-btn" onclick="chipWinner(${idx}, 0)">
+                        ${m[0].name} [Chips: ${m[0].chips}] ${m[0].wins > 0 ? `<span class="win-streak">Wins: ${m[0].wins}</span>` : ''}
+                    </button>
+                    <button class="player-btn" onclick="chipWinner(${idx}, 1)">
+                        ${m[1].name} [Chips: ${m[1].chips}] ${m[1].wins > 0 ? `<span class="win-streak">Wins: ${m[1].wins}</span>` : ''}
+                    </button>
+                ` : '<div style="text-align:center; color:#666">Waiting for players...</div>'}
+            </div>
+        `).join('');
+
+        document.getElementById('chip-queue-render').innerHTML = `<b>Queue (${queue.length}):</b> ` + 
+            (queue.length ? queue.map(p => `${p.name}(${p.chips})`).join(', ') : 'Empty');
     }
 
-    function showChamp(n) { document.getElementById('champion-display').innerText = n; document.getElementById('winner-overlay').classList.remove('hidden'); }
+    function chipWinner(tableIdx, winnerIdx) {
+        const match = activeMatches[tableIdx];
+        const winner = match[winnerIdx];
+        const loser = match[winnerIdx === 0 ? 1 : 0];
 
-    // D-PAD ENGINE
+        // Loser Logic
+        loser.chips--;
+        loser.wins = 0; // Reset loser streak
+        if (loser.chips > 0) {
+            queue.push(loser);
+        }
+
+        // Winner Logic (3-Win Rule)
+        winner.wins++;
+        if (winner.wins >= 3) {
+            winner.wins = 0; // Reset streak
+            queue.push(winner);
+            activeMatches[tableIdx] = []; // Both leave table
+        } else {
+            activeMatches[tableIdx] = [winner]; // Winner stays
+        }
+
+        // Check for overall champion (only one person with chips left)
+        const survivors = [...queue, ...activeMatches.flat()];
+        if (survivors.length === 1) {
+            showChamp(survivors[0].name);
+        } else {
+            refreshChipUI();
+        }
+    }
+
+    function showChamp(n) { 
+        document.getElementById('champion-display').innerText = n; 
+        document.getElementById('winner-overlay').classList.remove('hidden'); 
+    }
+
+    // D-PAD
     document.addEventListener('keydown', (e) => {
-        const focusables = Array.from(document.querySelectorAll('button, input, textarea, select')).filter(el => el.offsetParent !== null);
+        const focusables = Array.from(document.querySelectorAll('button, input, select')).filter(el => el.offsetParent !== null);
         let index = focusables.indexOf(document.activeElement);
-        if (e.keyCode === 37 || e.keyCode === 38) { // Up/Left
-            e.preventDefault(); const n = index > 0 ? index - 1 : focusables.length - 1; focusables[n].focus();
-        } else if (e.keyCode === 39 || e.keyCode === 40) { // Down/Right
-            e.preventDefault(); const n = index < focusables.length - 1 ? index + 1 : 0; focusables[n].focus();
+        if (e.keyCode >= 37 && e.keyCode <= 40) {
+            e.preventDefault();
+            if (e.keyCode === 37 || e.keyCode === 38) index = index > 0 ? index - 1 : focusables.length - 1;
+            else index = index < focusables.length - 1 ? index + 1 : 0;
+            focusables[index].focus();
         }
     });
 
