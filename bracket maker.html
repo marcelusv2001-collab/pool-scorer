@@ -7,53 +7,35 @@
     <style>
         :root { --primary: #00cc66; --bg: #0a0a0a; --surface: #1a1a1a; --text: #fff; --accent: #ffcc00; --border-thick: 6px; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; overflow-x: hidden; }
-        
         body.tv-mode { font-size: 28px; }
         body.mobile-mode { font-size: 16px; }
 
-        /* INTERACTIVE ELEMENTS */
         button, input, textarea, select { 
             border: var(--border-thick) solid #444 !important; 
-            background: #222; 
-            color: white; 
-            padding: 15px; 
-            font-size: 1em; 
-            border-radius: 10px; 
-            display: block; 
-            width: 100%; 
-            box-sizing: border-box;
+            background: #222; color: white; padding: 15px; font-size: 1em; border-radius: 10px; display: block; width: 100%; box-sizing: border-box;
         }
 
-        /* TV FOCUS STATE */
         button:focus, input:focus, textarea:focus, select:focus { 
-            outline: none !important;
-            border-color: var(--accent) !important;
-            background: var(--primary) !important; 
-            color: #000 !important;
-            transform: scale(1.03);
-            box-shadow: 0 0 25px var(--accent);
-            z-index: 10;
+            outline: none !important; border-color: var(--accent) !important; background: var(--primary) !important; color: #000 !important; transform: scale(1.03); box-shadow: 0 0 25px var(--accent); z-index: 10;
         }
 
         .header { padding: 20px 30px; background: var(--surface); display: flex; justify-content: space-between; align-items: center; border-bottom: 5px solid var(--primary); }
         .container { padding: 30px; max-width: 1400px; margin: auto; }
+        .setup-card { background: var(--surface); padding: 25px; border-radius: 15px; border: 2px solid #333; }
         
-        .counter-box { background: var(--primary); color: #000; padding: 5px 25px; border-radius: 25px; font-weight: bold; border: 3px solid #000; }
-        
-        /* BRACKET */
+        /* Layouts */
         .bracket-scroll { display: flex; gap: 40px; padding: 20px; overflow-x: auto; }
         .round { display: flex; flex-direction: column; justify-content: space-around; min-width: 300px; }
         .match { background: #262626; margin: 15px 0; border-radius: 12px; border-left: 15px solid var(--accent); overflow: hidden; }
         .player-btn { text-align: left; border: none !important; border-bottom: 2px solid #444 !important; border-radius: 0; }
         .winner-highlight { background: var(--primary) !important; color: #000 !important; font-weight: 900; }
         
+        table { width: 100%; border-collapse: collapse; background: #222; margin-top: 20px; }
+        th, td { border: 2px solid #444; padding: 15px; text-align: center; }
+        th { background: var(--surface); color: var(--accent); }
+
         .hidden { display: none !important; }
         .reset-badge { font-size: 0.6em; background: #ff4444; color: white; padding: 5px 10px; text-align: center; }
-        
-        /* CHIPS */
-        .chip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .table-card { background: #222; padding: 15px; border: 4px solid var(--primary); border-radius: 15px; }
-
         #winner-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.97); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
     </style>
 </head>
@@ -67,102 +49,174 @@
 
 <div class="header">
     <div style="font-weight: 900; letter-spacing: 2px;">🎱 BRACKET MAKER TV</div>
-    <div style="display: flex; gap: 15px; align-items: center;">
-        <button id="undo-chip-btn" class="hidden" style="width: auto; background: var(--accent); color: #000;" onclick="undoChipAction()">⏪ UNDO</button>
+    <div style="display: flex; gap: 15px;">
         <button style="width: auto; background: #444;" onclick="toggleDisplayMode()">🖥️ TV/MOBILE</button>
         <button style="width: auto; background: #ff4444;" onclick="location.reload()">RESET</button>
     </div>
 </div>
 
 <div class="container">
-    <div id="setup-view">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2 style="margin:0">Setup</h2>
-            <div class="counter-box">Players: <span id="player-count">0</span></div>
-        </div>
-
-        <select id="tourney-type" onchange="toggleSetupMode()">
+    <div id="setup-view" class="setup-card">
+        <h2 style="margin-top:0; color: var(--primary);">Tournament Setup</h2>
+        
+        <label>1. Select Mode:</label>
+        <select id="tourney-type" style="margin-bottom: 20px;">
             <option value="single">Single Elimination</option>
             <option value="double" selected>Double Elimination</option>
+            <option value="round">Round Robin (League)</option>
             <option value="chip">Chip Tournament (Queue)</option>
         </select>
 
-        <div id="bulk-names" style="margin-top: 25px;">
-            <label style="display:block; margin-bottom:10px;">Enter Names (One per line):</label>
-            <textarea id="name-list" rows="10" placeholder="Player 1&#10;Player 2&#10;Player 3" oninput="updateCount()"></textarea>
-            <button style="margin-top: 20px; background: var(--accent); color: #000;" onclick="randomizeNames()">🎲 RANDOM DRAW / SHUFFLE</button>
+        <label>2. Number of Players:</label>
+        <select id="player-count-select" onchange="handlePlayerCountChange()" style="margin-bottom: 20px;">
+            <option value="0">-- Select --</option>
+            <option value="4">4 Players</option>
+            <option value="8">8 Players</option>
+            <option value="16">16 Players</option>
+            <option value="32">32 Players</option>
+            <option value="64">64 Players</option>
+            <option value="custom">Custom Amount...</option>
+        </select>
+
+        <div id="custom-input-wrap" class="hidden" style="margin-bottom:20px;">
+            <input type="number" id="custom-qty" placeholder="Enter amount" oninput="generatePlayerFields(this.value)">
         </div>
 
-        <div id="individual-names" class="hidden" style="margin-top: 25px;">
-            <div id="player-rows-container"></div>
+        <div id="player-names-area">
+            <div id="player-inputs-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px;">
+                </div>
         </div>
 
-        <button style="margin-top: 40px; background: var(--primary); height: 110px; font-weight: bold; font-size: 1.2em;" onclick="startTourney()">START TOURNAMENT</button>
+        <button id="shuffle-btn" class="hidden" style="margin-top: 25px; background: var(--accent); color: #000;" onclick="shuffleInputs()">🎲 RANDOM DRAW / SHUFFLE</button>
+        <button id="start-btn" class="hidden" style="margin-top: 20px; background: var(--primary); height: 100px; font-weight: bold;" onclick="startTourney()">START TOURNAMENT</button>
     </div>
 
     <div id="bracket-view" class="hidden">
         <div id="bracket-render" class="bracket-scroll"></div>
         <div id="losers-section" class="hidden">
-            <h2 style="color:var(--accent); margin-top: 40px; border-top: 2px solid #333; padding-top: 20px;">Losers Bracket</h2>
+            <h2 style="color:var(--accent); margin-top: 40px;">Losers Bracket</h2>
             <div id="losers-render" class="bracket-scroll"></div>
         </div>
     </div>
 
+    <div id="round-robin-view" class="hidden">
+        <h2 style="color:var(--primary)">League Standings</h2>
+        <div id="rr-table-render"></div>
+        <div id="rr-matches-render" style="margin-top: 30px;"></div>
+    </div>
+
     <div id="chip-view" class="hidden">
-        <div class="chip-grid" id="chip-tables-container"></div>
-        <div id="chip-queue-render" style="margin-top: 30px; background: #111; padding: 25px; border-radius: 15px; border: 2px dashed #444;"></div>
+        <div id="chip-tables-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;"></div>
+        <div id="chip-queue-render" style="margin-top: 30px; padding: 20px; border: 2px dashed #444;"></div>
     </div>
 </div>
 
 <script>
     let players = []; let queue = []; let activeMatches = [[], [], [], [], []];
-    let mode = 'single'; let gfReset = false; let chipHistory = [];
+    let mode = 'single'; let gfReset = false;
 
     function toggleDisplayMode() { document.body.classList.toggle('tv-mode'); document.body.classList.toggle('mobile-mode'); }
-    
-    function updateCount() {
-        const count = document.getElementById('name-list').value.split('\n').filter(n => n.trim()).length;
-        document.getElementById('player-count').innerText = count;
+
+    function handlePlayerCountChange() {
+        const val = document.getElementById('player-count-select').value;
+        const customWrap = document.getElementById('custom-input-wrap');
+        if (val === 'custom') {
+            customWrap.classList.remove('hidden');
+            document.getElementById('player-inputs-grid').innerHTML = '';
+        } else {
+            customWrap.classList.add('hidden');
+            generatePlayerFields(parseInt(val));
+        }
     }
 
-    function toggleSetupMode() {
-        const type = document.getElementById('tourney-type').value;
-        document.getElementById('bulk-names').classList.toggle('hidden', type === 'chip');
-        document.getElementById('individual-names').classList.toggle('hidden', type !== 'chip');
-        if(type === 'chip') {
-            const container = document.getElementById('player-rows-container');
-            container.innerHTML = '';
-            for(let i=0; i<8; i++) {
-                container.innerHTML += `<div style="display:flex; gap:10px; margin-bottom:10px"><input type="text" placeholder="Player ${i+1}" class="p-name"><input type="number" value="3" style="width:100px" class="p-chips"></div>`;
+    function generatePlayerFields(num) {
+        const grid = document.getElementById('player-inputs-grid');
+        const modeType = document.getElementById('tourney-type').value;
+        grid.innerHTML = '';
+        const qty = parseInt(num) || 0;
+        
+        if (qty > 0) {
+            document.getElementById('shuffle-btn').classList.remove('hidden');
+            document.getElementById('start-btn').classList.remove('hidden');
+        }
+
+        for (let i = 0; i < qty; i++) {
+            const div = document.createElement('div');
+            div.style.display = "flex"; div.style.gap = "5px";
+            if (modeType === 'chip') {
+                div.innerHTML = `<input type="text" placeholder="Player ${i+1}" class="p-name"><input type="number" value="3" class="p-chips" style="width:80px">`;
+            } else {
+                div.innerHTML = `<input type="text" placeholder="Player ${i+1}" class="p-name">`;
             }
+            grid.appendChild(div);
+        }
+    }
+
+    function shuffleInputs() {
+        const grid = document.getElementById('player-inputs-grid');
+        const inputs = Array.from(grid.children);
+        for (let i = inputs.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            grid.appendChild(inputs[j]);
         }
     }
 
     function startTourney() {
         mode = document.getElementById('tourney-type').value;
         players = [];
-        if(mode === 'chip') {
-            document.querySelectorAll('#player-rows-container > div').forEach(div => {
-                const name = div.querySelector('.p-name').value.trim();
+        document.querySelectorAll('#player-inputs-grid > div').forEach(div => {
+            const name = div.querySelector('.p-name').value.trim();
+            if (mode === 'chip') {
                 const chips = parseInt(div.querySelector('.p-chips').value);
-                if(name) players.push({ name, chips, id: Math.random() });
-            });
-            queue = [...players];
-            document.getElementById('undo-chip-btn').classList.remove('hidden');
-            refreshChipUI();
-            document.getElementById('setup-view').classList.add('hidden');
-            document.getElementById('chip-view').classList.remove('hidden');
+                if (name) players.push({ name, chips, id: Math.random() });
+            } else {
+                if (name) players.push({ name, wins: 0, losses: 0, id: Math.random() });
+            }
+        });
+
+        if (!players.length) return alert("Enter some names first!");
+
+        if (mode === 'chip') {
+            queue = [...players]; refreshChipUI(); switchView('chip-view');
+        } else if (mode === 'round') {
+            setupRoundRobin(); switchView('round-robin-view');
         } else {
-            document.getElementById('name-list').value.split('\n').filter(n => n.trim()).forEach(n => {
-                players.push({ name: n.trim(), id: Math.random() });
-            });
-            setupBrackets();
-            document.getElementById('setup-view').classList.add('hidden');
-            document.getElementById('bracket-view').classList.remove('hidden');
+            setupBrackets(); switchView('bracket-view');
         }
-        setTimeout(() => document.querySelector('button:not(.hidden)')?.focus(), 100);
     }
 
+    function switchView(id) {
+        ['setup-view', 'bracket-view', 'round-robin-view', 'chip-view'].forEach(v => {
+            const el = document.getElementById(v);
+            if(el) el.classList.add('hidden');
+        });
+        document.getElementById(id).classList.remove('hidden');
+    }
+
+    // ROUND ROBIN
+    function setupRoundRobin() {
+        const table = document.getElementById('rr-table-render');
+        const matches = document.getElementById('rr-matches-render');
+        table.innerHTML = `<table><thead><tr><th>Player</th><th>W</th><th>L</th></tr></thead><tbody id="rr-body"></tbody></table>`;
+        updateRRTable();
+        matches.innerHTML = "<h3>Matches</h3>";
+        for(let i=0; i<players.length; i++) {
+            for(let j=i+1; j<players.length; j++) {
+                matches.innerHTML += `<div class="match">
+                    <button class="player-btn" onclick="winRR(${i}, ${j})">${players[i].name}</button>
+                    <button class="player-btn" onclick="winRR(${j}, ${i})">${players[j].name}</button>
+                </div>`;
+            }
+        }
+    }
+    function winRR(w, l) { players[w].wins++; players[l].losses++; updateRRTable(); }
+    function updateRRTable() {
+        const body = document.getElementById('rr-body');
+        const sorted = [...players].sort((a,b) => b.wins - a.wins);
+        body.innerHTML = sorted.map(p => `<tr><td>${p.name}</td><td>${p.wins}</td><td>${p.losses}</td></tr>`).join('');
+    }
+
+    // BRACKET
     function setupBrackets() {
         const rounds = Math.ceil(Math.log2(players.length));
         renderBracket('bracket-render', 'W', rounds);
@@ -182,8 +236,7 @@
     }
 
     function renderBracket(id, prefix, rounds) {
-        const cont = document.getElementById(id);
-        cont.innerHTML = '';
+        const cont = document.getElementById(id); cont.innerHTML = '';
         for(let r=0; r<rounds; r++) {
             const rd = document.createElement('div'); rd.className = 'round';
             let mCount = Math.pow(2, rounds - r - 1);
@@ -202,90 +255,56 @@
         const pEls = matchEl.querySelectorAll('.player-btn');
         const win = pEls[sIdx]; const lose = pEls[sIdx === 0 ? 1 : 0];
         if(win.innerText === 'TBD') return;
-
         if(br === 'GF' && sIdx === 1 && !gfReset) {
-            gfReset = true;
-            document.getElementById('gf-status').innerText = "MATCH 2 (RESET)";
-            pEls.forEach(p => p.classList.remove('winner-highlight'));
-            return;
+            gfReset = true; document.getElementById('gf-status').innerText = "MATCH 2 (RESET)";
+            pEls.forEach(p => p.classList.remove('winner-highlight')); return;
         }
-
-        win.classList.add('winner-highlight');
-        lose.style.opacity = "0.2";
-
+        win.classList.add('winner-highlight'); lose.style.opacity = "0.2";
         if(mode === 'double' && br === 'W') {
             const lSlots = document.querySelectorAll('#losers-render .round:first-child .player-btn');
             for(let s of lSlots) { if(s.innerText === 'TBD') { s.dataset.name = lose.dataset.name; s.innerText = lose.innerText; break; } }
         }
-
         const nr = document.getElementById(`${br}-r${r+1}-m${Math.floor(m/2)}`);
         if(nr) {
-            const target = nr.querySelectorAll('.player-btn')[m%2];
-            target.dataset.name = win.dataset.name; target.innerText = win.innerText;
+            const t = nr.querySelectorAll('.player-btn')[m%2]; t.dataset.name = win.dataset.name; t.innerText = win.innerText;
         } else if(br === 'W' && mode === 'double') {
-            const gfP = document.querySelectorAll('#GF-match .player-btn')[0];
-            gfP.innerText = win.innerText; gfP.dataset.name = win.dataset.name;
+            const g = document.querySelectorAll('#GF-match .player-btn')[0]; g.innerText = win.innerText; g.dataset.name = win.dataset.name;
         } else if(br === 'L' && mode === 'double') {
-            const gfP = document.querySelectorAll('#GF-match .player-btn')[1];
-            gfP.innerText = win.innerText; gfP.dataset.name = win.dataset.name;
+            const g = document.querySelectorAll('#GF-match .player-btn')[1]; g.innerText = win.innerText; g.dataset.name = win.dataset.name;
         } else if(mode === 'single' || br === 'GF') showChamp(win.dataset.name);
     }
 
+    // CHIPS
     function refreshChipUI() {
         const grid = document.getElementById('chip-tables-container');
         for(let i=0; i<4; i++) { while(activeMatches[i].length < 2 && queue.length > 0) activeMatches[i].push(queue.shift()); }
         grid.innerHTML = activeMatches.map((m, idx) => `
             <div class="table-card">
                 <div style="text-align:center; font-weight:bold; margin-bottom:10px">Table ${idx+1}</div>
-                ${m.length === 2 ? `
-                <button class="player-btn" onclick="chipWinner(${idx},0)">${m[0].name} [${m[0].chips}]</button>
-                <button class="player-btn" onclick="chipWinner(${idx},1)">${m[1].name} [${m[1].chips}]</button>` : '<div style="text-align:center">Waiting...</div>'}
+                ${m.length === 2 ? `<button class="player-btn" onclick="chipWinner(${idx},0)">${m[0].name} [${m[0].chips}]</button>
+                <button class="player-btn" onclick="chipWinner(${idx},1)">${m[1].name} [${m[1].chips}]</button>` : '<div>Waiting...</div>'}
             </div>`).join('');
-        document.getElementById('chip-queue-render').innerHTML = "<b>Next in Queue:</b> " + (queue.length ? queue.map(p => p.name).join(', ') : 'None');
+        document.getElementById('chip-queue-render').innerHTML = "Queue: " + queue.map(p => p.name).join(', ');
+    }
+    function chipWinner(t, w) {
+        const m = activeMatches[t]; const l = m[w===0?1:0]; l.chips--; 
+        if(l.chips > 0) queue.push(l); activeMatches[t] = [m[w]]; refreshChipUI();
     }
 
-    function chipWinner(tIdx, wIdx) {
-        chipHistory.push(JSON.parse(JSON.stringify({ queue, activeMatches })));
-        const m = activeMatches[tIdx]; const w = m[wIdx]; const l = m[wIdx===0?1:0];
-        l.chips--; if(l.chips > 0) queue.push(l);
-        activeMatches[tIdx] = [w];
-        refreshChipUI();
-    }
+    function showChamp(n) { document.getElementById('champion-display').innerText = n; document.getElementById('winner-overlay').classList.remove('hidden'); }
 
-    function undoChipAction() {
-        if(!chipHistory.length) return;
-        const last = chipHistory.pop();
-        queue = last.queue; activeMatches = last.activeMatches;
-        refreshChipUI();
-    }
-
-    function showChamp(n) { document.getElementById('champion-display').innerText = n; document.getElementById('winner-overlay').classList.remove('hidden'); document.querySelector('#winner-overlay button').focus(); }
-    function randomizeNames() { let l = document.getElementById('name-list').value.split('\n').filter(n => n.trim()); l.sort(() => Math.random() - 0.5); document.getElementById('name-list').value = l.join('\n'); updateCount(); }
-
-    // D-PAD NAVIGATION ENGINE
+    // D-PAD ENGINE
     document.addEventListener('keydown', (e) => {
-        const active = document.activeElement;
-        
-        // ALLOW ENTER KEY IN TEXTAREA
-        if (active.tagName === 'TEXTAREA' && e.keyCode === 13) {
-            return; // Don't prevent default, allow new line
-        }
-
         const focusables = Array.from(document.querySelectorAll('button, input, textarea, select')).filter(el => el.offsetParent !== null);
-        let index = focusables.indexOf(active);
-
+        let index = focusables.indexOf(document.activeElement);
         if (e.keyCode === 37 || e.keyCode === 38) { // Up/Left
-            e.preventDefault();
-            const next = index > 0 ? index - 1 : focusables.length - 1;
-            focusables[next].focus();
+            e.preventDefault(); const n = index > 0 ? index - 1 : focusables.length - 1; focusables[n].focus();
         } else if (e.keyCode === 39 || e.keyCode === 40) { // Down/Right
-            e.preventDefault();
-            const next = index < focusables.length - 1 ? index + 1 : 0;
-            focusables[next].focus();
+            e.preventDefault(); const n = index < focusables.length - 1 ? index + 1 : 0; focusables[n].focus();
         }
     });
 
-    window.onload = () => document.querySelector('select').focus();
+    window.onload = () => document.getElementById('tourney-type').focus();
 </script>
 </body>
 </html>
