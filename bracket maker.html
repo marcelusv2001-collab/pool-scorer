@@ -7,56 +7,66 @@
     <style>
         :root { --primary: #00cc66; --bg: #0a0a0a; --surface: #1a1a1a; --text: #fff; --accent: #ffcc00; --border-thick: 6px; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; overflow: hidden; }
-        .tv-mode { font-size: 30px; }
         
-        /* THE FOCUS ENGINE CSS */
+        /* MODES */
+        body.tv-mode { font-size: 28px; }
+        body.mobile-mode { font-size: 16px; }
+
+        /* UNIVERSAL FOCUSABLE ELEMENTS */
         button, input, textarea, select { 
             border: var(--border-thick) solid #444 !important; 
             background: #222; 
             color: white; 
-            padding: 20px; 
+            padding: 15px; 
             font-size: 1em; 
-            border-radius: 12px; 
+            border-radius: 10px; 
             display: block; 
             width: 100%; 
             box-sizing: border-box;
-            transition: all 0.2s;
         }
 
-        /* SUPER BRIGHT FOCUS FOR TV BRIGHTNESS */
+        /* HIGH-VISIBILITY FOCUS */
         button:focus, input:focus, textarea:focus, select:focus { 
             outline: none !important;
             border-color: var(--accent) !important;
             background: var(--primary) !important; 
             color: #000 !important;
-            transform: scale(1.08);
-            box-shadow: 0 0 30px var(--accent);
+            transform: scale(1.05);
+            box-shadow: 0 0 25px var(--accent);
             z-index: 10;
         }
 
-        /* TAB SYSTEM */
-        .tab-bar { display: flex; background: #000; padding: 10px; gap: 10px; border-bottom: 4px solid var(--primary); }
-        .tab-btn { width: auto; flex: 1; background: #333; }
+        .tab-bar { display: flex; background: #000; padding: 10px; gap: 10px; border-bottom: 5px solid var(--primary); }
+        .tab-btn { width: auto; flex: 1; background: #333; font-weight: bold; }
 
-        .header { padding: 15px 30px; background: var(--surface); display: flex; justify-content: space-between; align-items: center; }
-        .container { padding: 30px; height: 80vh; overflow-y: auto; }
+        .header { padding: 15px 25px; background: var(--surface); display: flex; justify-content: space-between; align-items: center; }
+        .container { padding: 25px; height: 75vh; overflow-y: auto; scroll-behavior: smooth; }
         
-        .match { background: #262626; margin: 20px 0; border-radius: 15px; border-left: 15px solid var(--accent); overflow: hidden; }
+        .counter-box { background: var(--primary); color: #000; padding: 5px 20px; border-radius: 20px; font-weight: bold; border: 3px solid #000; }
+        
+        /* BRACKET */
+        .bracket-scroll { display: flex; gap: 40px; padding: 20px; }
+        .round { display: flex; flex-direction: column; justify-content: space-around; min-width: 280px; }
+        .match { background: #262626; margin: 15px 0; border-radius: 12px; border-left: 15px solid var(--accent); overflow: hidden; }
         .player-btn { text-align: left; border: none !important; border-bottom: 2px solid #444 !important; border-radius: 0; }
         .winner-highlight { background: var(--primary) !important; color: #000 !important; font-weight: 900; }
         
         .hidden { display: none !important; }
-        #winner-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .bracket-scroll { display: flex; gap: 50px; padding: 20px; }
-        .round { display: flex; flex-direction: column; justify-content: space-around; min-width: 300px; }
+        .reset-badge { font-size: 0.6em; background: #ff4444; color: white; padding: 5px 10px; text-align: center; }
+        
+        /* CHIPS */
+        .chip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .table-card { background: #222; padding: 15px; border: 4px solid var(--primary); border-radius: 15px; }
+
+        #winner-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.97); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
     </style>
 </head>
 <body class="tv-mode">
 
 <div id="winner-overlay" class="hidden">
-    <div style="font-size: 200px;">🏆</div>
-    <div id="champion-display" style="font-size: 100px; font-weight: bold; color: var(--primary);">WINNER</div>
-    <button style="width: 400px; background: var(--accent); color: #000;" onclick="location.reload()">NEW TOURNAMENT</button>
+    <div style="font-size: 150px;">🏆</div>
+    <div id="champion-display" style="font-size: 80px; font-weight: bold; color: var(--primary);">WINNER</div>
+    <button style="width: 400px; background: var(--accent); color: #000; margin-top: 40px;" onclick="location.reload()">NEW TOURNAMENT</button>
 </div>
 
 <div class="tab-bar">
@@ -67,49 +77,67 @@
 
 <div class="header">
     <div style="font-weight: 900; letter-spacing: 2px;">🎱 BRACKET MAKER TV</div>
-    <button style="width: auto; background: #ff4444;" onclick="location.reload()">RESET ALL</button>
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <button id="undo-chip-btn" class="hidden" style="width: auto; background: var(--accent); color: #000;" onclick="undoChipAction()">⏪ UNDO</button>
+        <button style="width: auto; background: #444;" onclick="toggleDisplayMode()">🖥️ TV/MOBILE</button>
+        <button style="width: auto; background: #ff4444;" onclick="location.reload()">RESET</button>
+    </div>
 </div>
 
-<div class="container" id="main-container">
+<div class="container">
     <div id="setup-view">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="margin:0">Setup</h2>
+            <div class="counter-box">Players: <span id="player-count">0</span></div>
+        </div>
+
         <select id="tourney-type" onchange="toggleSetupMode()">
             <option value="single">Single Elimination</option>
-            <option value="double">Double Elimination</option>
-            <option value="chip">Chip Tournament</option>
+            <option value="double" selected>Double Elimination</option>
+            <option value="chip">Chip Tournament (Queue)</option>
         </select>
+
         <div id="bulk-names" style="margin-top: 20px;">
-            <textarea id="name-list" rows="5" placeholder="Enter Names (One per line)"></textarea>
-            <button style="margin-top: 20px; background: var(--accent); color:#000" onclick="randomizeNames()">🎲 SHUFFLE NAMES</button>
+            <textarea id="name-list" rows="6" placeholder="Enter Names (One per line)" oninput="updateCount()"></textarea>
+            <button style="margin-top: 15px; background: var(--accent); color: #000;" onclick="randomizeNames()">🎲 RANDOM DRAW</button>
         </div>
+
         <div id="individual-names" class="hidden" style="margin-top: 20px;">
             <div id="player-rows-container"></div>
         </div>
-        <button style="margin-top: 40px; background: var(--primary); height: 100px; font-size: 1.5em;" onclick="startTourney()">START TOURNAMENT</button>
+
+        <button style="margin-top: 40px; background: var(--primary); height: 100px; font-weight: bold;" onclick="startTourney()">START</button>
     </div>
 
     <div id="bracket-view" class="hidden">
         <div id="bracket-render" class="bracket-scroll"></div>
         <div id="losers-section" class="hidden">
-            <h2 style="color:var(--accent); margin-top: 50px;">Losers Bracket</h2>
+            <h2 style="color:var(--accent); margin-left: 20px; border-top: 1px solid #333; padding-top: 20px;">Losers Bracket</h2>
             <div id="losers-render" class="bracket-scroll"></div>
         </div>
     </div>
 
     <div id="chip-view" class="hidden">
-        <div id="chip-tables-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;"></div>
+        <div class="chip-grid" id="chip-tables-container"></div>
+        <div id="chip-queue-render" style="margin-top: 30px; background: #111; padding: 20px; border-radius: 10px; border: 2px dashed #444;"></div>
     </div>
 </div>
 
 <script>
     let players = []; let queue = []; let activeMatches = [[], [], [], [], []];
-    let mode = 'single'; let grandFinalsReset = false;
+    let mode = 'single'; let gfReset = false; let chipHistory = [];
 
-    // VIEW SWITCHER
-    function switchView(viewId) {
+    function toggleDisplayMode() { document.body.classList.toggle('tv-mode'); document.body.classList.toggle('mobile-mode'); }
+    
+    function updateCount() {
+        const count = document.getElementById('name-list').value.split('\n').filter(n => n.trim()).length;
+        document.getElementById('player-count').innerText = count;
+    }
+
+    function switchView(id) {
         ['setup-view', 'bracket-view', 'chip-view'].forEach(v => document.getElementById(v).classList.add('hidden'));
-        document.getElementById(viewId).classList.remove('hidden');
-        // Reset focus to top of new view
-        setTimeout(focusFirst, 100);
+        document.getElementById(id).classList.remove('hidden');
+        setTimeout(() => document.querySelector(`#${id} button, #${id} select, #${id} textarea`)?.focus(), 50);
     }
 
     function toggleSetupMode() {
@@ -120,7 +148,7 @@
             const container = document.getElementById('player-rows-container');
             container.innerHTML = '';
             for(let i=0; i<8; i++) {
-                container.innerHTML += `<div style="display:flex; gap:10px; margin-bottom:10px"><input type="text" placeholder="Player ${i+1}" class="p-name"><input type="number" value="3" style="width:120px" class="p-chips"></div>`;
+                container.innerHTML += `<div style="display:flex; gap:10px; margin-bottom:10px"><input type="text" placeholder="Player ${i+1}" class="p-name"><input type="number" value="3" style="width:100px" class="p-chips"></div>`;
             }
         }
     }
@@ -135,14 +163,13 @@
                 if(name) players.push({ name, chips, id: Math.random() });
             });
             queue = [...players];
-            switchView('chip-view');
-            refreshChipUI();
+            document.getElementById('undo-chip-btn').classList.remove('hidden');
+            refreshChipUI(); switchView('chip-view');
         } else {
             document.getElementById('name-list').value.split('\n').filter(n => n.trim()).forEach(n => {
                 players.push({ name: n.trim(), id: Math.random() });
             });
-            switchView('bracket-view');
-            setupBrackets();
+            setupBrackets(); switchView('bracket-view');
         }
     }
 
@@ -154,7 +181,7 @@
             renderBracket('losers-render', 'L', rounds);
             const gf = document.createElement('div'); gf.className = 'round';
             gf.innerHTML = `<div class="match" id="GF-match">
-                <div id="gf-status" style="background:red; font-size: 0.5em; text-align:center">GRAND FINAL</div>
+                <div id="gf-status" class="reset-badge">GRAND FINAL</div>
                 <button class="player-btn" onclick="advBr('GF',0,0,0)">Winner Champ</button>
                 <button class="player-btn" onclick="advBr('GF',0,0,1)">Loser Champ</button>
             </div>`;
@@ -166,6 +193,7 @@
 
     function renderBracket(id, prefix, rounds) {
         const cont = document.getElementById(id);
+        cont.innerHTML = '';
         for(let r=0; r<rounds; r++) {
             const rd = document.createElement('div'); rd.className = 'round';
             let mCount = Math.pow(2, rounds - r - 1);
@@ -185,8 +213,8 @@
         const win = pEls[sIdx]; const lose = pEls[sIdx === 0 ? 1 : 0];
         if(win.innerText === 'TBD') return;
 
-        if(br === 'GF' && sIdx === 1 && !grandFinalsReset) {
-            grandFinalsReset = true;
+        if(br === 'GF' && sIdx === 1 && !gfReset) {
+            gfReset = true;
             document.getElementById('gf-status').innerText = "MATCH 2 (RESET)";
             pEls.forEach(p => p.classList.remove('winner-highlight'));
             return;
@@ -217,41 +245,43 @@
         const grid = document.getElementById('chip-tables-container');
         for(let i=0; i<4; i++) { while(activeMatches[i].length < 2 && queue.length > 0) activeMatches[i].push(queue.shift()); }
         grid.innerHTML = activeMatches.map((m, idx) => `
-            <div style="background:#222; padding:15px; border:2px solid var(--primary); border-radius:15px">
-                <div style="text-align:center; margin-bottom:10px">Table ${idx+1}</div>
+            <div class="table-card">
+                <div style="text-align:center; font-weight:bold; margin-bottom:10px">Table ${idx+1}</div>
                 ${m.length === 2 ? `
                 <button class="player-btn" onclick="chipWinner(${idx},0)">${m[0].name} [${m[0].chips}]</button>
-                <button class="player-btn" onclick="chipWinner(${idx},1)">${m[1].name} [${m[1].chips}]</button>` : '<div>Empty</div>'}
+                <button class="player-btn" onclick="chipWinner(${idx},1)">${m[1].name} [${m[1].chips}]</button>` : '<div style="text-align:center">Waiting...</div>'}
             </div>`).join('');
+        document.getElementById('chip-queue-render').innerHTML = "<b>Next in Queue:</b> " + (queue.length ? queue.map(p => p.name).join(', ') : 'None');
     }
 
     function chipWinner(tIdx, wIdx) {
+        chipHistory.push(JSON.parse(JSON.stringify({ queue, activeMatches })));
         const m = activeMatches[tIdx]; const w = m[wIdx]; const l = m[wIdx===0?1:0];
         l.chips--; if(l.chips > 0) queue.push(l);
-        activeMatches[tIdx] = [w]; // Winner stays
+        activeMatches[tIdx] = [w];
         refreshChipUI();
     }
 
-    function showChamp(n) { document.getElementById('champion-display').innerText = n; document.getElementById('winner-overlay').classList.remove('hidden'); }
-    function randomizeNames() { let l = document.getElementById('name-list').value.split('\n').filter(n => n.trim()); l.sort(() => Math.random() - 0.5); document.getElementById('name-list').value = l.join('\n'); }
+    function undoChipAction() {
+        if(!chipHistory.length) return;
+        const last = chipHistory.pop();
+        queue = last.queue; activeMatches = last.activeMatches;
+        refreshChipUI();
+    }
 
-    // TIZEN-SPECIFIC "VIRTUAL LIST" NAVIGATION
+    function showChamp(n) { document.getElementById('champion-display').innerText = n; document.getElementById('winner-overlay').classList.remove('hidden'); document.querySelector('#winner-overlay button').focus(); }
+    function randomizeNames() { let l = document.getElementById('name-list').value.split('\n').filter(n => n.trim()); l.sort(() => Math.random() - 0.5); document.getElementById('name-list').value = l.join('\n'); updateCount(); }
+
+    // UNIVERSAL D-PAD NAVIGATION
     document.addEventListener('keydown', (e) => {
-        // Find all focusable elements currently visible in the active view + tabs
-        const focusables = Array.from(document.querySelectorAll('button, input, textarea, select'))
-            .filter(el => {
-                const style = window.getComputedStyle(el);
-                return style.display !== 'none' && style.visibility !== 'hidden' && el.offsetParent !== null;
-            });
-            
+        const focusables = Array.from(document.querySelectorAll('button, input, textarea, select')).filter(el => el.offsetParent !== null);
         let index = focusables.indexOf(document.activeElement);
-
-        if (e.keyCode === 37 || e.keyCode === 38) { // Left or Up
+        if (e.keyCode === 37 || e.keyCode === 38) { // Up/Left
             e.preventDefault();
-            const prev = index > 0 ? index - 1 : focusables.length - 1;
-            focusables[prev].focus();
-            focusables[prev].scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } else if (e.keyCode === 39 || e.keyCode === 40) { // Right or Down
+            const next = index > 0 ? index - 1 : focusables.length - 1;
+            focusables[next].focus();
+            focusables[next].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else if (e.keyCode === 39 || e.keyCode === 40) { // Down/Right
             e.preventDefault();
             const next = index < focusables.length - 1 ? index + 1 : 0;
             focusables[next].focus();
@@ -259,8 +289,7 @@
         }
     });
 
-    function focusFirst() { document.querySelector('button, select, textarea')?.focus(); }
-    window.onload = focusFirst;
+    window.onload = () => document.querySelector('select').focus();
 </script>
 </body>
 </html>
