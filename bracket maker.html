@@ -22,20 +22,22 @@
         .header { padding: 20px 30px; background: var(--surface); display: flex; justify-content: space-between; align-items: center; border-bottom: 5px solid var(--primary); }
         .container { padding: 30px; max-width: 1400px; margin: auto; }
         
-        /* Layouts */
-        .bracket-scroll { display: flex; gap: 40px; padding: 20px; overflow-x: auto; }
-        .round { display: flex; flex-direction: column; justify-content: space-around; min-width: 300px; }
-        .match { background: #262626; margin: 15px 0; border-radius: 12px; border-left: 15px solid var(--accent); overflow: hidden; }
+        .bracket-scroll { display: flex; gap: 40px; padding: 20px; overflow-x: auto; align-items: flex-start; }
+        .round { display: flex; flex-direction: column; justify-content: space-around; min-width: 320px; }
+        .match { background: #262626; margin: 15px 0; border-radius: 12px; border-left: 15px solid var(--accent); overflow: hidden; position: relative; }
         .player-btn { text-align: left; border: none !important; border-bottom: 2px solid #444 !important; border-radius: 0; }
         .winner-highlight { background: var(--primary) !important; color: #000 !important; font-weight: 900; }
         
-        /* Chip Tables Layout */
         .chip-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
         .table-card { background: #222; padding: 15px; border: 4px solid var(--primary); border-radius: 15px; }
         .win-streak { font-size: 0.7em; background: gold; color: black; padding: 2px 8px; border-radius: 10px; margin-left: 10px; font-weight: bold; }
 
         .hidden { display: none !important; }
         #winner-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.97); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        
+        .rr-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        .rr-table th, .rr-table td { border: 2px solid #444; padding: 15px; text-align: center; }
+        .rr-table th { background: var(--primary); color: #000; }
     </style>
 </head>
 <body class="tv-mode">
@@ -66,6 +68,11 @@
             <option value="chip">Chip Tournament (Queue + 3-Win Rule)</option>
         </select>
 
+        <div id="rr-rounds-config" class="hidden" style="margin-top: 15px;">
+            <label>Times to play each opponent:</label>
+            <input type="number" id="rr-repeat" value="1" min="1">
+        </div>
+
         <label style="margin-top:20px; display:block;">2. Number of Players:</label>
         <select id="player-count-select" onchange="handlePlayerCountChange()" style="margin-bottom: 20px;">
             <option value="0">-- Select --</option>
@@ -93,19 +100,44 @@
         <div id="chip-queue-render" style="margin-top: 30px; padding: 20px; border: 2px dashed #444; background: #111;"></div>
     </div>
 
-    <div id="bracket-view" class="hidden"><div id="bracket-render" class="bracket-scroll"></div><div id="losers-section" class="hidden"><h2>Losers</h2><div id="losers-render" class="bracket-scroll"></div></div></div>
-    <div id="round-robin-view" class="hidden"><div id="rr-table-render"></div><div id="rr-matches-render"></div></div>
+    <div id="bracket-view" class="hidden">
+        <div id="winners-bracket-area">
+            <h2 style="color: var(--primary)">Winners Bracket</h2>
+            <div id="bracket-render" class="bracket-scroll"></div>
+        </div>
+        <div id="losers-section" class="hidden">
+            <h2 style="color: #ff4444; margin-top: 50px;">Losers Bracket</h2>
+            <div id="losers-render" class="bracket-scroll"></div>
+        </div>
+        <div id="grand-final-section" class="hidden" style="margin-top: 50px; border: 4px solid var(--accent); padding: 20px; border-radius: 15px;">
+            <h2 style="text-align: center; color: var(--accent);">🏆 GRAND FINAL 🏆</h2>
+            <div id="final-match-render" style="max-width: 600px; margin: auto;"></div>
+        </div>
+    </div>
+
+    <div id="round-robin-view" class="hidden">
+        <div id="rr-table-render"></div>
+        <div id="rr-matches-render" class="chip-grid"></div>
+    </div>
 </div>
 
 <script>
-    let players = []; let queue = []; 
-    let activeMatches = [[], [], [], [], []]; // 5 Slots for 5 Tables
+    let players = []; 
+    let queue = []; 
+    let activeMatches = [[], [], [], [], []]; 
     let mode = 'single';
+    let winnersRounds = [];
+    let losersRounds = [];
+    let grandFinal = { hotSeat: null, challenger: null, winner: null, resetRequired: false };
+    let rrMatches = [];
 
     function toggleDisplayMode() { document.body.classList.toggle('tv-mode'); document.body.classList.toggle('mobile-mode'); }
 
     function handlePlayerCountChange() {
         const val = document.getElementById('player-count-select').value;
+        const type = document.getElementById('tourney-type').value;
+        if (type === 'round') document.getElementById('rr-rounds-config').classList.remove('hidden');
+        else document.getElementById('rr-rounds-config').classList.add('hidden');
         if (val === 'custom') {
             document.getElementById('custom-input-wrap').classList.remove('hidden');
             document.getElementById('player-inputs-grid').innerHTML = '';
@@ -117,7 +149,6 @@
 
     function generatePlayerFields(num) {
         const grid = document.getElementById('player-inputs-grid');
-        const modeType = document.getElementById('tourney-type').value;
         grid.innerHTML = '';
         const qty = parseInt(num) || 0;
         if (qty > 0) {
@@ -126,46 +157,27 @@
         }
         for (let i = 0; i < qty; i++) {
             const div = document.createElement('div');
-            div.style.display = "flex"; div.style.gap = "5px";
-            if (modeType === 'chip') {
-                div.innerHTML = `<input type="text" placeholder="P${i+1} Name" class="p-name"><input type="number" value="3" class="p-chips" style="width:80px">`;
-            } else {
-                div.innerHTML = `<input type="text" placeholder="P${i+1} Name" class="p-name">`;
-            }
+            div.innerHTML = `<input type="text" placeholder="P${i+1} Name" class="p-name">` + 
+                (document.getElementById('tourney-type').value === 'chip' ? `<input type="number" value="3" class="p-chips" style="width:80px">` : '');
             grid.appendChild(div);
         }
     }
 
     function shuffleInputs() {
         const grid = document.getElementById('player-inputs-grid');
-        const inputs = Array.from(grid.children);
-        for (let i = inputs.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            grid.appendChild(inputs[j]);
-        }
+        for (let i = grid.children.length; i >= 0; i--) grid.appendChild(grid.children[Math.random() * i | 0]);
     }
 
     function startTourney() {
         mode = document.getElementById('tourney-type').value;
         players = [];
-        document.querySelectorAll('#player-inputs-grid > div').forEach(div => {
-            const name = div.querySelector('.p-name').value.trim();
-            if (name) {
-                if (mode === 'chip') {
-                    players.push({ name, chips: parseInt(div.querySelector('.p-chips').value), wins: 0, id: Math.random() });
-                } else {
-                    players.push({ name, wins: 0, losses: 0, id: Math.random() });
-                }
-            }
+        document.querySelectorAll('#player-inputs-grid > div').forEach((div, idx) => {
+            const name = div.querySelector('.p-name').value.trim() || `Player ${idx+1}`;
+            players.push({ name, chips: div.querySelector('.p-chips')?.value || 0, wins: 0, losses: 0, points: 0, id: idx });
         });
 
-        if (!players.length) return;
-
         if (mode === 'chip') {
-            queue = [...players];
-            activeMatches = [[], [], [], [], []]; // Reset tables
-            refreshChipUI();
-            switchView('chip-view');
+            queue = [...players]; activeMatches = [[],[],[],[],[]]; refreshChipUI(); switchView('chip-view');
         } else if (mode === 'round') {
             setupRoundRobin(); switchView('round-robin-view');
         } else {
@@ -178,81 +190,221 @@
         document.getElementById(id).classList.remove('hidden');
     }
 
-    // CHIP LOGIC WITH 3-WIN RULE & 5 TABLES
-    function refreshChipUI() {
-        const container = document.getElementById('chip-tables-container');
-        // Fill 5 tables
-        for(let i=0; i<5; i++) {
-            while(activeMatches[i].length < 2 && queue.length > 0) {
-                activeMatches[i].push(queue.shift());
+    // --- REBUILT BRACKET LOGIC ---
+    function setupBrackets() {
+        winnersRounds = []; losersRounds = [];
+        grandFinal = { hotSeat: null, challenger: null, winner: null, resetRequired: false };
+        const size = Math.pow(2, Math.ceil(Math.log2(players.length)));
+
+        // Setup Winners
+        let wbSize = size;
+        while (wbSize >= 2) {
+            winnersRounds.push(Array.from({length: wbSize/2}, () => ({p1:null, p2:null, winner:null})));
+            wbSize /= 2;
+        }
+
+        // Setup Losers
+        if (mode === 'double') {
+            document.getElementById('losers-section').classList.remove('hidden');
+            let lbSize = size / 2;
+            // A professional LB has (log2(N) * 2) - 2 rounds
+            // e.g. 8 players (log2=3) -> (3*2)-2 = 4 rounds + final round = 5 total.
+            const lbRoundCount = (winnersRounds.length * 2) - 1;
+            for (let r = 0; r < lbRoundCount; r++) {
+                losersRounds.push(Array.from({length: lbSize}, () => ({p1:null, p2:null, winner:null})));
+                // Round count only halves every other round in LB
+                if (r % 2 === 1) lbSize /= 2;
             }
         }
 
-        container.innerHTML = activeMatches.map((m, idx) => `
-            <div class="table-card">
-                <div style="text-align:center; font-weight:bold; color:var(--accent); margin-bottom:10px">Table ${idx+1}</div>
-                ${m.length === 2 ? `
-                    <button class="player-btn" onclick="chipWinner(${idx}, 0)">
-                        ${m[0].name} [Chips: ${m[0].chips}] ${m[0].wins > 0 ? `<span class="win-streak">Wins: ${m[0].wins}</span>` : ''}
-                    </button>
-                    <button class="player-btn" onclick="chipWinner(${idx}, 1)">
-                        ${m[1].name} [Chips: ${m[1].chips}] ${m[1].wins > 0 ? `<span class="win-streak">Wins: ${m[1].wins}</span>` : ''}
-                    </button>
-                ` : '<div style="text-align:center; color:#666">Waiting for players...</div>'}
+        // Seed WB Round 1
+        for (let i = 0; i < size; i += 2) {
+            let p1 = players[i] || { name: "BYE", isBye: true };
+            let p2 = players[i+1] || { name: "BYE", isBye: true };
+            winnersRounds[0][i/2].p1 = p1;
+            winnersRounds[0][i/2].p2 = p2;
+            checkAndAdvanceBye('winners', 0, i/2);
+        }
+        renderBrackets();
+    }
+
+    function checkAndAdvanceBye(type, rIdx, mIdx) {
+        let rounds = type === 'winners' ? winnersRounds : losersRounds;
+        let m = rounds[rIdx][mIdx];
+        if (m.p1?.isBye && m.p2) processWinner(type, rIdx, mIdx, 2);
+        else if (m.p2?.isBye && m.p1) processWinner(type, rIdx, mIdx, 1);
+    }
+
+    function advance(type, rIdx, mIdx, pNum) {
+        processWinner(type, rIdx, mIdx, pNum);
+        renderBrackets();
+    }
+
+    function processWinner(type, rIdx, mIdx, pNum) {
+        let rounds = type === 'winners' ? winnersRounds : losersRounds;
+        let match = rounds[rIdx][mIdx];
+        if (!match.p1 || !match.p2 || match.winner) return;
+
+        let winner = pNum === 1 ? match.p1 : match.p2;
+        let loser = pNum === 1 ? match.p2 : match.p1;
+        match.winner = winner;
+
+        if (type === 'winners') {
+            // WB Winner Progression
+            if (rIdx + 1 < winnersRounds.length) {
+                let nIdx = Math.floor(mIdx / 2);
+                if (mIdx % 2 === 0) winnersRounds[rIdx+1][nIdx].p1 = winner;
+                else winnersRounds[rIdx+1][nIdx].p2 = winner;
+                checkAndAdvanceBye('winners', rIdx + 1, nIdx);
+            } else {
+                if (mode === 'single') showChamp(winner.name);
+                else { grandFinal.hotSeat = winner; checkGrandFinalTrigger(); }
+            }
+
+            // WB Loser Drop-down
+            if (mode === 'double' && !loser.isBye) {
+                // Mapping: WB Round 0 -> LB Round 0, WB Round 1 -> LB Round 2, WB Round 2 -> LB Round 4
+                let targetLRound = (rIdx * 2); 
+                // LB Rounds 0, 2, 4 etc are "drop-in" rounds where p2 is empty for the loser
+                let slot = losersRounds[targetLRound].find(m => !m.p1 || !m.p2);
+                if (slot) {
+                    if (!slot.p1) slot.p1 = loser; else slot.p2 = loser;
+                    checkAndAdvanceBye('losers', targetLRound, losersRounds[targetLRound].indexOf(slot));
+                }
+            }
+        } else {
+            // LB Winner Progression
+            if (rIdx + 1 < losersRounds.length) {
+                let nextR = losersRounds[rIdx+1];
+                let shrinking = nextR.length < losersRounds[rIdx].length;
+                let nIdx = shrinking ? Math.floor(mIdx / 2) : mIdx;
+                
+                if (shrinking) { // Consolidation round (LB winner plays LB winner)
+                    if (mIdx % 2 === 0) nextR[nIdx].p1 = winner; else nextR[nIdx].p2 = winner;
+                } else { // Survival round (LB winner plays WB loser)
+                    nextR[nIdx].p1 = winner; 
+                }
+                checkAndAdvanceBye('losers', rIdx + 1, nIdx);
+            } else {
+                // LB Champion found!
+                grandFinal.challenger = winner;
+                checkGrandFinalTrigger();
+            }
+        }
+    }
+
+    function checkGrandFinalTrigger() {
+        if (grandFinal.hotSeat && grandFinal.challenger) {
+            document.getElementById('grand-final-section').classList.remove('hidden');
+            renderGrandFinal();
+        }
+    }
+
+    function renderGrandFinal() {
+        const div = document.getElementById('final-match-render');
+        div.innerHTML = `
+            <div class="match" style="border-left-color: var(--primary)">
+                <button class="player-btn" onclick="finalWin('hotSeat')">${grandFinal.hotSeat.name} (Hot Seat)</button>
+                <button class="player-btn" onclick="finalWin('challenger')">${grandFinal.challenger.name} (Challenger)</button>
+            </div>
+            ${grandFinal.resetRequired ? `<div style="text-align:center; color:var(--accent); font-weight:bold;">BRACKET RESET - ONE MATCH LEFT!</div>` : ''}
+        `;
+    }
+
+    function finalWin(who) {
+        if (who === 'hotSeat') showChamp(grandFinal.hotSeat.name);
+        else {
+            if (!grandFinal.resetRequired) {
+                grandFinal.resetRequired = true;
+                renderGrandFinal();
+            } else showChamp(grandFinal.challenger.name);
+        }
+    }
+
+    function renderBrackets() {
+        renderBracketType(winnersRounds, 'bracket-render', 'winners');
+        if (mode === 'double') renderBracketType(losersRounds, 'losers-render', 'losers');
+    }
+
+    function renderBracketType(rounds, elementId, type) {
+        const container = document.getElementById(elementId);
+        container.innerHTML = '';
+        rounds.forEach((round, rIdx) => {
+            const roundDiv = document.createElement('div');
+            roundDiv.className = 'round';
+            round.forEach((m, mIdx) => {
+                const matchDiv = document.createElement('div');
+                matchDiv.className = 'match';
+                matchDiv.innerHTML = `
+                    <button class="player-btn ${m.winner && m.winner === m.p1 ? 'winner-highlight' : ''}" onclick="advance('${type}',${rIdx},${mIdx},1)">${m.p1?.name || 'TBD'}</button>
+                    <button class="player-btn ${m.winner && m.winner === m.p2 ? 'winner-highlight' : ''}" onclick="advance('${type}',${rIdx},${mIdx},2)">${m.p2?.name || 'TBD'}</button>
+                `;
+                roundDiv.appendChild(matchDiv);
+            });
+            container.appendChild(roundDiv);
+        });
+    }
+
+    // --- OTHER MODES ---
+    function setupRoundRobin() {
+        const repeat = parseInt(document.getElementById('rr-repeat').value) || 1;
+        rrMatches = [];
+        for (let r = 0; r < repeat; r++) {
+            for (let i = 0; i < players.length; i++) {
+                for (let j = i + 1; j < players.length; j++) {
+                    rrMatches.push({ p1: players[i], p2: players[j], winner: null });
+                }
+            }
+        }
+        renderRR();
+    }
+
+    function renderRR() {
+        const sorted = [...players].sort((a,b) => b.points - a.points);
+        document.getElementById('rr-table-render').innerHTML = `
+            <table class="rr-table">
+                <tr><th>Player</th><th>W</th><th>L</th><th>Pts</th></tr>
+                ${sorted.map(p => `<tr><td>${p.name}</td><td>${p.wins}</td><td>${p.losses}</td><td>${p.points}</td></tr>`).join('')}
+            </table>
+        `;
+        document.getElementById('rr-matches-render').innerHTML = rrMatches.map((m, idx) => `
+            <div class="match" style="${m.winner ? 'opacity:0.5' : ''}">
+                <button class="player-btn ${m.winner === m.p1 ? 'winner-highlight' : ''}" onclick="rrWin(${idx}, 1)">${m.p1.name}</button>
+                <button class="player-btn ${m.winner === m.p2 ? 'winner-highlight' : ''}" onclick="rrWin(${idx}, 2)">${m.p2.name}</button>
             </div>
         `).join('');
-
-        document.getElementById('chip-queue-render').innerHTML = `<b>Queue (${queue.length}):</b> ` + 
-            (queue.length ? queue.map(p => `${p.name}(${p.chips})`).join(', ') : 'Empty');
+        if (rrMatches.length > 0 && rrMatches.every(m => m.winner)) showChamp(sorted[0].name);
     }
 
-    function chipWinner(tableIdx, winnerIdx) {
-        const match = activeMatches[tableIdx];
-        const winner = match[winnerIdx];
-        const loser = match[winnerIdx === 0 ? 1 : 0];
-
-        // Loser Logic
-        loser.chips--;
-        loser.wins = 0; // Reset loser streak
-        if (loser.chips > 0) {
-            queue.push(loser);
-        }
-
-        // Winner Logic (3-Win Rule)
-        winner.wins++;
-        if (winner.wins >= 3) {
-            winner.wins = 0; // Reset streak
-            queue.push(winner);
-            activeMatches[tableIdx] = []; // Both leave table
-        } else {
-            activeMatches[tableIdx] = [winner]; // Winner stays
-        }
-
-        // Check for overall champion (only one person with chips left)
-        const survivors = [...queue, ...activeMatches.flat()];
-        if (survivors.length === 1) {
-            showChamp(survivors[0].name);
-        } else {
-            refreshChipUI();
-        }
+    function rrWin(idx, pNum) {
+        if (rrMatches[idx].winner) return;
+        const m = rrMatches[idx];
+        const win = pNum === 1 ? m.p1 : m.p2;
+        const lose = pNum === 1 ? m.p2 : m.p1;
+        m.winner = win; win.wins++; win.points += 3; lose.losses++;
+        renderRR();
     }
 
-    function showChamp(n) { 
-        document.getElementById('champion-display').innerText = n; 
-        document.getElementById('winner-overlay').classList.remove('hidden'); 
+    function refreshChipUI() {
+        const container = document.getElementById('chip-tables-container');
+        for(let i=0; i<5; i++) while(activeMatches[i].length < 2 && queue.length > 0) activeMatches[i].push(queue.shift());
+        container.innerHTML = activeMatches.map((m, idx) => `
+            <div class="table-card"><div style="text-align:center; font-weight:bold; color:var(--accent); margin-bottom:10px">Table ${idx+1}</div>
+                ${m.length === 2 ? `<button class="player-btn" onclick="chipWinner(${idx}, 0)">${m[0].name} [${m[0].chips}] ${m[0].wins > 0 ? `<span class="win-streak">W: ${m[0].wins}</span>` : ''}</button>
+                    <button class="player-btn" onclick="chipWinner(${idx}, 1)">${m[1].name} [${m[1].chips}] ${m[1].wins > 0 ? `<span class="win-streak">W: ${m[1].wins}</span>` : ''}</button>` : 'Waiting...'}
+            </div>`).join('');
+        document.getElementById('chip-queue-render').innerHTML = `<b>Queue:</b> ` + queue.map(p => p.name).join(', ');
     }
 
-    // D-PAD
-    document.addEventListener('keydown', (e) => {
-        const focusables = Array.from(document.querySelectorAll('button, input, select')).filter(el => el.offsetParent !== null);
-        let index = focusables.indexOf(document.activeElement);
-        if (e.keyCode >= 37 && e.keyCode <= 40) {
-            e.preventDefault();
-            if (e.keyCode === 37 || e.keyCode === 38) index = index > 0 ? index - 1 : focusables.length - 1;
-            else index = index < focusables.length - 1 ? index + 1 : 0;
-            focusables[index].focus();
-        }
-    });
+    function chipWinner(tIdx, wIdx) {
+        const m = activeMatches[tIdx]; const w = m[wIdx]; const l = m[wIdx === 0 ? 1 : 0];
+        l.chips--; l.wins = 0; if (l.chips > 0) queue.push(l);
+        w.wins++; if (w.wins >= 3) { w.wins = 0; queue.push(w); activeMatches[tIdx] = []; } else activeMatches[tIdx] = [w];
+        const s = [...queue, ...activeMatches.flat()];
+        if (s.length === 1) showChamp(s[0].name); else refreshChipUI();
+    }
+
+    function showChamp(n) { document.getElementById('champion-display').innerText = n; document.getElementById('winner-overlay').classList.remove('hidden'); }
 
     window.onload = () => document.getElementById('tourney-type').focus();
 </script>
