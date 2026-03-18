@@ -14,7 +14,7 @@
             --gold: #ffc107; 
             --blue: #0d47a1; 
             --red: #b71c1c; 
-            --text-main: #e3e3e3;
+            --text-main: #e3e3e3; 
             --text-dim: #9aa0a6;
             --radius: 16px;
         }
@@ -109,7 +109,31 @@
         .footer-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
         .footer-btns button { padding: 14px; border: none; border-radius: 12px; color: white; font-weight: bold; font-size: 0.85rem; }
 
-        #modal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 100; }
+        /* Summary Overlay Styling */
+        #summaryOverlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.95); justify-content: center; align-items: center; z-index: 100; }
+        
+        .summary-card { 
+            background: #ffffff; color: #000000; width: 95%; max-width: 600px; border-radius: 8px; padding: 12px; 
+            box-shadow: 0 0 40px rgba(0,0,0,0.5); border: 2px solid #000; overflow-x: hidden;
+        }
+        .summary-header { border-bottom: 3px solid #000; padding-bottom: 8px; margin-bottom: 8px; text-align: center; }
+        .summary-header h2 { margin: 0; color: #000; font-size: 1.3rem; text-transform: uppercase; font-weight: 900; letter-spacing: -0.5px; }
+        
+        .summary-log-container {
+            background: #f0f0f0; border-radius: 4px; padding: 5px; border: 2px solid #000;
+            max-height: 320px; overflow-y: auto; overflow-x: auto; margin-bottom: 8px;
+        }
+        .summary-log-container pre { 
+            margin: 0; color: #000; font-family: 'Courier New', monospace; font-size: 0.65rem; line-height: 1.1; white-space: pre; font-weight: 700;
+        }
+
+        .summary-footer-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+        .summary-footer-table td { width: 100%; padding: 10px; vertical-align: top; border: 2px solid #000; background: #fff; }
+        .label-cell { color: #000; text-transform: uppercase; font-size: 0.75rem; font-weight: 900; display: block; background: #ddd; padding: 4px; border-bottom: 2px solid #000; margin-bottom: 6px; }
+        .value-cell { color: #000; font-size: 1.1rem; font-weight: 950; line-height: 1.5; letter-spacing: -0.2px; }
+        .value-cell b { background: #eee; padding: 0 4px; }
+
+        #modal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.95); justify-content: center; align-items: center; z-index: 100; }
         .m-content { background: var(--surface); padding: 20px; border-radius: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 90%; max-width: 400px; }
     </style>
 </head>
@@ -182,6 +206,7 @@
     <div class="card">
         <div class="row" style="gap:5px;">
             <button onclick="copyLog()" style="flex:1; padding:10px; font-size:0.75rem; background:#333; border:none; color:#fff; border-radius:8px;">COPY LOG</button>
+            <button id="viewSummaryBtn" onclick="showSummary()" style="flex:1; padding:10px; font-size:0.75rem; background:var(--blue); border:none; color:#fff; border-radius:8px;">VIEW SUMMARY</button>
             <button id="editBtn" onclick="toggleEdit()" style="flex:1; padding:10px; font-size:0.75rem; background:#333; border:none; color:#fff; border-radius:8px;">EDIT LOG</button>
         </div>
         <div class="log" id="matchLog"></div>
@@ -196,6 +221,39 @@
 
 <div id="modal" onclick="if(event.target==this)this.style.display='none'">
     <div class="m-content" id="mBtns"></div>
+</div>
+
+<div id="summaryOverlay" onclick="this.style.display='none'">
+    <div class="summary-card" onclick="event.stopPropagation()">
+        <div class="summary-header">
+            <h2 id="sumTeams">MATCH REPORT</h2>
+            <div id="sumDate" style="font-size: 0.65rem; color: #000; font-weight: 900; margin-top: 2px;"></div>
+        </div>
+        
+        <div class="summary-log-container">
+            <pre id="sumLogBody"></pre>
+        </div>
+
+        <table class="summary-footer-table">
+            <tr>
+                <td>
+                    <span class="label-cell">TOTAL POINTS</span>
+                    <div id="sumTotalPts" class="value-cell"></div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <span class="label-cell">TOTAL SKILL LEVEL</span>
+                    <div id="sumTotalSl" class="value-cell"></div>
+                </td>
+            </tr>
+        </table>
+        
+        <div class="row" style="margin-top:10px; gap:8px;">
+            <button onclick="shareReport()" style="flex:1; padding:14px; background:var(--felt); color:#fff; border:none; border-radius:8px; font-weight:900; font-size:0.9rem; text-transform:uppercase;">SHARE REPORT</button>
+            <button onclick="document.getElementById('summaryOverlay').style.display='none'" style="flex:1; padding:14px; background:#000; color:#fff; border:none; border-radius:8px; font-weight:900; font-size:0.9rem; text-transform:uppercase;">CLOSE</button>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -238,27 +296,19 @@ function setLag(p) { if(matches[currentM].isEnded) return; saveHistory(); matche
 function openRack(winner) {
     let m = matches[currentM]; if (m.isEnded || (winner==='H' && m.gwH >= m.reqH) || (winner==='A' && m.gwA >= m.reqA)) return;
     if(!m.hp || !m.ap || !m.lag) return alert("Names & Lag Required!");
-
     const pName = winner === 'H' ? m.hp : m.ap;
     const modal = document.getElementById('modal'), container = document.getElementById('mBtns');
     modal.style.display = 'flex'; 
     container.innerHTML = `<h3 style="text-align:center;color:var(--gold);margin:0;grid-column:span 2">Rack ${m.g} Winner: ${pName}</h3>`;
-    
     ["Win", "BR", "8BB", "WP", "S8", "E8"].forEach(t => {
         let b = document.createElement('button'); b.className = 'score-btn ' + (winner==='H'?'h-btn':'a-btn'); b.innerText = t;
         b.onclick = () => {
             saveHistory();
-            
-            m.rackLogs.push(`  Rack ${m.g}: (H) ${m.defH}D|${m.toH}T | (A) ${m.defA}D|${m.toA}T | Inn: ${m.inn} [${t}] Win: ${pName}`);
-
-            m.tToH += m.toH; m.tToA += m.toA;
-            m.tDefH += m.defH; m.tDefA += m.defA;
-            m.tInn += m.inn;
-
+            m.rackLogs.push({ num: m.g, hDef: m.defH, hTo: m.toH, aDef: m.defA, aTo: m.toA, inn: m.inn, type: t, win: pName });
+            m.tToH += m.toH; m.tToA += m.toA; m.tDefH += m.defH; m.tDefA += m.defA; m.tInn += m.inn;
             winner==='H' ? m.gwH++ : m.gwA++; m.g++;
             modal.style.display = 'none'; 
             if(m.gwH >= m.reqH || m.gwA >= m.reqA) m.isEnded = true; 
-            
             m.toH=0; m.toA=0; m.defH=0; m.defA=0; m.inn=0; 
             updateUI();
         }; container.appendChild(b);
@@ -272,77 +322,103 @@ function updateUI() {
     document.getElementById('inn').innerText = m.inn; 
     document.getElementById('hPlayer').value = m.hp; document.getElementById('aPlayer').value = m.ap; 
     document.getElementById('slH').value = m.slH; document.getElementById('slA').value = m.slA; 
-    document.getElementById('gw').innerText = `${m.gwH}/${m.reqH} GW/GN - ${m.gwA}/${m.reqA} GN/GN`;
-    document.getElementById('race').innerText = `Race: ${m.reqH}/${m.reqA}`;
-    
+    document.getElementById('gw').innerText = `${m.gwH}/${m.reqH} Games Won - ${m.gwA}/${m.reqA} Games Won`;
+    document.getElementById('race').innerText = `Race Goal: ${m.reqH} to ${m.reqA}`;
     document.querySelectorAll('.lag-btn').forEach(b => b.classList.remove('active')); 
     if(m.lag) document.getElementById('l'+m.lag).classList.add('active');
-    
     document.querySelectorAll('.m-ctrl').forEach(btn => btn.disabled = m.isEnded);
     ['hPlayer', 'aPlayer', 'slH', 'slA'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).disabled = m.isEnded; });
 
     let sesH = 0, sesA = 0, totalSlH = 0, totalSlA = 0;
     let fullLogText = "";
-
     for(let i=1; i<=5; i++){
         let match = matches[i];
-        if (match.hp) totalSlH += Number(match.slH);
-        if (match.ap) totalSlA += Number(match.slA);
-
+        if (match.hp.trim() !== "") totalSlH += Number(match.slH);
+        if (match.ap.trim() !== "") totalSlA += Number(match.slA);
         let mH = 0, mA = 0;
         if(match.gwH >= match.reqH || match.gwA >= match.reqA) {
             if(match.gwH >= match.reqH) {
-                if(match.gwA === 0) mH = 3; 
-                else if(match.gwA >= match.reqA - 1) { mH = 2; mA = 1; } 
-                else mH = 2;
+                if(match.gwA === 0) mH = 3; else if(match.gwA >= match.reqA - 1) { mH = 2; mA = 1; } else mH = 2;
             } else {
-                if(match.gwH === 0) mA = 3; 
-                else if(match.gwH >= match.reqH - 1) { mA = 2; mH = 1; } 
-                else mA = 2;
+                if(match.gwH === 0) mA = 3; else if(match.gwH >= match.reqH - 1) { mA = 2; mH = 1; } else mA = 2;
             }
         }
         sesH += mH; sesA += mA;
-
         if(match.rackLogs.length > 0) {
-            fullLogText += `>>> MATCH ${i} [${match.hp} vs ${match.ap}] Lag: ${match.lag}\n`;
-            match.rackLogs.forEach(line => fullLogText += line + "\n");
-            
+            fullLogText += `MATCH ${i} [ ${match.hp} vs ${match.ap} ]\n`;
+            fullLogText += "RACK | HOME DETAILS      | AWAY DETAILS\n";
+            fullLogText += "-----+-------------------+------------------\n";
+            match.rackLogs.forEach(rl => {
+                let hStr = `${rl.hDef} Def, ${rl.hTo} TO`.padEnd(17);
+                let aStr = `${rl.aDef} Def, ${rl.aTo} TO`.padEnd(17);
+                fullLogText += ` #${rl.num} | ${hStr} | ${aStr}\n`;
+                fullLogText += `     | Innings: ${rl.inn.toString().padEnd(8)} | Win: ${rl.win} [${rl.type}]\n`;
+                fullLogText += "-----+-------------------+------------------\n";
+            });
             if(match.isEnded) {
-                fullLogText += `  [ FINAL: ${mH}-${mA} Pts | Inn: ${match.tInn} | H-Def: ${match.tDefH} | A-Def: ${match.tDefA} ]\n`;
-                fullLogText += `------------------------------------------------\n`;
-            } else {
-                fullLogText += `  (Match in progress...)\n\n`;
+                fullLogText += `[ SCORE: ${mH} - ${mA} | INN: ${match.tInn} ]\n`;
+                fullLogText += "============================================\n\n";
             }
         }
     }
-    
     document.getElementById('matchLog').innerText = fullLogText;
-    document.getElementById('totalSl').innerText = `SLs: H(${totalSlH}) A(${totalSlA})`;
+    document.getElementById('totalSl').innerText = `Total Skill Levels: Home(${totalSlH}) Away(${totalSlA})`;
     document.getElementById('totalSl').style.color = (totalSlH > 23 || totalSlA > 23) ? "#ff4444" : "#9aa0a6";
-
-    const ht = document.getElementById('hTeam').value || "Home", at = document.getElementById('aTeam').value || "Away";
-    
-    let curH = 0, curA = 0;
-    let cm = matches[currentM];
+    const ht = document.getElementById('hTeam').value || "Home Team";
+    const at = document.getElementById('aTeam').value || "Away Team";
+    let curH = 0, curA = 0, cm = matches[currentM];
     if(cm.gwH >= cm.reqH || cm.gwA >= cm.reqA) {
-         if(cm.gwH >= cm.reqH) {
-            if(cm.gwA === 0) curH = 3; else if(cm.gwA >= cm.reqA - 1) { curH = 2; curA = 1; } else curH = 2;
-         } else {
-            if(cm.gwH === 0) curA = 3; else if(cm.gwH >= cm.reqH - 1) { curA = 2; curH = 1; } else curA = 2;
-         }
+         if(cm.gwH >= cm.reqH) { if(cm.gwA === 0) curH = 3; else if(cm.gwA >= cm.reqA - 1) { curH = 2; curA = 1; } else curH = 2; } 
+         else { if(cm.gwH === 0) curA = 3; else if(cm.gwH >= cm.reqH - 1) { curA = 2; curH = 1; } else curA = 2; }
     }
-
-    document.getElementById('playerPtsH').innerHTML = `${cm.hp || 'H'}: ${curH}`;
-    document.getElementById('playerPtsA').innerHTML = `${cm.ap || 'A'}: ${curA}`;
-    document.getElementById('teamPtsH').innerHTML = `${ht}: ${sesH}`;
-    document.getElementById('teamPtsA').innerHTML = `${at}: ${sesA}`;
+    document.getElementById('playerPtsH').innerHTML = `${cm.hp || 'Home'}: ${curH} Pts`;
+    document.getElementById('playerPtsA').innerHTML = `${cm.ap || 'Away'}: ${curA} Pts`;
+    document.getElementById('teamPtsH').innerHTML = `${ht}: ${sesH} Total`;
+    document.getElementById('teamPtsA').innerHTML = `${at}: ${sesA} Total`;
     localStorage.setItem('pool_session', JSON.stringify(matches));
 }
 
-function endMatch() { if(!confirm("Lock match scores?")) return; matches[currentM].isEnded = true; updateUI(); if(currentM < 5) { currentM++; document.getElementById('mSelect').value = currentM; updateUI(); } }
-function resetSession() { if(confirm("Wipe all data?")) { localStorage.clear(); location.reload(); } }
+function showSummary() {
+    const hTeam = (document.getElementById('hTeam').value || "HOME").toUpperCase();
+    const aTeam = (document.getElementById('aTeam').value || "AWAY").toUpperCase();
+    document.getElementById('sumTeams').innerText = `${hTeam} vs ${aTeam}`;
+    document.getElementById('sumDate').innerText = new Date().toLocaleString().toUpperCase();
+    document.getElementById('sumLogBody').innerText = document.getElementById('matchLog').innerText || "NO MATCH DATA LOGGED";
+    let tH = 0, tA = 0, sH = 0, sA = 0;
+    for (let i = 1; i <= 5; i++) {
+        let m = matches[i];
+        if (m.hp.trim() === "" && m.ap.trim() === "") continue;
+        let ph = 0, pa = 0;
+        if(m.gwH >= m.reqH) { if(m.gwA === 0) ph = 3; else if(m.gwA >= m.reqA - 1) { ph = 2; pa = 1; } else ph = 2; } 
+        else if(m.gwA >= m.reqA) { if(m.gwH === 0) pa = 3; else if(m.gwH >= m.reqH - 1) { pa = 2; ph = 1; } else pa = 2; }
+        tH += ph; tA += pa; sH += (m.hp.trim() !== "" ? Number(m.slH) : 0); sA += (m.ap.trim() !== "" ? Number(m.slA) : 0);
+    }
+    document.getElementById('sumTotalPts').innerHTML = `<b>${hTeam}:</b> ${tH} PTS<br><b>${aTeam}:</b> ${tA} PTS`;
+    document.getElementById('sumTotalSl').innerHTML = `<b>${hTeam}:</b> ${sH} SL<br><b>${aTeam}:</b> ${sA} SL`;
+    document.getElementById('summaryOverlay').style.display = 'flex';
+}
+
+function shareReport() {
+    const header = document.getElementById('sumTeams').innerText + " - MATCH REPORT\n";
+    const date = document.getElementById('sumDate').innerText + "\n\n";
+    const body = document.getElementById('matchLog').innerText;
+    const totals = "\nTOTAL POINTS:\n" + document.getElementById('sumTotalPts').innerText.replace(/<br>/g, "\n") + 
+                   "\n\nTOTAL SKILL LEVELS:\n" + document.getElementById('sumTotalSl').innerText.replace(/<br>/g, "\n");
+    
+    const fullText = header + date + body + totals;
+
+    if (navigator.share) {
+        navigator.share({ title: 'Match Report', text: fullText }).catch(console.error);
+    } else {
+        copyLog();
+        alert("Share not supported on this browser. Full report has been COPIED to clipboard instead.");
+    }
+}
+
+function endMatch() { if(!confirm("Confirm completion?")) return; matches[currentM].isEnded = true; updateUI(); if(currentM < 5) { currentM++; document.getElementById('mSelect').value = currentM; updateUI(); } }
+function resetSession() { if(confirm("Permanently wipe all session data?")) { localStorage.clear(); location.reload(); } }
 function toggleEdit() { const l = document.getElementById('matchLog'), b = document.getElementById('editBtn'), is = l.contentEditable === "true"; l.contentEditable = !is; b.innerText = is ? "Edit Log" : "Save Log"; b.style.background = is ? "#333" : "var(--felt)"; if(!is) l.focus(); }
-async function copyLog() { try { await navigator.clipboard.writeText(document.getElementById('matchLog').innerText); alert("Copied!"); } catch(e) {} }
+async function copyLog() { try { await navigator.clipboard.writeText(document.getElementById('matchLog').innerText); alert("Report copied!"); } catch(e) {} }
 function saveHistory() { historyStack.push(JSON.stringify(matches)); if(historyStack.length > 20) historyStack.shift(); }
 function undo() { if(historyStack.length > 0) { matches = JSON.parse(historyStack.pop()); updateUI(); } }
 window.onload = initRace;
