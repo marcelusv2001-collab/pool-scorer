@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Lebanon 8-Ball Pro</title>
+    <style>
+        :root {
+            --bg: #020617; --felt: #000080; --gold: #fbbf24;
+            --wood: #451a03; --slate: #1e293b; --text: #f8fafc;
+            --home: #3b82f6; --visit: #ef4444;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background: var(--bg); color: var(--text);
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0; height: 100vh; height: 100dvh;
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(to bottom, var(--wood), #000080);
+            padding: 10px; display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 2px solid var(--gold); flex-shrink: 0;
+        }
+        header h1 { font-size: 0.9rem; margin: 0; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; }
+        
+        .header-btns { display: flex; gap: 15px; align-items: center; }
+        .reset-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; }
+        .stats-link-btn { background: var(--gold); color: black; border: none; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; text-decoration: none; display: none; }
+
+        details { background: #1e293b; border-bottom: 1px solid var(--gold); z-index: 100; }
+        summary { color: var(--gold); font-size: 0.75rem; cursor: pointer; padding: 10px; font-weight: bold; list-style: none; text-align: center; }
+        .settings-content { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+        .settings-content input { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--gold); background: #020617; color: white; font-size: 0.8rem; }
+        .settings-btns { display: flex; gap: 8px; }
+        .btn-load { flex: 1; background: var(--gold); border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .btn-clear { background: #ef4444; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+
+        #scoring-interface { flex: 1; overflow-y: auto; padding: 6px; background: var(--bg); }
+        .team-banner { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+        .input-wrapper { display: flex; align-items: center; background: var(--slate); border-radius: 8px; padding-right: 4px; border: 1px solid #334155; }
+        .input-wrapper input { width: 100%; background: transparent; border: none; color: white; padding: 12px; font-size: 0.9rem; outline: none; font-weight: bold; }
+        
+        .game-grid { background: var(--felt); border-radius: 12px; border: 3px solid var(--wood); display: flex; flex-direction: column; }
+        .game-row { display: grid; grid-template-columns: 28px 1fr 1fr 42px; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 8px 4px; }
+        .game-num { font-size: 0.75rem; font-weight: bold; color: var(--gold); text-align: center; opacity: 0.8; }
+        
+        .player-box { display: flex; flex-direction: column; padding: 0 4px; }
+        .p-input-wrap { display: flex; align-items: center; background: rgba(0,0,0,0.4); border-radius: 6px; padding-right: 2px; }
+        .p-input-wrap input { background: transparent; border: none; color: white; padding: 8px; font-size: 0.85rem; width: 100%; outline: none; }
+        
+        .voice-btn { background: none; border: none; color: var(--gold); cursor: pointer; padding: 4px; font-size: 1.1rem; }
+        .voice-btn.listening { color: var(--visit); animation: pulse 1s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+
+        .markers { display: flex; gap: 6px; margin-top: 5px; }
+        .marker { font-size: 0.65rem; padding: 2px 6px; background: rgba(0,0,0,0.6); border-radius: 4px; color: #94a3b8; cursor: pointer; border: 1px solid transparent; }
+        .marker.on { background: var(--gold); color: black; font-weight: bold; border-color: white; }
+
+        .win-btn { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 900; background: #0f172a; color: #475569; justify-self: center; }
+        .win-btn.h { background: var(--home); color: white; border-color: white; box-shadow: 0 0 10px var(--home); }
+        .win-btn.v { background: var(--visit); color: white; border-color: white; box-shadow: 0 0 10px var(--visit); }
+
+        footer { background: #0f172a; padding: 16px; display: grid; grid-template-columns: 1fr 2.5fr 1fr; align-items: center; gap: 8px; flex-shrink: 0; border-top: 1px solid #1e293b; }
+        .score-chip { text-align: center; }
+        .score-chip span { font-size: 1.6rem; font-weight: 900; color: var(--gold); }
+        .actions { display: flex; flex-direction: column; gap: 6px; }
+        .btn-submit { background: var(--gold); color: black; border: none; padding: 12px; border-radius: 10px; font-weight: 900; text-transform: uppercase; cursor: pointer; }
+        .btn-copy { background: #334155; color: white; border: none; padding: 6px; border-radius: 6px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-btns">
+        <button class="reset-btn" onclick="resetBoard()">🗑️</button>
+        <a id="view-stats" href="#" target="_blank" class="stats-link-btn">📊 STATS</a>
+    </div>
+    <h1>8-Ball 18 Games</h1>
+    <div style="width:24px"></div>
+</header>
+
+<details id="setup-panel">
+    <summary>⚙️ SETUP: CONFIG & STATS</summary>
+    <div class="settings-content">
+        <label style="font-size: 0.7rem; color: var(--gold);">ROSTER CSV URL:</label>
+        <input type="text" id="sheet-url" placeholder="Paste Google CSV URL here...">
+        
+        <label style="font-size: 0.7rem; color: var(--gold); margin-top: 5px;">STATS PAGE URL (Optional):</label>
+        <input type="text" id="stats-url" placeholder="Paste League Stats URL here...">
+
+        <div class="settings-btns">
+            <button class="btn-load" onclick="saveSettings()">SAVE ALL</button>
+            <button class="btn-clear" onclick="clearSettings()">RESET</button>
+        </div>
+    </div>
+</details>
+
+<main id="scoring-interface">
+    <div class="team-banner">
+        <div class="input-wrapper">
+            <input type="text" id="h-team" placeholder="Home Team" oninput="updateDatalists()">
+            <button class="voice-btn" onclick="startVoice('h-team')">🎤</button>
+        </div>
+        <div class="input-wrapper">
+            <input type="text" id="v-team" placeholder="Visiting Team" oninput="updateDatalists()">
+            <button class="voice-btn" onclick="startVoice('v-team')">🎤</button>
+        </div>
+    </div>
+    <div class="game-grid" id="grid"></div>
+</main>
+
+<footer>
+    <div class="score-chip"><span><span id="h-score">0</span></span></div>
+    <div class="actions">
+        <button class="btn-submit" onclick="handleSubmit()">Submit & Text</button>
+        <button class="btn-copy" onclick="copyResults()">📋 Copy Text</button>
+    </div>
+    <div class="score-chip"><span><span id="v-score">0</span></span></div>
+</footer>
+
+<datalist id="h-roster"></datalist>
+<datalist id="v-roster"></datalist>
+
+<script>
+    let MASTER_ROSTERS = {};
+    let state = Array.from({length: 18}, (_, i) => ({
+        id: i + 1, h: "", v: "", hTR: false, h8B: false, vTR: false, v8B: false, win: null
+    }));
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const savedRosterUrl = localStorage.getItem('user_sheet_url');
+        const savedStatsUrl = localStorage.getItem('user_stats_url');
+        
+        if (savedRosterUrl) {
+            document.getElementById('sheet-url').value = savedRosterUrl;
+            fetchRosters(savedRosterUrl);
+        }
+        if (savedStatsUrl) {
+            document.getElementById('stats-url').value = savedStatsUrl;
+            updateStatsButton(savedStatsUrl);
+        }
+        draw();
+    });
+
+    async function saveSettings() {
+        const rUrl = document.getElementById('sheet-url').value.trim();
+        const sUrl = document.getElementById('stats-url').value.trim();
+
+        if (rUrl && rUrl.includes('output=csv')) {
+            localStorage.setItem('user_sheet_url', rUrl);
+            await fetchRosters(rUrl);
+        }
+        
+        if (sUrl) {
+            localStorage.setItem('user_stats_url', sUrl);
+            updateStatsButton(sUrl);
+        }
+
+        document.getElementById('setup-panel').open = false;
+        alert("Settings Saved!");
+    }
+
+    function updateStatsButton(url) {
+        const btn = document.getElementById('view-stats');
+        if (url) {
+            btn.href = url;
+            btn.style.display = 'block';
+        } else {
+            btn.style.display = 'none';
+        }
+    }
+
+    async function fetchRosters(url) {
+        try {
+            const response = await fetch(url + (url.includes('?') ? '&' : '?') + 'cb=' + new Date().getTime());
+            const data = await response.text();
+            parseCSV(data);
+        } catch (err) { console.error("Fetch error", err); }
+    }
+
+    function parseCSV(csvText) {
+        const lines = csvText.split(/\r?\n/);
+        const newRosters = {};
+        lines.forEach((line, index) => {
+            if (index === 0 || !line.trim()) return; 
+            const parts = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+            const team = parts[0]?.replace(/^"|"$/g, '').trim().toUpperCase();
+            const player = parts[1]?.replace(/^"|"$/g, '').trim();
+            if (team && player) {
+                if (!newRosters[team]) newRosters[team] = [];
+                newRosters[team].push(player);
+            }
+        });
+        MASTER_ROSTERS = newRosters;
+        updateDatalists();
+    }
+
+    function updateDatalists() {
+        const hTeam = document.getElementById('h-team').value.toUpperCase();
+        const vTeam = document.getElementById('v-team').value.toUpperCase();
+        document.getElementById('h-roster').innerHTML = (MASTER_ROSTERS[hTeam] || []).map(p => `<option value="${p}">`).join('');
+        document.getElementById('v-roster').innerHTML = (MASTER_ROSTERS[vTeam] || []).map(p => `<option value="${p}">`).join('');
+    }
+
+    function clearSettings() {
+        if(confirm("Clear all URLs?")) {
+            localStorage.clear();
+            location.reload();
+        }
+    }
+
+    function draw() {
+        const grid = document.getElementById('grid');
+        grid.innerHTML = state.map(g => `
+            <div class="game-row">
+                <div class="game-num">${g.id}</div>
+                <div class="player-box">
+                    <div class="p-input-wrap">
+                        <input type="text" id="h-in-${g.id}" list="h-roster" placeholder="Home" value="${g.h}" oninput="state[${g.id-1}].h=this.value">
+                        <button class="voice-btn" style="font-size:0.8rem" onclick="startVoice('h-in-${g.id}', ${g.id-1}, 'h')">🎤</button>
+                    </div>
+                    <div class="markers">
+                        <span class="marker ${g.hTR?'on':''}" onclick="setExclusiveMarker(${g.id}, 'hTR')">TR</span>
+                        <span class="marker ${g.h8B?'on':''}" onclick="setExclusiveMarker(${g.id}, 'h8B')">8B</span>
+                    </div>
+                </div>
+                <div class="player-box">
+                    <div class="p-input-wrap">
+                        <input type="text" id="v-in-${g.id}" list="v-roster" placeholder="Visit" value="${g.v}" oninput="state[${g.id-1}].v=this.value">
+                        <button class="voice-btn" style="font-size:0.8rem" onclick="startVoice('v-in-${g.id}', ${g.id-1}, 'v')">🎤</button>
+                    </div>
+                    <div class="markers">
+                        <span class="marker ${g.vTR?'on':''}" onclick="setExclusiveMarker(${g.id}, 'vTR')">TR</span>
+                        <span class="marker ${g.v8B?'on':''}" onclick="setExclusiveMarker(${g.id}, 'v8B')">8B</span>
+                    </div>
+                </div>
+                <div class="win-btn ${g.win||''}" onclick="cycleWin(${g.id})">${g.win ? g.win.toUpperCase() : 'W'}</div>
+            </div>
+        `).join('');
+        document.getElementById('h-score').innerText = state.filter(g => g.win === 'h').length;
+        document.getElementById('v-score').innerText = state.filter(g => g.win === 'v').length;
+    }
+
+    function setExclusiveMarker(gameId, clickedKey) {
+        const g = state[gameId - 1];
+        const active = g[clickedKey];
+        g.hTR = g.h8B = g.vTR = g.v8B = false;
+        if (!active) g[clickedKey] = true;
+        draw();
+    }
+
+    function cycleWin(id) {
+        const g = state[id-1];
+        g.win = g.win === null ? 'h' : (g.win === 'h' ? 'v' : null);
+        draw();
+    }
+
+    function resetBoard() {
+        if(confirm("Reset entire score sheet?")) {
+            state.forEach(g => { g.h=""; g.v=""; g.hTR=g.h8B=g.vTR=g.v8B=false; g.win=null; });
+            document.getElementById('h-team').value = "";
+            document.getElementById('v-team').value = "";
+            draw();
+        }
+    }
+
+    function startVoice(targetId, idx = null, side = null) {
+        const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if(!Speech) return;
+        const recognition = new Speech();
+        const btn = event.currentTarget;
+        recognition.onstart = () => btn.classList.add('listening');
+        recognition.onend = () => btn.classList.remove('listening');
+        recognition.onresult = (e) => {
+            const val = e.results[0][0].transcript;
+            document.getElementById(targetId).value = val;
+            if(idx !== null) state[idx][side] = val;
+            if(targetId.includes('team')) updateDatalists();
+            draw();
+        };
+        recognition.start();
+    }
+
+    function buildMessage() {
+        const hTeam = (document.getElementById('h-team').value || "Home").toUpperCase();
+        const vTeam = (document.getElementById('v-team').value || "Visit").toUpperCase();
+        const hFinal = document.getElementById('h-score').innerText;
+        const vFinal = document.getElementById('v-score').innerText;
+        const divider = "........................................\n";
+
+        let msg = `🎱 LEBANON 8-BALL\n🏠 ${hTeam} (${hFinal})\n🚗 ${vTeam} (${vFinal})\n${divider}\n`;
+        
+        state.forEach(g => {
+            if (g.h || g.v || g.win) {
+                const hM = (g.hTR ? '⭐' : '') + (g.h8B ? '🔥' : '');
+                const vM = (g.vTR ? '⭐' : '') + (g.v8B ? '🔥' : '');
+                const hName = g.h || "P";
+                const vName = g.v || "P";
+                const hWin = g.win === 'h' ? ' ✅' : '';
+                const vWin = g.win === 'v' ? ' ✅' : '';
+
+                msg += `Gm${g.id} ${hName}${hWin}${hM} vs ${vName}${vWin}${vM}\n${divider}`;
+            }
+        });
+        
+        return msg + `\nTr=⭐ 8bb=🔥`;
+    }
+
+    function handleSubmit() {
+        const msg = buildMessage();
+        if (navigator.share) navigator.share({ text: msg }).catch(() => {});
+        else window.location.href = `sms:?body=${encodeURIComponent(msg)}`;
+    }
+
+    function copyResults() {
+        navigator.clipboard.writeText(buildMessage()).then(() => alert("Copied!"));
+    }
+
+    draw();
+</script>
+</body>
+</html>
