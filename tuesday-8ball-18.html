@@ -36,7 +36,6 @@
         summary { color: var(--gold); font-size: 0.75rem; cursor: pointer; padding: 10px; font-weight: bold; list-style: none; text-align: center; }
         .settings-content { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
 
-        /* Status Light Styling */
         .status-container {
             display: flex; align-items: center; justify-content: center; gap: 10px;
             background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid #334155;
@@ -127,11 +126,11 @@
 <main id="scoring-interface">
     <div class="team-banner">
         <div class="input-wrapper">
-            <input type="text" id="h-team" placeholder="Home Team" oninput="updateDatalists()">
+            <input type="text" id="h-team" placeholder="Home Team" list="team-list" oninput="updateDatalists()" onclick="this.readOnly=false" onblur="this.readOnly=true" readonly>
             <button class="voice-btn" onclick="startVoice('h-team')">🎤</button>
         </div>
         <div class="input-wrapper">
-            <input type="text" id="v-team" placeholder="Visiting Team" oninput="updateDatalists()">
+            <input type="text" id="v-team" placeholder="Visiting Team" list="team-list" oninput="updateDatalists()" onclick="this.readOnly=false" onblur="this.readOnly=true" readonly>
             <button class="voice-btn" onclick="startVoice('v-team')">🎤</button>
         </div>
     </div>
@@ -147,6 +146,7 @@
     <div class="score-chip"><span><span id="v-score">0</span></span></div>
 </footer>
 
+<datalist id="team-list"></datalist>
 <datalist id="h-roster"></datalist>
 <datalist id="v-roster"></datalist>
 
@@ -190,7 +190,7 @@
     function setStatus(type) {
         const led = document.getElementById('led');
         const txt = document.getElementById('status-text');
-        led.className = 'led-light'; // Reset
+        led.className = 'led-light'; 
         
         if(type === 'success') {
             led.classList.add('active');
@@ -234,6 +234,8 @@
         MASTER_ROSTERS = newRosters;
         if(Object.keys(MASTER_ROSTERS).length > 0) {
             setStatus('success');
+            // Populate Team List datalist
+            document.getElementById('team-list').innerHTML = Object.keys(MASTER_ROSTERS).map(t => `<option value="${t}">`).join('');
             updateDatalists();
         } else {
             setStatus('error');
@@ -268,7 +270,9 @@
                 <div class="game-num">${g.id}</div>
                 <div class="player-box">
                     <div class="p-input-wrap">
-                        <input type="text" id="h-in-${g.id}" list="h-roster" placeholder="Home" value="${g.h}" oninput="state[${g.id-1}].h=this.value">
+                        <input type="text" id="h-in-${g.id}" list="h-roster" placeholder="Home" value="${g.h}" 
+                               oninput="state[${g.id-1}].h=this.value" 
+                               onclick="this.readOnly=false" onblur="this.readOnly=true" readonly>
                         <button class="voice-btn" style="font-size:0.8rem" onclick="startVoice('h-in-${g.id}', ${g.id-1}, 'h')">🎤</button>
                     </div>
                     <div class="markers">
@@ -278,7 +282,9 @@
                 </div>
                 <div class="player-box">
                     <div class="p-input-wrap">
-                        <input type="text" id="v-in-${g.id}" list="v-roster" placeholder="Visit" value="${g.v}" oninput="state[${g.id-1}].v=this.value">
+                        <input type="text" id="v-in-${g.id}" list="v-roster" placeholder="Visit" value="${g.v}" 
+                               oninput="state[${g.id-1}].v=this.value"
+                               onclick="this.readOnly=false" onblur="this.readOnly=true" readonly>
                         <button class="voice-btn" style="font-size:0.8rem" onclick="startVoice('v-in-${g.id}', ${g.id-1}, 'v')">🎤</button>
                     </div>
                     <div class="markers">
