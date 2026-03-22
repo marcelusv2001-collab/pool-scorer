@@ -9,6 +9,7 @@
             --bg: #020617; --felt: #000080; --gold: #fbbf24;
             --wood: #451a03; --slate: #1e293b; --text: #f8fafc;
             --home: #3b82f6; --visit: #ef4444;
+            --status-off: #475569; --status-on: #22c55e; --status-err: #ef4444;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -34,6 +35,25 @@
         details { background: #1e293b; border-bottom: 1px solid var(--gold); z-index: 100; }
         summary { color: var(--gold); font-size: 0.75rem; cursor: pointer; padding: 10px; font-weight: bold; list-style: none; text-align: center; }
         .settings-content { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+
+        /* Status Light Styling */
+        .status-container {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid #334155;
+        }
+        .led-light {
+            width: 12px; height: 12px; border-radius: 50%;
+            background: var(--status-off); box-shadow: 0 0 2px black;
+        }
+        .led-light.active { 
+            background: var(--status-on); 
+            box-shadow: 0 0 10px var(--status-on);
+            animation: blink 2s infinite;
+        }
+        .led-light.error { background: var(--status-err); box-shadow: 0 0 10px var(--status-err); }
+        #status-text { font-size: 0.7rem; font-weight: bold; color: #94a3b8; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
         .settings-content input { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--gold); background: #020617; color: white; font-size: 0.8rem; }
         .settings-btns { display: flex; gap: 8px; }
         .btn-load { flex: 1; background: var(--gold); border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; }
@@ -86,6 +106,11 @@
 <details id="setup-panel">
     <summary>⚙️ SETUP: CONFIG & STATS</summary>
     <div class="settings-content">
+        <div class="status-container">
+            <div id="led" class="led-light"></div>
+            <span id="status-text">ROSTER: DISCONNECTED</span>
+        </div>
+
         <label style="font-size: 0.7rem; color: var(--gold);">ROSTER CSV URL:</label>
         <input type="text" id="sheet-url" placeholder="Paste Google CSV URL here...">
         
@@ -150,7 +175,7 @@
         const rUrl = document.getElementById('sheet-url').value.trim();
         const sUrl = document.getElementById('stats-url').value.trim();
 
-        if (rUrl && rUrl.includes('output=csv')) {
+        if (rUrl) {
             localStorage.setItem('user_sheet_url', rUrl);
             await fetchRosters(rUrl);
         }
@@ -159,27 +184,38 @@
             localStorage.setItem('user_stats_url', sUrl);
             updateStatsButton(sUrl);
         }
-
         document.getElementById('setup-panel').open = false;
-        alert("Settings Saved!");
     }
 
-    function updateStatsButton(url) {
-        const btn = document.getElementById('view-stats');
-        if (url) {
-            btn.href = url;
-            btn.style.display = 'block';
-        } else {
-            btn.style.display = 'none';
+    function setStatus(type) {
+        const led = document.getElementById('led');
+        const txt = document.getElementById('status-text');
+        led.className = 'led-light'; // Reset
+        
+        if(type === 'success') {
+            led.classList.add('active');
+            txt.innerText = "ROSTER: ACTIVE";
+            txt.style.color = "var(--status-on)";
+        } else if (type === 'error') {
+            led.classList.add('error');
+            txt.innerText = "ROSTER: ERROR";
+            txt.style.color = "var(--status-err)";
         }
     }
 
     async function fetchRosters(url) {
         try {
-            const response = await fetch(url + (url.includes('?') ? '&' : '?') + 'cb=' + new Date().getTime());
+            let fetchUrl = url;
+            if (url.includes('/edit')) fetchUrl = url.replace(/\/edit.*$/, '/export?format=csv');
+            
+            const response = await fetch(fetchUrl + (fetchUrl.includes('?') ? '&' : '?') + 'cb=' + new Date().getTime());
+            if(!response.ok) throw new Error();
             const data = await response.text();
             parseCSV(data);
-        } catch (err) { console.error("Fetch error", err); }
+        } catch (err) { 
+            console.error("Fetch error", err); 
+            setStatus('error');
+        }
     }
 
     function parseCSV(csvText) {
@@ -196,20 +232,32 @@
             }
         });
         MASTER_ROSTERS = newRosters;
-        updateDatalists();
+        if(Object.keys(MASTER_ROSTERS).length > 0) {
+            setStatus('success');
+            updateDatalists();
+        } else {
+            setStatus('error');
+        }
     }
 
     function updateDatalists() {
         const hTeam = document.getElementById('h-team').value.toUpperCase();
         const vTeam = document.getElementById('v-team').value.toUpperCase();
-        document.getElementById('h-roster').innerHTML = (MASTER_ROSTERS[hTeam] || []).map(p => `<option value="${p}">`).join('');
-        document.getElementById('v-roster').innerHTML = (MASTER_ROSTERS[vTeam] || []).map(p => `<option value="${p}">`).join('');
+        
+        const hOptions = (MASTER_ROSTERS[hTeam] || []).map(p => `<option value="${p}">`).join('');
+        const vOptions = (MASTER_ROSTERS[vTeam] || []).map(p => `<option value="${p}">`).join('');
+        
+        document.getElementById('h-roster').innerHTML = hOptions;
+        document.getElementById('v-roster').innerHTML = vOptions;
     }
 
-    function clearSettings() {
-        if(confirm("Clear all URLs?")) {
-            localStorage.clear();
-            location.reload();
+    function updateStatsButton(url) {
+        const btn = document.getElementById('view-stats');
+        if (url) {
+            btn.href = url;
+            btn.style.display = 'block';
+        } else {
+            btn.style.display = 'none';
         }
     }
 
@@ -318,6 +366,13 @@
 
     function copyResults() {
         navigator.clipboard.writeText(buildMessage()).then(() => alert("Copied!"));
+    }
+
+    function clearSettings() {
+        if(confirm("Clear all URLs?")) {
+            localStorage.clear();
+            location.reload();
+        }
     }
 
     draw();
