@@ -58,6 +58,7 @@
         .settings-btns { display: flex; gap: 8px; }
         .btn-load { flex: 1; background: var(--gold); border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         .btn-clear { background: #ef4444; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+        .btn-clear-match { background: #475569; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; width: 100%; margin-top: 5px; }
 
         #scoring-interface { flex: 1; overflow-y: auto; padding: 6px; background: var(--bg); position: relative; }
         .team-banner { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
@@ -131,6 +132,8 @@
 
         <label id="match-label" style="font-size: 0.7rem; color: var(--gold); margin-top: 5px; display:none;">2. SELECT MATCHUP:</label>
         <select id="match-selector" style="display:none;" onchange="loadSelectedMatch()"></select>
+        
+        <button id="clear-match-btn" class="btn-clear-match" style="display:none;" onclick="clearSelectedMatch()">❌ CLEAR MATCH SELECTION</button>
 
         <label style="font-size: 0.7rem; color: var(--gold); margin-top: 5px;">STATS PAGE URL (Optional):</label>
         <input type="text" id="stats-url" placeholder="Paste League Stats URL here...">
@@ -260,9 +263,10 @@
         const date = document.getElementById('week-selector').value;
         const matchLabel = document.getElementById('match-label');
         const matchSelector = document.getElementById('match-selector');
+        const clearBtn = document.getElementById('clear-match-btn');
 
         if (!date) {
-            matchLabel.style.display = matchSelector.style.display = 'none';
+            matchLabel.style.display = matchSelector.style.display = clearBtn.style.display = 'none';
             return;
         }
 
@@ -275,7 +279,7 @@
             matchSelector.appendChild(opt);
         });
 
-        matchLabel.style.display = matchSelector.style.display = 'block';
+        matchLabel.style.display = matchSelector.style.display = clearBtn.style.display = 'block';
     }
 
     function loadSelectedMatch() {
@@ -291,6 +295,15 @@
             document.getElementById('v-team').value = selected.visit;
             draw();
         }
+    }
+
+    function clearSelectedMatch() {
+        document.getElementById('week-selector').value = "";
+        document.getElementById('match-selector').value = "";
+        document.getElementById('h-team').value = "";
+        document.getElementById('v-team').value = "";
+        updateMatchupList();
+        draw();
     }
 
     function showTeamDropdown(e, id) {
