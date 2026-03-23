@@ -72,7 +72,6 @@
         .p-input-wrap { display: flex; align-items: center; background: rgba(0,0,0,0.4); border-radius: 6px; padding-right: 2px; }
         .p-input-wrap input { background: transparent; border: none; color: white; padding: 8px; font-size: 0.85rem; width: 100%; outline: none; cursor: pointer; }
         
-        /* Custom Styled Dropdowns */
         .custom-dropdown {
             position: absolute; top: 100%; left: 0; width: 100%; 
             background: var(--dropdown-bg); border: 1px solid var(--gold); 
@@ -124,7 +123,7 @@
             <div id="led" class="led-light"></div>
             <span id="status-text">ROSTER: DISCONNECTED</span>
         </div>
-        <label style="font-size: 0.7rem; color: var(--gold);">ROSTER CSV URL:</label>
+        <label style="font-size: 0.7rem; color: var(--gold);">MASTER DATA CSV URL:</label>
         <input type="text" id="sheet-url" placeholder="Paste Google CSV URL here...">
         <label style="font-size: 0.7rem; color: var(--gold); margin-top: 5px;">STATS PAGE URL (Optional):</label>
         <input type="text" id="stats-url" placeholder="Paste League Stats URL here...">
@@ -186,8 +185,8 @@
         const led = document.getElementById('led');
         const txt = document.getElementById('status-text');
         led.className = 'led-light'; 
-        if(type === 'success') { led.classList.add('active'); txt.innerText = "ROSTER: ACTIVE"; txt.style.color = "var(--status-on)"; }
-        else { led.classList.add('error'); txt.innerText = "ROSTER: ERROR"; txt.style.color = "var(--status-err)"; }
+        if(type === 'success') { led.classList.add('active'); txt.innerText = "DATA: ACTIVE"; txt.style.color = "var(--status-on)"; }
+        else { led.classList.add('error'); txt.innerText = "DATA: ERROR"; txt.style.color = "var(--status-err)"; }
     }
 
     async function fetchRosters(url) {
@@ -202,16 +201,28 @@
     function parseCSV(csvText) {
         const lines = csvText.split(/\r?\n/);
         const newRosters = {};
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
         lines.forEach((line, index) => {
             if (index === 0 || !line.trim()) return; 
-            const parts = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-            const team = parts[0]?.replace(/^"|"$/g, '').trim().toUpperCase();
-            const player = parts[1]?.replace(/^"|"$/g, '').trim();
-            if (team && player) {
+            const parts = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(s => s.replace(/^"|"$/g, '').trim());
+            
+            const rowType = parts[0]?.toUpperCase(); // e.g., "ROSTER" or "SCHEDULE"
+            const col2 = parts[1]; // Team (Roster) or Home (Schedule)
+            const col3 = parts[2]; // Player (Roster) or Visitor (Schedule)
+            const col4 = parts[3]; // Date (Schedule)
+
+            if (rowType === "ROSTER" && col2 && col3) {
+                const team = col2.toUpperCase();
                 if (!newRosters[team]) newRosters[team] = [];
-                newRosters[team].push(player);
+                newRosters[team].push(col3);
+            } 
+            else if (rowType === "SCHEDULE" && col2 && col3 && col4 === today) {
+                document.getElementById('h-team').value = col2;
+                document.getElementById('v-team').value = col3;
             }
         });
+
         MASTER_ROSTERS = newRosters;
         setStatus(Object.keys(MASTER_ROSTERS).length > 0 ? 'success' : 'error');
     }
