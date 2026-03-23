@@ -126,8 +126,11 @@
         <label style="font-size: 0.7rem; color: var(--gold);">MASTER DATA CSV URL:</label>
         <input type="text" id="sheet-url" placeholder="Paste Google CSV URL here...">
         
-        <label style="font-size: 0.7rem; color: var(--gold); margin-top: 5px;">SELECT WEEK/DATE:</label>
-        <select id="week-selector" onchange="loadSelectedWeek()"></select>
+        <label style="font-size: 0.7rem; color: var(--gold); margin-top: 5px;">1. SELECT DATE:</label>
+        <select id="week-selector" onchange="updateMatchupList()"></select>
+
+        <label id="match-label" style="font-size: 0.7rem; color: var(--gold); margin-top: 5px; display:none;">2. SELECT MATCHUP:</label>
+        <select id="match-selector" style="display:none;" onchange="loadSelectedMatch()"></select>
 
         <label style="font-size: 0.7rem; color: var(--gold); margin-top: 5px;">STATS PAGE URL (Optional):</label>
         <input type="text" id="stats-url" placeholder="Paste League Stats URL here...">
@@ -231,11 +234,11 @@
         MASTER_ROSTERS = newRosters;
         MASTER_SCHEDULE = newSchedule;
         
-        populateWeekSelector(today);
+        populateDateSelector(today);
         setStatus(Object.keys(MASTER_ROSTERS).length > 0 ? 'success' : 'error');
     }
 
-    function populateWeekSelector(today) {
+    function populateDateSelector(today) {
         const selector = document.getElementById('week-selector');
         const dates = [...new Set(MASTER_SCHEDULE.map(s => s.date))].sort();
         
@@ -247,21 +250,45 @@
             selector.appendChild(opt);
         });
 
-        // Auto-load today if exists
         if (dates.includes(today)) {
             selector.value = today;
-            loadSelectedWeek();
+            updateMatchupList();
         }
     }
 
-    function loadSelectedWeek() {
-        const selectedDate = document.getElementById('week-selector').value;
-        if (!selectedDate) return;
-        
-        const match = MASTER_SCHEDULE.find(s => s.date === selectedDate);
-        if (match) {
-            document.getElementById('h-team').value = match.home;
-            document.getElementById('v-team').value = match.visit;
+    function updateMatchupList() {
+        const date = document.getElementById('week-selector').value;
+        const matchLabel = document.getElementById('match-label');
+        const matchSelector = document.getElementById('match-selector');
+
+        if (!date) {
+            matchLabel.style.display = matchSelector.style.display = 'none';
+            return;
+        }
+
+        const matches = MASTER_SCHEDULE.filter(s => s.date === date);
+        matchSelector.innerHTML = '<option value="">-- Select Your Game --</option>';
+        matches.forEach((m, idx) => {
+            const opt = document.createElement('option');
+            opt.value = idx;
+            opt.innerText = `${m.home} vs ${m.visit}`;
+            matchSelector.appendChild(opt);
+        });
+
+        matchLabel.style.display = matchSelector.style.display = 'block';
+    }
+
+    function loadSelectedMatch() {
+        const date = document.getElementById('week-selector').value;
+        const matchIdx = document.getElementById('match-selector').value;
+        if (date === "" || matchIdx === "") return;
+
+        const matches = MASTER_SCHEDULE.filter(s => s.date === date);
+        const selected = matches[matchIdx];
+
+        if (selected) {
+            document.getElementById('h-team').value = selected.home;
+            document.getElementById('v-team').value = selected.visit;
             draw();
         }
     }
