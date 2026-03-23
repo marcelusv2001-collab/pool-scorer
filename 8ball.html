@@ -43,7 +43,7 @@
 
         .app-bar h1 { font-size: 1.1rem; margin: 0; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; }
 
-        .container { width: 95%; max-width: 500px; margin: 12px auto; display: flex; flex-direction: column; gap: 12px; }
+        .container { width: 95%; max-width: 500px; margin: 12px auto; display: flex; flex-direction: column; gap: 12px; transition: all 0.3s ease; }
 
         .card {
             background: var(--surface);
@@ -51,7 +51,12 @@
             padding: 16px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
             border: 1px solid #2d333b;
+            transition: all 0.3s ease;
         }
+
+        /* Grayed out state for ended matches */
+        .match-ended { filter: grayscale(100%); opacity: 0.7; pointer-events: none; }
+        .match-ended .card { background: #16181d; border-color: #222; }
 
         .row { display: flex; gap: 8px; width: 100%; margin-bottom: 8px; }
 
@@ -74,7 +79,7 @@
 
         .score-banner { text-align: center; font-size: 1.2rem; font-weight: 900; color: var(--gold); margin: 5px 0; }
         
-        .grid { display: grid; grid-template-columns: 1fr 80px 1fr; gap: 12px; }
+        .grid { display: grid; grid-template-columns: 1fr 100px 1fr; gap: 8px; align-items: end; }
         
         .btn-stack { display: flex; flex-direction: column; gap: 10px; }
         
@@ -87,10 +92,21 @@
         .h-btn { background: var(--blue); border-bottom: 4px solid #08306b; }
         .a-btn { background: var(--red); border-bottom: 4px solid #7f1414; }
         
+        /* Turn Indicator Styling */
+        .turn-display {
+            text-align: center;
+            font-weight: 900;
+            color: var(--gold);
+            line-height: 1.1;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        #turnName { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
         .inn-btn { 
             background: #121212; border: 2px solid var(--gold); color: var(--gold); 
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            border-radius: 50%; width: 75px; height: 75px; align-self: center; margin: 0 auto;
+            border-radius: 50%; width: 65px; height: 65px; align-self: center; margin: 0 auto;
         }
 
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 5px; }
@@ -110,7 +126,7 @@
         .footer-btns button { padding: 14px; border: none; border-radius: 12px; color: white; font-weight: bold; font-size: 0.85rem; }
 
         /* Summary Overlay Styling */
-        #summaryOverlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.95); justify-content: center; align-items: center; z-index: 100; }
+        #summaryOverlay, #helpOverlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.95); justify-content: center; align-items: center; z-index: 100; }
         
         .summary-card { 
             background: #ffffff; color: #000000; width: 95%; max-width: 600px; border-radius: 8px; padding: 12px; 
@@ -135,18 +151,27 @@
 
         #modal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.95); justify-content: center; align-items: center; z-index: 100; }
         .m-content { background: var(--surface); padding: 20px; border-radius: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 90%; max-width: 400px; }
+
+        /* Help Styling */
+        .help-content { background: var(--surface); color: var(--text-main); width: 90%; max-width: 500px; border-radius: var(--radius); padding: 20px; max-height: 80vh; overflow-y: auto; border: 1px solid var(--gold); }
+        .help-content h2 { color: var(--gold); margin-top: 0; }
+        .help-content ul { padding-left: 20px; font-size: 0.9rem; line-height: 1.5; }
+        .help-content b { color: var(--gold); }
     </style>
 </head>
 <body>
 
 <div class="app-bar">
-    <h1>8-Ball 3Pt. Offline Scorekeeper</h1>
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <button onclick="document.getElementById('helpOverlay').style.display='flex'" style="background:none; border: 1px solid var(--gold); color: var(--gold); border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-weight: bold;">?</button>
+        <h1>8-Ball 3Pt.</h1>
+    </div>
     <div style="font-size: 0.8rem; font-weight: bold; color: var(--text-dim);">
         Match <select id="mSelect" onchange="switchMatch(this.value)" style="padding:4px; background:#000; color:#fff;"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
     </div>
 </div>
 
-<div class="container">
+<div class="container" id="mainContainer">
     <div class="card" style="padding: 10px 16px;">
         <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-dim);">
             <span id="race">Race: 2/2</span>
@@ -182,7 +207,13 @@
                 <button class="score-btn h-btn m-ctrl" onclick="openRack('H')">RACK</button>
             </div>
             
-            <button class="score-btn inn-btn m-ctrl" onclick="inc('inn')">INN<br><span id="inn" style="font-size:1.4rem">0</span></button>
+            <div style="display: flex; flex-direction: column; justify-content: flex-end; height: 100%;">
+                <div class="turn-display" id="turnIndicator">
+                    <span id="turnName" style="font-size: 0.75rem;">---</span>
+                    <span style="font-size: 0.6rem;">Turn is<br>Over</span>
+                </div>
+                <button class="score-btn inn-btn m-ctrl" onclick="inc('inn')">INN<br><span id="inn" style="font-size:1.2rem">0</span></button>
+            </div>
             
             <div class="btn-stack">
                 <button class="score-btn a-btn m-ctrl" onclick="inc('toA')">TO: <span id="toA">0</span></button>
@@ -212,7 +243,7 @@
         <div class="log" id="matchLog"></div>
     </div>
 
-    <div class="footer-btns">
+    <div class="footer-btns" id="footerControls">
         <button onclick="endMatch()" class="m-ctrl" style="background:var(--felt)">END MATCH</button>
         <button onclick="undo()" style="background:#444;">UNDO</button>
         <button onclick="resetSession()" style="background:var(--red); grid-column: span 2; opacity: 0.7; font-size: 0.7rem;">RESET ALL DATA</button>
@@ -253,6 +284,26 @@
             <button onclick="shareReport()" style="flex:1; padding:14px; background:var(--felt); color:#fff; border:none; border-radius:8px; font-weight:900; font-size:0.9rem; text-transform:uppercase;">SHARE REPORT</button>
             <button onclick="document.getElementById('summaryOverlay').style.display='none'" style="flex:1; padding:14px; background:#000; color:#fff; border:none; border-radius:8px; font-weight:900; font-size:0.9rem; text-transform:uppercase;">CLOSE</button>
         </div>
+    </div>
+</div>
+
+<div id="helpOverlay" onclick="this.style.display='none'">
+    <div class="help-content" onclick="event.stopPropagation()">
+        <h2>How to Use</h2>
+        <ul>
+            <li><b>Setup:</b> Enter Team Names and select current Match (1-5).</li>
+            <li><b>Players:</b> Enter names and select Skill Levels (SL). The app automatically calculates the race goal.</li>
+            <li><b>Lag:</b> Select who won the lag (Required to start).</li>
+            <li><b>Scoring:</b> 
+                <ul>
+                    <li>Track <b>INN</b> (Innings), <b>DEF</b> (Defensive shots), and <b>TO</b> (Timeouts).</li>
+                    <li>Click <b>RACK</b> when a game ends to select the win type (Win, Break & Run, etc.).</li>
+                </ul>
+            </li>
+            <li><b>Status:</b> Once a match ends, the screen will turn grey to show it is locked.</li>
+            <li><b>Share:</b> Use "View Summary" -> "SHARE REPORT" to send a full report via Email or Message.</li>
+        </ul>
+        <button onclick="document.getElementById('helpOverlay').style.display='none'" style="width:100%; padding:12px; background:var(--gold); border:none; border-radius:8px; font-weight:bold; margin-top:10px;">GOT IT</button>
     </div>
 </div>
 
@@ -317,6 +368,28 @@ function openRack(winner) {
 
 function updateUI() {
     let m = matches[currentM];
+    const container = document.getElementById('mainContainer');
+    const foot = document.getElementById('footerControls');
+    
+    // Grayscale logic
+    if (m.isEnded) {
+        container.classList.add('match-ended');
+        foot.style.pointerEvents = "auto";
+    } else {
+        container.classList.remove('match-ended');
+    }
+
+    // Turn Logic
+    const turnNameEl = document.getElementById('turnName');
+    if (m.lag) {
+        const loserName = m.lag === 'H' ? (m.ap || 'AWAY') : (m.hp || 'HOME');
+        turnNameEl.innerText = loserName.toUpperCase();
+        // Dynamic font sizing
+        turnNameEl.style.fontSize = loserName.length > 8 ? "0.55rem" : "0.75rem";
+    } else {
+        turnNameEl.innerText = "---";
+    }
+
     document.getElementById('toH').innerText = m.toH; document.getElementById('toA').innerText = m.toA;
     document.getElementById('defH').innerText = m.defH; document.getElementById('defA').innerText = m.defA;
     document.getElementById('inn').innerText = m.inn; 
@@ -398,20 +471,35 @@ function showSummary() {
     document.getElementById('summaryOverlay').style.display = 'flex';
 }
 
-function shareReport() {
-    const header = document.getElementById('sumTeams').innerText + " - MATCH REPORT\n";
-    const date = document.getElementById('sumDate').innerText + "\n\n";
-    const body = document.getElementById('matchLog').innerText;
-    const totals = "\nTOTAL POINTS:\n" + document.getElementById('sumTotalPts').innerText.replace(/<br>/g, "\n") + 
-                   "\n\nTOTAL SKILL LEVELS:\n" + document.getElementById('sumTotalSl').innerText.replace(/<br>/g, "\n");
+async function shareReport() {
+    const hTeam = (document.getElementById('hTeam').value || "HOME").toUpperCase();
+    const aTeam = (document.getElementById('aTeam').value || "AWAY").toUpperCase();
+    const summaryCardHtml = document.querySelector('.summary-card').innerHTML;
     
-    const fullText = header + date + body + totals;
+    const reportHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body { background: #000; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }.summary-card { background: #fff; color: #000; width: 100%; max-width: 600px; border-radius: 8px; padding: 12px; border: 2px solid #000; }.summary-header { border-bottom: 3px solid #000; padding-bottom: 8px; margin-bottom: 8px; text-align: center; }.summary-header h2 { margin: 0; font-size: 1.3rem; text-transform: uppercase; font-weight: 900; }.summary-log-container { background: #f0f0f0; border: 2px solid #000; padding: 5px; max-height: none; overflow-x: auto; margin-bottom: 8px; }pre { margin: 0; font-family: 'Courier New', monospace; font-size: 0.7rem; line-height: 1.1; white-space: pre; font-weight: 700; }.summary-footer-table { width: 100%; border-collapse: collapse; margin-top: 5px; }.summary-footer-table td { padding: 10px; border: 2px solid #000; background: #fff; }.label-cell { text-transform: uppercase; font-size: 0.75rem; font-weight: 900; display: block; background: #ddd; padding: 4px; border-bottom: 2px solid #000; margin-bottom: 6px; }.value-cell { font-size: 1.1rem; font-weight: 950; line-height: 1.5; }.row { display: none; }</style></head><body><div class="summary-card">${summaryCardHtml}</div></body></html>`;
 
-    if (navigator.share) {
-        navigator.share({ title: 'Match Report', text: fullText }).catch(console.error);
+    const blob = new Blob([reportHtml], { type: 'text/html' });
+    const file = new File([blob], `Match_Report_${hTeam}_vs_${aTeam}.html`, { type: 'text/html' });
+
+    const shareData = {
+        title: `${hTeam} vs ${aTeam} - Match Report`,
+        text: `Pool Match Report: ${hTeam} vs ${aTeam}`,
+        files: [file]
+    };
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+            await navigator.share(shareData);
+        } catch (err) {
+            console.log("Share failed:", err);
+        }
     } else {
-        copyLog();
-        alert("Share not supported on this browser. Full report has been COPIED to clipboard instead.");
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Match_Report_${hTeam}_vs_${aTeam}.html`;
+        a.click();
+        alert("Sharing not supported. File downloaded.");
     }
 }
 
