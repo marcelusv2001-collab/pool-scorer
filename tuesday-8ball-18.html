@@ -30,8 +30,27 @@
         header h1 { font-size: 0.9rem; margin: 0; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; }
         
         .header-btns { display: flex; gap: 15px; align-items: center; }
-        .reset-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; }
+        .reset-btn, .help-trigger { background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 0; margin: 0; }
+        .help-trigger { font-size: 1.4rem; color: var(--gold); }
         .stats-link-btn { background: var(--gold); color: black; border: none; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; text-decoration: none; display: none; }
+
+        /* Help Modal Styles */
+        #help-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 2000;
+            display: none; padding: 20px; overflow-y: auto;
+        }
+        .help-content {
+            background: var(--slate); border: 2px solid var(--gold);
+            border-radius: 12px; padding: 20px; max-width: 500px; margin: 0 auto;
+        }
+        .help-content h2 { color: var(--gold); margin-top: 0; font-size: 1.2rem; }
+        .help-content h3 { color: var(--gold); font-size: 0.9rem; margin-top: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px; }
+        .help-content p, .help-content li { font-size: 0.85rem; line-height: 1.4; color: #cbd5e1; }
+        .help-close {
+            background: var(--gold); color: black; border: none; width: 100%;
+            padding: 12px; border-radius: 8px; font-weight: bold; margin-top: 20px; cursor: pointer;
+        }
 
         details { background: #1e293b; border-bottom: 1px solid var(--gold); z-index: 100; }
         summary { color: var(--gold); font-size: 0.75rem; cursor: pointer; padding: 10px; font-weight: bold; list-style: none; text-align: center; }
@@ -108,13 +127,39 @@
 </head>
 <body onclick="closeAllDropdowns(event)">
 
+<div id="help-modal">
+    <div class="help-content">
+        <h2>How to use Lebanon 8-Ball</h2>
+        
+        <h3>1. Setup & Data</h3>
+        <p>Click <b>SETUP</b> and paste your Google Sheet CSV URL. Once saved, the LED will turn green. You can then select a <b>Date</b> and a specific <b>Matchup</b> to auto-load teams.</p>
+        
+        <h3>2. Selecting Players</h3>
+        <p>Tap a player box to see the roster for that team. If a player is missing, click <b>"Add New Player"</b> at the top of the menu to type their name manually.</p>
+        
+        <h3>3. Voice Commands</h3>
+        <p>Click the 🎤 icon next to any input. Speak the name clearly, and it will be entered automatically.</p>
+        
+        <h3>4. Scoring & Wins</h3>
+        <p>Tap the <b>"W"</b> circle on the right. It cycles through: Home Win (Blue), Visitor Win (Red), and Clear. Scores at the bottom update automatically.</p>
+        
+        <h3>5. Bonus Markers</h3>
+        <p><b>TR (Table Run):</b> 1st turn finish. <br><b>8B (8-Ball Break):</b> 8-ball on the break.</p>
+        
+        <h3>6. Finalizing</h3>
+        <p>Click <b>Submit & Text</b> to send results to the league group via SMS or social apps. Use <b>Copy Text</b> for a quick clipboard copy.</p>
+
+        <button class="help-close" onclick="toggleHelp()">GOT IT!</button>
+    </div>
+</div>
+
 <header>
     <div class="header-btns">
         <button class="reset-btn" onclick="resetBoard()">🗑️</button>
         <a id="view-stats" href="#" target="_blank" class="stats-link-btn">📊 STATS</a>
     </div>
     <h1>8-Ball 18 Games</h1>
-    <div style="width:24px"></div>
+    <button class="help-trigger" onclick="toggleHelp()">❓</button>
 </header>
 
 <details id="setup-panel">
@@ -183,6 +228,11 @@
         if (savedStatsUrl) updateStatsButton(savedStatsUrl);
         draw();
     });
+
+    function toggleHelp() {
+        const modal = document.getElementById('help-modal');
+        modal.style.display = modal.style.display === 'block' ? 'none' : 'block';
+    }
 
     async function saveSettings() {
         const rUrl = document.getElementById('sheet-url').value.trim();
