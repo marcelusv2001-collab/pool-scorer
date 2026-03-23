@@ -54,7 +54,7 @@
         #status-text { font-size: 0.7rem; font-weight: bold; color: #94a3b8; }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
 
-        .settings-content input { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--gold); background: #020617; color: white; font-size: 0.8rem; }
+        .settings-content input, .settings-content select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--gold); background: #020617; color: white; font-size: 0.8rem; }
         .settings-btns { display: flex; gap: 8px; }
         .btn-load { flex: 1; background: var(--gold); border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         .btn-clear { background: #ef4444; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
@@ -125,6 +125,10 @@
         </div>
         <label style="font-size: 0.7rem; color: var(--gold);">MASTER DATA CSV URL:</label>
         <input type="text" id="sheet-url" placeholder="Paste Google CSV URL here...">
+        
+        <label style="font-size: 0.7rem; color: var(--gold); margin-top: 5px;">SELECT WEEK/DATE:</label>
+        <select id="week-selector" onchange="loadSelectedWeek()"></select>
+
         <label style="font-size: 0.7rem; color: var(--gold); margin-top: 5px;">STATS PAGE URL (Optional):</label>
         <input type="text" id="stats-url" placeholder="Paste League Stats URL here...">
         <div class="settings-btns">
@@ -161,6 +165,7 @@
 
 <script>
     let MASTER_ROSTERS = {};
+    let MASTER_SCHEDULE = [];
     let state = Array.from({length: 18}, (_, i) => ({
         id: i + 1, h: "", v: "", hTR: false, h8B: false, vTR: false, v8B: false, win: null
     }));
@@ -201,30 +206,64 @@
     function parseCSV(csvText) {
         const lines = csvText.split(/\r?\n/);
         const newRosters = {};
-        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const newSchedule = [];
+        const today = new Date().toISOString().split('T')[0];
 
         lines.forEach((line, index) => {
             if (index === 0 || !line.trim()) return; 
             const parts = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(s => s.replace(/^"|"$/g, '').trim());
             
-            const rowType = parts[0]?.toUpperCase(); // e.g., "ROSTER" or "SCHEDULE"
-            const col2 = parts[1]; // Team (Roster) or Home (Schedule)
-            const col3 = parts[2]; // Player (Roster) or Visitor (Schedule)
-            const col4 = parts[3]; // Date (Schedule)
+            const rowType = parts[0]?.toUpperCase();
+            const col2 = parts[1];
+            const col3 = parts[2];
+            const col4 = parts[3];
 
             if (rowType === "ROSTER" && col2 && col3) {
                 const team = col2.toUpperCase();
                 if (!newRosters[team]) newRosters[team] = [];
                 newRosters[team].push(col3);
             } 
-            else if (rowType === "SCHEDULE" && col2 && col3 && col4 === today) {
-                document.getElementById('h-team').value = col2;
-                document.getElementById('v-team').value = col3;
+            else if (rowType === "SCHEDULE" && col2 && col3 && col4) {
+                newSchedule.push({ home: col2, visit: col3, date: col4 });
             }
         });
 
         MASTER_ROSTERS = newRosters;
+        MASTER_SCHEDULE = newSchedule;
+        
+        populateWeekSelector(today);
         setStatus(Object.keys(MASTER_ROSTERS).length > 0 ? 'success' : 'error');
+    }
+
+    function populateWeekSelector(today) {
+        const selector = document.getElementById('week-selector');
+        const dates = [...new Set(MASTER_SCHEDULE.map(s => s.date))].sort();
+        
+        selector.innerHTML = '<option value="">-- Choose a Date --</option>';
+        dates.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d;
+            opt.innerText = d + (d === today ? ' (TODAY)' : '');
+            selector.appendChild(opt);
+        });
+
+        // Auto-load today if exists
+        if (dates.includes(today)) {
+            selector.value = today;
+            loadSelectedWeek();
+        }
+    }
+
+    function loadSelectedWeek() {
+        const selectedDate = document.getElementById('week-selector').value;
+        if (!selectedDate) return;
+        
+        const match = MASTER_SCHEDULE.find(s => s.date === selectedDate);
+        if (match) {
+            document.getElementById('h-team').value = match.home;
+            document.getElementById('v-team').value = match.visit;
+            draw();
+        }
     }
 
     function showTeamDropdown(e, id) {
