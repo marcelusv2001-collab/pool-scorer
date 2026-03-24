@@ -3,314 +3,330 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>APA 9-Ball Ultimate Tracker</title>
+    <title>APA 9-Ball Elite Scorekeeper</title>
     <style>
         :root { 
-            --bg: #0d1117; --surface: #161b22; --gold: #ffea00; 
-            --blue: #2196f3; --red: #f44336; --text: #f0f6fc;
-            --ball-1: #ffeb3b; --ball-2: #0288d1; --ball-3: #d32f2f;
-            --ball-4: #7b1fa2; --ball-5: #fb8c00; --ball-6: #388e3c;
-            --ball-7: #8d6e63; --ball-8: #212121; --ball-9: #fff176;
+            --bg: #0d1117; --surface: #161b22; --gold: #ffd600; 
+            --blue: #58a6ff; --red: #ff7b72; --text: #f0f6fc;
             --border: #30363d;
+            --b1: #f9e04b; --b2: #0277bd; --b3: #c62828; --b4: #6a1b9a; 
+            --b5: #ef6c00; --b6: #2e7d32; --b7: #5d4037; --b8: #111; --b9: #f9e04b;
         }
 
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; padding-bottom: 60px; }
-        .card { background: var(--surface); border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid var(--border); position: relative;}
-        
-        .team-header { display: grid; grid-template-columns: 1fr 40px 1fr; gap: 10px; text-align: center; margin-bottom: 5px; }
-        .team-total { font-size: 1.8rem; font-weight: 900; color: var(--gold); }
-        
-        .match-nav { display: flex; gap: 4px; margin-bottom: 15px; }
-        .nav-btn { flex: 1; padding: 10px 5px; background: #21262d; border: 1px solid var(--border); color: #8b949e; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: bold;}
-        .nav-btn.active { background: var(--gold); color: #000; }
-
-        .score-grid { display: grid; grid-template-columns: 1fr 60px 1fr; align-items: center; text-align: center; }
-        .match-pts { font-size: 2.8rem; font-weight: 900; line-height: 1; margin: 5px 0; }
-        .sl-sel { background: #30363d; color: white; border: none; border-radius: 4px; padding: 6px; font-size: 0.8rem; width: 100%; margin-top: 5px;}
-        
-        .ball-rack { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin: 15px 0; }
-        .ball {
-            width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; 
-            justify-content: center; font-size: 1rem; font-weight: bold; color: #000;
-            cursor: pointer; transition: 0.1s; border: 3px solid transparent;
+        body { 
+            background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; 
+            margin: 0; padding: 10px; padding-bottom: 40px;
+            height: 100dvh; display: flex; flex-direction: column; box-sizing: border-box; 
         }
-        .ball.pocketed { opacity: 0.05; transform: scale(0.6); pointer-events: none; }
-        .ball.dead { opacity: 0.4; border-color: var(--red); pointer-events: none; transform: scale(0.85); }
         
-        .b1{background:var(--ball-1)} .b2{background:var(--ball-2)} .b3{background:var(--ball-3)} 
-        .b4{background:var(--ball-4)} .b5{background:var(--ball-5)} .b6{background:var(--ball-6)} 
-        .b7{background:var(--ball-7)} .b8{background:var(--ball-8); color:#fff} .b9{background:var(--ball-9); border: 2px dashed #000;}
-
-        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .btn { padding: 12px 5px; border-radius: 8px; border: 1px solid var(--border); background: #21262d; color: white; font-size: 0.75rem; font-weight: bold; cursor: pointer; }
-        .turn-btn.active { background: #fff !important; color: #000 !important; }
+        .header-compact { flex-shrink: 0; display: grid; grid-template-columns: 1fr 1.5fr 1fr; background: var(--surface); border: 2px solid var(--border); border-radius: 8px; padding: 8px; margin-bottom: 8px; align-items: center; }
+        .t-pts { font-size: 2rem; font-weight: 900; color: var(--gold); line-height: 1; }
         
-        .locked-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10; border-radius:12px; display:flex; align-items:center; justify-content:center; flex-direction:column; font-weight:900; color:var(--red); border:2px solid var(--red); }
+        .center-stats { text-align: center; border-left: 1px solid #333; border-right: 1px solid #333; padding: 0 5px; }
+        .big-stat-label { font-size: 0.6rem; font-weight: 900; color: #8b949e; text-transform: uppercase; }
+        .big-stat-value { font-size: 2rem; font-weight: 900; line-height: 1; display: block; }
 
-        table { width: 100%; border-collapse: collapse; font-size: 0.65rem; }
-        th { color: #8b949e; border-bottom: 1px solid var(--border); padding: 5px; }
-        td { padding: 6px 2px; border-bottom: 1px solid #21262d; text-align: center; }
+        #game-container { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 100; align-items: center; justify-content: center; flex-direction: column; }
-        .modal-card { background: var(--surface); padding: 20px; border-radius: 12px; border: 1px solid var(--gold); width: 85%; text-align: center; max-height: 80vh; overflow-y: auto; }
-        .br-badge { color: var(--gold); font-weight: bold; font-size: 0.5rem; }
+        .nav-row { flex-shrink: 0; display: flex; gap: 3px; margin-bottom: 8px; }
+        .nav-btn { flex: 1; padding: 8px 0; background: #21262d; border: 1px solid var(--border); color: #8b949e; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
+        .nav-btn.active { background: var(--gold); color: #000; border-color: var(--gold); }
+
+        .game-status-banner { background: #30363d; color: var(--gold); text-align: center; font-weight: 900; font-size: 0.8rem; padding: 4px; border-radius: 6px; margin-bottom: 8px; text-transform: uppercase; border: 1px solid #444; }
+
+        .player-card { background: var(--surface); border-radius: 12px; padding: 10px; border: 2px solid var(--border); margin-bottom: 8px; position: relative; }
+        .player-card.active { border-color: var(--gold); box-shadow: inset 0 0 15px rgba(255, 214, 0, 0.15); }
+        .p-score { font-size: 3.5rem; font-weight: 900; line-height: 1; margin-right: 12px; }
+        
+        .lag-badge { background: var(--blue); color: #000; font-size: 0.5rem; padding: 2px 4px; border-radius: 3px; margin-left: 5px; vertical-align: middle; font-weight: 900; }
+
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 5px; }
+        .stat-box { background: #000; border: 1px solid #333; border-radius: 6px; padding: 3px; text-align: center; }
+        .stat-label { font-size: 0.5rem; color: #8b949e; text-transform: uppercase; display: block; }
+        .stat-value { font-size: 1rem; font-weight: 900; color: #fff; }
+
+        .tray { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 8px; min-height: 20px; padding: 5px; background: rgba(0,0,0,0.3); border-radius: 6px; }
+        
+        .ball, .mini-ball { 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #000; position: relative;
+            box-shadow: inset -2px -2px 4px rgba(0,0,0,0.6);
+            background-image: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.4) 0%, transparent 50%);
+        }
+        .ball { width: 44px; height: 44px; font-size: 1.1rem; }
+        .mini-ball { width: 16px; height: 16px; font-size: 0.5rem; }
+        .ball::before { width: 20px; height: 20px; content: ''; position: absolute; background: #fff; border-radius: 50%; z-index: 0; }
+        .mini-ball::before { width: 8px; height: 8px; content: ''; position: absolute; background: #fff; border-radius: 50%; z-index: 0; }
+        .ball span, .mini-ball span { position: relative; z-index: 1; }
+        
+        .b1 { background-color: var(--b1); } .b2 { background-color: var(--b2); } .b3 { background-color: var(--b3); }
+        .b4 { background-color: var(--b4); } .b5 { background-color: var(--b5); } .b6 { background-color: var(--b6); }
+        .b7 { background-color: var(--b7); } 
+        .b8 { background-color: var(--b8); color: #fff !important; } .b8::before { display: none !important; }
+        .b9 { background-color: var(--b9); border: 1px dashed #000; }
+
+        .ball.pocketed { opacity: 0.1; transform: scale(0.8); pointer-events: none; }
+        .ball.dead { opacity: 0.2; filter: grayscale(1); pointer-events: none; }
+
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; margin-bottom: 20px; }
+        .btn-action { padding: 15px; border-radius: 10px; border: 1px solid var(--border); background: #21262d; color: white; font-size: 0.9rem; font-weight: bold; }
+        
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 9999; align-items: center; justify-content: center; padding: 20px; }
+        .modal-content { background: var(--surface); padding: 20px; border-radius: 16px; border: 1px solid var(--gold); width: 100%; max-width: 350px; }
+        
+        input, select { background: #000; border: 1px solid #333; color: #fff; padding: 12px; border-radius: 8px; width: 100%; box-sizing: border-box; margin-bottom: 8px; }
+        #timer-display { font-size: 6rem; font-weight: 900; text-align: center; color: var(--gold); margin: 10px 0; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <div class="team-header">
-            <div><div style="font-size:0.7rem; color:#8b949e">HOME</div><div class="team-total" id="team-h-total">0</div></div>
-            <div style="align-self: center; color: var(--border); font-weight: bold;">VS</div>
-            <div><div style="font-size:0.7rem; color:#8b949e">AWAY</div><div class="team-total" id="team-a-total">0</div></div>
+    <div class="header-compact">
+        <div><div id="disp-h-name" style="font-size:0.6rem; color:#888;">HOME</div><div class="t-pts" id="team-h-total">0</div></div>
+        <div class="center-stats">
+            <span class="big-stat-label">INN / G-INN</span>
+            <span class="big-stat-value"><span id="ui-inn">0</span><span style="font-size:1rem; color:#555; margin:0 5px;">/</span><span id="ui-g-inn" style="color:var(--blue)">0</span></span>
         </div>
+        <div style="text-align: right;"><div id="disp-a-name" style="font-size:0.6rem; color:#888;">AWAY</div><div class="t-pts" id="team-a-total">0</div></div>
     </div>
 
-    <div class="match-nav" id="match-nav">
-        <button class="nav-btn active" onclick="switchMatch(0)">M1</button>
-        <button class="nav-btn" onclick="switchMatch(1)">M2</button>
-        <button class="nav-btn" onclick="switchMatch(2)">M3</button>
-        <button class="nav-btn" onclick="switchMatch(3)">M4</button>
-        <button class="nav-btn" onclick="switchMatch(4)">M5</button>
-    </div>
+    <div class="nav-row" id="match-nav"></div>
 
-    <div id="setup-view" class="card">
-        <div style="text-align: center; color: var(--gold); margin-bottom: 10px; font-weight: bold;">NEW MATCH SETUP</div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <div>
-                <input type="text" id="in-p1-name" placeholder="Home Player" class="btn" style="width:90%; text-align:left; background:#0d1117;">
-                <select id="in-p1-sl" class="sl-sel"></select>
+    <div id="game-container">
+        <div id="setup-view" class="player-card">
+            <input type="text" id="team-h-input" placeholder="Home Team Name" oninput="syncNames()">
+            <input type="text" id="team-a-input" placeholder="Away Team Name" oninput="syncNames()">
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px;">
+                <input type="text" id="p1-name" placeholder="P1 Name"><select id="p1-sl"></select>
+                <input type="text" id="p2-name" placeholder="P2 Name"><select id="p2-sl"></select>
             </div>
-            <div>
-                <input type="text" id="in-p2-name" placeholder="Away Player" class="btn" style="width:90%; text-align:left; background:#0d1117;">
-                <select id="in-p2-sl" class="sl-sel"></select>
-            </div>
-        </div>
-        <button class="btn" style="width: 100%; margin-top: 15px; background: var(--blue);" onclick="initMatch()">SET PLAYERS</button>
-    </div>
-
-    <div id="lag-view" class="card" style="display: none; text-align: center;">
-        <p style="color: var(--gold);">Who won the Lag?</p>
-        <div style="display: flex; gap: 10px;">
-            <button id="lag-p1" class="btn" style="flex:1; background:var(--gold); color:#000" onclick="confirmLag('p1')"></button>
-            <button id="lag-p2" class="btn" style="flex:1; background:var(--gold); color:#000" onclick="confirmLag('p2')"></button>
-        </div>
-    </div>
-
-    <div id="game-view" style="display: none;">
-        <div class="card score-grid">
-            <div id="lock-screen" class="locked-overlay" style="display:none;">
-                <span style="font-size: 1.2rem;">MATCH LOCKED</span>
-                <button class="btn" style="margin-top:10px; border-color:var(--gold); color:var(--gold);" onclick="unlock()">UNLOCK</button>
-            </div>
-            <div>
-                <div id="disp-p1" style="font-weight:bold; color:var(--gold);"></div>
-                <div class="match-pts" id="p1-score">0</div>
-                <div style="font-size: 0.6rem; color:#8b949e">Target: <span id="p1-targ"></span> | <span style="color:var(--blue)" id="p1-apa">0</span> pts</div>
-            </div>
-            <div><div style="font-size:0.6rem; color:#8b949e">INN</div><div id="ui-inn" style="font-size:1.8rem; font-weight:900; color:var(--gold);">0</div></div>
-            <div>
-                <div id="disp-p2" style="font-weight:bold; color:var(--gold);"></div>
-                <div class="match-pts" id="p2-score">0</div>
-                <div style="font-size: 0.6rem; color:#8b949e">Target: <span id="p2-targ"></span> | <span style="color:var(--blue)" id="p2-apa">0</span> pts</div>
-            </div>
+            <button class="btn-action" style="width:100%; background:var(--blue); color:#000; margin-top:10px;" onclick="startMatch('p1')">P1 WON LAG</button>
+            <button class="btn-action" style="width:100%; background:var(--blue); color:#000; margin-top:8px;" onclick="startMatch('p2')">P2 WON LAG</button>
         </div>
 
-        <div class="card">
-            <div class="ball-rack" id="rack"></div>
-            <div style="display: flex; gap: 10px;">
-                <button class="btn" style="flex:1; background:#333;" onclick="undo()">UNDO LAST BALL</button>
+        <div id="game-view" style="display:none; flex-direction: column;">
+            <div class="game-status-banner">CURRENTLY PLAYING: <span id="ui-game-number">GAME 1</span></div>
+            
+            <div id="card-p1" class="player-card" onclick="setTurn('p1')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="p-score" id="ui-p1-s">0</div>
+                    <div style="flex:1;">
+                        <span id="ui-p1-display" style="font-weight:900;">---</span><span id="lag-p1"></span>
+                        <div style="font-size: 0.7rem; opacity: 0.7;">SL <span id="ui-p1-sl">0</span> • GOAL <span id="ui-p1-t">0</span></div>
+                        <div class="stat-grid">
+                            <div class="stat-box" style="border-color:var(--blue)"><span class="stat-label">DEF</span><span class="stat-value" id="stat-def-p1">0</span></div>
+                            <div class="stat-box" style="border-color:var(--red)"><span class="stat-label">T/O</span><span class="stat-value" id="stat-to-p1">0</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tray" id="tray-p1"></div>
             </div>
+
+            <div id="card-p2" class="player-card" onclick="setTurn('p2')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="p-score" id="ui-p2-s">0</div>
+                    <div style="flex:1;">
+                        <span id="ui-p2-display" style="font-weight:900;">---</span><span id="lag-p2"></span>
+                        <div style="font-size: 0.7rem; opacity: 0.7;">SL <span id="ui-p2-sl">0</span> • GOAL <span id="ui-p2-t">0</span></div>
+                        <div class="stat-grid">
+                            <div class="stat-box" style="border-color:var(--blue)"><span class="stat-label">DEF</span><span class="stat-value" id="stat-def-p2">0</span></div>
+                            <div class="stat-box" style="border-color:var(--red)"><span class="stat-label">T/O</span><span class="stat-value" id="stat-to-p2">0</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tray" id="tray-p2"></div>
+            </div>
+
+            <div style="background:var(--gold); color:#000; text-align:center; font-weight:900; font-size:0.7rem; padding:2px; border-radius:4px; margin-bottom:5px;">DEAD BALLS: <span id="ui-dead-total">0</span></div>
+            <div id="ball-rack" style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap; margin-bottom:15px;"></div>
+
             <div class="controls">
-                <button id="btn-p1-turn" class="btn turn-btn" onclick="setTurn('p1')"></button>
-                <button id="btn-p2-turn" class="btn turn-btn" onclick="setTurn('p2')"></button>
+                <button class="btn-action" onclick="addDef()">DEFENSE</button>
+                <button class="btn-action" onclick="undo()" style="color:var(--red)">UNDO</button>
+                <button class="btn-action" onclick="useTimeout()" style="background:var(--blue); color:#000;">TIMEOUT</button>
+                <button class="btn-action" onclick="showReport()">REPORT</button>
             </div>
-            <div class="controls">
-                <button class="btn" onclick="stat('p1','def')">P1 DEF (<span id="p1-def">0</span>)</button>
-                <button class="btn" onclick="stat('p2','def')">P2 DEF (<span id="p2-def">0</span>)</button>
-            </div>
-            <div style="text-align:center; margin-top:10px; font-size:0.7rem; color:#8b949e;">DEAD: <span id="ui-dead" style="color:var(--red)">0</span></div>
-        </div>
-
-        <div class="card">
-            <table>
-                <thead><tr><th>#</th><th>Inns</th><th>P1</th><th>P2</th><th>Dead</th><th>Edit</th></tr></thead>
-                <tbody id="match-hist"></tbody>
-            </table>
         </div>
     </div>
 
-    <div id="summary-btn-area" style="display:none;">
-        <button class="btn" style="width:100%; background:var(--blue); margin-bottom:10px;" onclick="showFinalSummary()">SHOW 5-MATCH SUMMARY</button>
-    </div>
-    <button class="btn" onclick="globalReset()" style="width:100%; background:#b71c1c;">RESET ALL DATA</button>
-
-    <div id="br-modal" class="modal">
-        <div class="modal-card">
-            <h2 style="color:var(--gold);">BREAK & RUN?</h2>
-            <button class="btn" style="width:100%; margin-bottom:10px; background:var(--gold); color:#000;" onclick="closeBR(true)">YES (B&R)</button>
-            <button class="btn" style="width:100%; background:#444;" onclick="closeBR(false)">NO (REGULAR)</button>
+    <div id="timer-modal" class="modal">
+        <div class="modal-content" style="text-align:center;">
+            <h3 style="color:var(--gold); margin-top:0;">TIMEOUT</h3>
+            <div id="timer-display">60</div>
+            <button class="btn-action" style="width:100%; background:var(--red); color:#fff;" onclick="stopTimer()">CLOSE</button>
         </div>
     </div>
 
-    <div id="summary-modal" class="modal">
-        <div class="modal-card">
-            <h2 style="color:var(--gold);">5-MATCH GRAND SUMMARY</h2>
-            <div id="summary-content" style="text-align:left; font-size:0.7rem;"></div>
-            <button class="btn" style="width:100%; margin-top:20px;" onclick="document.getElementById('summary-modal').style.display='none'">CLOSE</button>
+    <div id="nine-modal" class="modal">
+        <div class="modal-content">
+            <h3 style="text-align:center; color:var(--gold); margin-top:0;">9-BALL</h3>
+            <button class="btn-action" style="width:100%; margin-bottom:10px; background:var(--gold); color:#000;" onclick="close9('pocket')">POCKETED (+2)</button>
+            <button class="btn-action" style="width:100%; margin-bottom:10px; background:var(--blue); color:#000;" onclick="close9('snap')">9-ON-SNAP</button>
+            <button class="btn-action" style="width:100%; margin-bottom:10px; background:#2e7d32; color:#fff;" onclick="close9('brun')">BREAK & RUN</button>
+            <button class="btn-action" style="width:100%; background:#444;" onclick="document.getElementById('nine-modal').style.display='none'">CANCEL</button>
         </div>
     </div>
+
+    <div id="report-modal" class="modal"><div class="modal-content"><h3>Match Details</h3><div id="report-body"></div><button class="btn-action" style="width:100%; margin-top:20px;" onclick="document.getElementById('report-modal').style.display='none'">CLOSE</button></div></div>
 
     <script>
-        const RACES = { 1:14, 2:19, 3:25, 4:31, 5:38, 6:46, 7:55, 8:65, 9:75 };
-        let activeIdx = 0, matches = Array.from({length:5}, () => ({
-            setup: false, started: false, locked: false, turn: '', lagW: '', inn: 0, dead: 0, undoStack: [],
-            p1: { name: '', sl: 3, score: 0, rPts: 0, def: 0, apa: 0 },
-            p2: { name: '', sl: 3, score: 0, rPts: 0, def: 0, apa: 0 },
-            history: []
+        const RACES = {1:14, 2:19, 3:25, 4:31, 5:38, 6:46, 7:55, 8:65, 9:75};
+        let activeIdx = 0, lastClickTime = 0, timerInterval = null;
+        let matches = Array.from({length:5}, () => ({
+            started: false, turn: 'p1', totalInn: 0, gameInn: 0, lagWinner: '', deadTotal: 0,
+            p1: { name:'', sl:3, score:0, def:0, tray:[], timeouts:0 },
+            p2: { name:'', sl:3, score:0, def:0, tray:[], timeouts:0 },
+            rackBalls: [], rackHistory: []
         }));
 
-        document.querySelectorAll('.sl-sel').forEach(s => { for(let i=1; i<=9; i++) s.add(new Option('SL '+i, i)); s.value=3; });
+        const s1 = document.getElementById('p1-sl'), s2 = document.getElementById('p2-sl');
+        for(let i=1;i<=9;i++) { s1.add(new Option('SL '+i, i)); s2.add(new Option('SL '+i, i)); }
+        s1.value = 3; s2.value = 3;
 
-        function switchMatch(i) { activeIdx = i; document.querySelectorAll('.nav-btn').forEach((b,idx)=>b.classList.toggle('active', idx===i)); render(); }
-
-        function initMatch() {
-            let m = matches[activeIdx];
-            m.p1.name = document.getElementById('in-p1-name').value || "Player 1";
-            m.p2.name = document.getElementById('in-p2-name').value || "Player 2";
-            m.p1.sl = document.getElementById('in-p1-sl').value;
-            m.p2.sl = document.getElementById('in-p2-sl').value;
-            m.setup = true; render();
+        function syncNames() {
+            document.getElementById('disp-h-name').innerText = document.getElementById('team-h-input').value || "HOME";
+            document.getElementById('disp-a-name').innerText = document.getElementById('team-a-input').value || "AWAY";
         }
 
-        function confirmLag(p) { let m = matches[activeIdx]; m.lagW = p; m.turn = p; m.started = true; render(); }
+        function updateNav() {
+            const nav = document.getElementById('match-nav'); nav.innerHTML = '';
+            matches.forEach((m, i) => {
+                const b = document.createElement('button');
+                b.className = `nav-btn ${i === activeIdx ? 'active' : ''}`;
+                b.innerText = `M ${i+1}`;
+                b.onclick = () => { activeIdx = i; render(); };
+                nav.appendChild(b);
+            });
+        }
 
-        function handleBall(n, action) {
+        function startMatch(winner) {
             let m = matches[activeIdx];
-            m.undoStack.push({n, action, turn: m.turn});
-            if (n === 9 && action === 'pocket') { 
-                m[m.turn].score += 2; m[m.turn].rPts += 2;
-                if(m.inn === 0 && m[m.turn].rPts === 10) document.getElementById('br-modal').style.display='flex';
-                else endRack(false);
-            } else if (action === 'dead') { m.dead++; } 
-            else { m[m.turn].score++; m[m.turn].rPts++; }
+            m.p1.name = document.getElementById('p1-name').value || "Player 1";
+            m.p2.name = document.getElementById('p2-name').value || "Player 2";
+            m.p1.sl = parseInt(document.getElementById('p1-sl').value);
+            m.p2.sl = parseInt(document.getElementById('p2-sl').value);
+            
+            // FORCE START AT 0-0
+            m.p1.score = 0; m.p2.score = 0; 
+            m.totalInn = 0; m.gameInn = 0; m.deadTotal = 0;
+            m.p1.tray = []; m.p2.tray = []; m.rackBalls = []; m.rackHistory = [];
+            m.p1.def = 0; m.p2.def = 0; m.p1.timeouts = 0; m.p2.timeouts = 0;
+            
+            m.started = true; m.lagWinner = winner; m.turn = winner;
             render();
         }
 
-        function undo() {
-            let m = matches[activeIdx]; if(!m.undoStack.length) return;
-            let last = m.undoStack.pop();
-            if(last.action === 'dead') m.dead--;
-            else { m[last.turn].score -= (last.n === 9 ? 2 : 1); m[last.turn].rPts -= (last.n === 9 ? 2 : 1); }
-            render();
-        }
-
-        function closeBR(isBR) { document.getElementById('br-modal').style.display='none'; endRack(isBR); }
-
-        function endRack(isBR) {
-            let m = matches[activeIdx];
-            m.history.push({ rack: m.history.length+1, inn: m.inn, p1: m.p1.rPts, p2: m.p2.rPts, d: m.dead, br: isBR });
-            m.p1.rPts = 0; m.p2.rPts = 0; m.dead = 0; m.inn = 0; m.undoStack = [];
-            render(); checkGoal();
-        }
-
-        function checkGoal() {
-            let m = matches[activeIdx];
-            if(m.p1.score >= RACES[m.p1.sl] || m.p2.score >= RACES[m.p2.sl]) {
-                if(confirm("Goal reached. Lock match?")) { m.locked = true; render(); }
+        function handleBallClick(n) {
+            const now = Date.now();
+            if (now - lastClickTime < 300) recordBall(n, true);
+            else { 
+                lastClickTime = now; 
+                setTimeout(() => { if (Date.now() - lastClickTime >= 300) n === 9 ? document.getElementById('nine-modal').style.display='flex' : recordBall(n, false); }, 305);
             }
         }
 
-        function calculateAPA() {
-            matches.forEach(m => {
-                const getP = (s, t, os, ot) => {
-                    if (s >= t) { const p = os/ot; return p<=0.05?20:p<=0.2?19:p<=0.35?18:p<=0.5?17:p<=0.65?16:p<=0.8?15:14; }
-                    else { const p = s/t; return p<=0.05?0:p<=0.2?1:p<=0.35?2:p<=0.5?3:p<=0.65?4:p<=0.8?5:6; }
-                };
-                m.p1.apa = getP(m.p1.score, RACES[m.p1.sl], m.p2.score, RACES[m.p2.sl]);
-                m.p2.apa = getP(m.p2.score, RACES[m.p2.sl], m.p1.score, RACES[m.p1.sl]);
-            });
-            let h=0, a=0; matches.forEach(m => { if(m.locked) { h+=m.p1.apa; a+=m.p2.apa; } });
-            document.getElementById('team-h-total').innerText = h;
-            document.getElementById('team-a-total').innerText = a;
+        function recordBall(n, isDead) {
+            let m = matches[activeIdx];
+            if (m.rackBalls.find(b => b.n === n)) return;
+            m.rackBalls.push({ n, isDead, player: m.turn });
+            if (isDead) m.deadTotal++; else { m[m.turn].score++; m[m.turn].tray.push(n); }
+            render();
         }
+
+        function close9(type) {
+            let m = matches[activeIdx];
+            document.getElementById('nine-modal').style.display = 'none';
+            m[m.turn].score += 2; m[m.turn].tray.push(9);
+            m.rackHistory.push({ type });
+            m.rackBalls = []; m.p1.tray = []; m.p2.tray = []; m.gameInn = 0; 
+            render();
+        }
+
+        function setTurn(p) { 
+            let m = matches[activeIdx]; 
+            if (m.turn !== p) { if(p === m.lagWinner) { m.totalInn++; m.gameInn++; } m.turn = p; } 
+            render(); 
+        }
+
+        function useTimeout() { 
+            let m = matches[activeIdx], p = m[m.turn]; 
+            if (p.timeouts < (p.sl <= 3 ? 2 : 1)) { p.timeouts++; render(); startTimer(); }
+        }
+
+        function addDef() { matches[activeIdx][matches[activeIdx].turn].def++; render(); }
+        function undo() {
+            let m = matches[activeIdx]; if (m.rackBalls.length === 0) return;
+            let b = m.rackBalls.pop();
+            if (b.isDead) m.deadTotal--; else { m[b.player].score--; m[b.player].tray.pop(); }
+            render();
+        }
+
+        function startTimer() {
+            let sec = 60; document.getElementById('timer-modal').style.display = 'flex';
+            const disp = document.getElementById('timer-display'); disp.innerText = sec; disp.style.color = 'var(--gold)';
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                sec--; disp.innerText = sec;
+                if(sec <= 10) disp.style.color = 'var(--red)';
+                if(sec <= 0) { clearInterval(timerInterval); disp.innerText = "TIME!"; }
+            }, 1000);
+        }
+
+        function stopTimer() { clearInterval(timerInterval); document.getElementById('timer-modal').style.display = 'none'; }
 
         function render() {
-            let m = matches[activeIdx];
-            document.getElementById('setup-view').style.display = !m.setup ? 'block' : 'none';
-            document.getElementById('lag-view').style.display = (m.setup && !m.started) ? 'block' : 'none';
-            document.getElementById('game-view').style.display = m.started ? 'block' : 'none';
-            document.getElementById('lock-screen').style.display = m.locked ? 'flex' : 'none';
-            
-            if(m.setup) {
-                document.getElementById('lag-p1').innerText = m.p1.name;
-                document.getElementById('lag-p2').innerText = m.p2.name;
-                document.getElementById('disp-p1').innerText = m.p1.name;
-                document.getElementById('disp-p2').innerText = m.p2.name;
-                document.getElementById('p1-targ').innerText = RACES[m.p1.sl];
-                document.getElementById('p2-targ').innerText = RACES[m.p2.sl];
-                document.getElementById('btn-p1-turn').innerText = m.p1.name;
-                document.getElementById('btn-p2-turn').innerText = m.p2.name;
-            }
-            if(m.started) {
-                document.getElementById('p1-score').innerText = m.p1.score;
-                document.getElementById('p2-score').innerText = m.p2.score;
-                document.getElementById('ui-inn').innerText = m.inn;
-                document.getElementById('ui-dead').innerText = m.dead;
-                document.getElementById('p1-def').innerText = m.p1.def;
-                document.getElementById('p2-def').innerText = m.p2.def;
-                document.getElementById('btn-p1-turn').classList.toggle('active', m.turn === 'p1');
-                document.getElementById('btn-p2-turn').classList.toggle('active', m.turn === 'p2');
-                
-                const r = document.getElementById('rack'); r.innerHTML = '';
+            updateNav(); let m = matches[activeIdx];
+            document.getElementById('setup-view').style.display = m.started ? 'none' : 'block';
+            document.getElementById('game-view').style.display = m.started ? 'flex' : 'none';
+            if (m.started) {
+                document.getElementById('ui-game-number').innerText = `GAME ${m.rackHistory.length + 1}`;
+                document.getElementById('ui-p1-display').innerText = m.p1.name;
+                document.getElementById('ui-p2-display').innerText = m.p2.name;
+                document.getElementById('lag-p1').innerHTML = m.lagWinner === 'p1' ? '<span class="lag-badge">LAG</span>' : '';
+                document.getElementById('lag-p2').innerHTML = m.lagWinner === 'p2' ? '<span class="lag-badge">LAG</span>' : '';
+                document.getElementById('ui-p1-s').innerText = m.p1.score;
+                document.getElementById('ui-p2-s').innerText = m.p2.score;
+                document.getElementById('ui-p1-sl').innerText = m.p1.sl;
+                document.getElementById('ui-p2-sl').innerText = m.p2.sl;
+                document.getElementById('ui-p1-t').innerText = RACES[m.p1.sl];
+                document.getElementById('ui-p2-t').innerText = RACES[m.p2.sl];
+                document.getElementById('ui-inn').innerText = m.totalInn;
+                document.getElementById('ui-g-inn').innerText = m.gameInn;
+                document.getElementById('ui-dead-total').innerText = m.deadTotal;
+                document.getElementById('stat-def-p1').innerText = m.p1.def;
+                document.getElementById('stat-def-p2').innerText = m.p2.def;
+                document.getElementById('stat-to-p1').innerText = m.p1.timeouts;
+                document.getElementById('stat-to-p2').innerText = m.p2.timeouts;
+                document.getElementById('card-p1').classList.toggle('active', m.turn === 'p1');
+                document.getElementById('card-p2').classList.toggle('active', m.turn === 'p2');
+
+                const rack = document.getElementById('ball-rack'); rack.innerHTML = '';
                 for(let i=1; i<=9; i++) {
-                    const b = document.createElement('div'); b.className = ball b${i}; b.innerText = i;
-                    if(m.undoStack.some(u => u.n === i && u.action === 'pocket')) b.classList.add('pocketed');
-                    if(m.undoStack.some(u => u.n === i && u.action === 'dead')) b.classList.add('dead');
-                    let clickT = 0; b.onclick = () => {
-                        if(clickT === 0) { clickT = setTimeout(() => { handleBall(i, 'pocket'); clickT = 0; }, 200); }
-                        else { clearTimeout(clickT); clickT = 0; handleBall(i, 'dead'); }
-                    };
-                    r.appendChild(b);
+                    const bd = m.rackBalls.find(x => x.n === i);
+                    const b = document.createElement('div');
+                    b.className = `ball b${i} ${bd ? (bd.isDead ? 'dead' : 'pocketed') : ''}`;
+                    b.innerHTML = `<span>${i}</span>`;
+                    b.onclick = () => handleBallClick(i);
+                    rack.appendChild(b);
                 }
-                document.getElementById('match-hist').innerHTML = m.history.map((h, i) => `
-                    <tr><td>${h.rack}${h.br?'<br><b class="br-badge">B&R</b>':''}</td><td>${h.inn}</td><td>${h.p1}</td><td>${h.p2}</td><td>${h.d}</td>
-                    <td><button onclick="editRack(${i})" style="font-size:0.5rem;">Edit</button></td></tr>
-                `).reverse().join('');
+                const drawTray = (p) => m[p].tray.map(n => `<div class="mini-ball b${n}"><span>${n}</span></div>`).join('');
+                document.getElementById('tray-p1').innerHTML = drawTray('p1');
+                document.getElementById('tray-p2').innerHTML = drawTray('p2');
             }
-            calculateAPA();
-            document.getElementById('p1-apa').innerText = m.p1.apa;
-            document.getElementById('p2-apa').innerText = m.p2.apa;
-            if(matches.every(m => m.locked)) document.getElementById('summary-btn-area').style.display = 'block';
+            calcTeam();
         }
 
-        function setTurn(p) {
-            let m = matches[activeIdx]; if(m.turn === p) return;
-            const lagLoser = m.lagW === 'p1' ? 'p2' : 'p1';
-            if(m.turn === lagLoser) m.inn++;
-            m.turn = p; render();
+        function calcTeam() {
+            const g = (s, t, os, ot) => { if (s >= t) { let r = os/ot; return r<=.2?20:r<=.4?19:r<=.55?18:r<=.7?17:r<=.85?16:15; } let r = s/t; return r<=.2?1:r<=.4?2:r<=.6?3:r<=.8?4:5; };
+            let ht = 0, at = 0, hl = 0, al = 0;
+            matches.forEach(m => { if(m.started) { ht += g(m.p1.score, RACES[m.p1.sl], m.p2.score, RACES[m.p2.sl]); at += g(m.p2.score, RACES[m.p2.sl], m.p1.score, RACES[m.p1.sl]); if(m.lagWinner==='p1') hl++; else al++; } });
+            if(hl===5) ht+=5; if(al===5) at+=5;
+            document.getElementById('team-h-total').innerText = ht; document.getElementById('team-a-total').innerText = at;
         }
 
-        function stat(p, s) { matches[activeIdx][p][s]++; render(); }
-        function unlock() { matches[activeIdx].locked = false; render(); }
-        
-        function showFinalSummary() {
-            let html = "";
-            matches.forEach((m, idx) => {
-                html += `<div style="border-bottom:1px solid #444; margin-bottom:10px; padding-bottom:5px;">
-                    <b style="color:var(--gold)">MATCH ${idx+1}: ${m.p1.name} vs ${m.p2.name}</b><br>
-                    Score: ${m.p1.score}-${m.p2.score} (${m.p1.apa}-${m.p2.apa} APA Pts)<br>
-                    <table style="width:100%; margin-top:5px;">
-                        <tr><th>Rack</th><th>Inn</th><th>P1</th><th>P2</th><th>Dead</th></tr>
-                        ${m.history.map(h => <tr><td>${h.rack}${h.br?'(BR)':''}</td><td>${h.inn}</td><td>${h.p1}</td><td>${h.p2}</td><td>${h.d}</td></tr>).join('')}
-                    </table>
-                </div>`;
-            });
-            document.getElementById('summary-content').innerHTML = html;
-            document.getElementById('summary-modal').style.display = 'flex';
+        function showReport() {
+            let m = matches[activeIdx];
+            document.getElementById('report-body').innerHTML = `<p>${m.p1.name}: ${m.p1.score}/${RACES[m.p1.sl]}</p><p>${m.p2.name}: ${m.p2.score}/${RACES[m.p2.sl]}</p><p>Innings: ${m.totalInn}</p>`;
+            document.getElementById('report-modal').style.display = 'flex';
         }
-
-        function globalReset() { if(confirm("Wipe all matches?")) location.reload(); }
     </script>
 </body>
 </html>
