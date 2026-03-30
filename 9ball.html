@@ -32,48 +32,42 @@
         .big-stat-value { font-size: 1.4rem; font-weight: 900; line-height: 1; color: #fff; }
         .divider { width: 1px; height: 20px; background: #333; }
 
-        #match-dropdown-container { display: none; }
+        .game-status-banner { background: #30363d; color: var(--gold); text-align: center; font-weight: 900; font-size: 0.75rem; padding: 4px; border-radius: 6px; margin-bottom: 6px; text-transform: uppercase; border: 1px solid #444; display: flex; align-items: center; justify-content: center; gap: 5px; min-height: 25px;}
+        
+        #game-select { background: transparent; color: var(--gold); border: none; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; cursor: pointer; outline: none; padding-right: 5px; }
 
-        @media (orientation: landscape) {
-            #match-nav { display: none; } 
-            #match-dropdown-container { display: block; } 
-            #game-view { display: grid !important; grid-template-columns: 1fr 1fr; column-gap: 10px; }
-            .game-status-banner { grid-column: span 2; margin-bottom: 4px !important; }
-            .dead-balls-banner { grid-column: span 2; margin-bottom: 2px !important; }
-            #ball-rack { grid-column: span 2; padding: 4px !important; margin-bottom: 4px !important; }
-            .controls { grid-column: span 2; display: grid !important; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 5px !important; }
-            .controls .btn-action { padding: 10px 5px !important; font-size: 0.65rem !important; }
-            .p-score { font-size: 2.2rem !important; }
-            .player-card { margin-bottom: 4px !important; }
-        }
-
-        .nav-row { flex-shrink: 0; display: flex; gap: 3px; margin-bottom: 6px; }
-        .nav-btn { flex: 1; padding: 6px 0; background: #21262d; border: 1px solid var(--border); color: #8b949e; border-radius: 4px; font-size: 0.65rem; font-weight: bold; }
-        .nav-btn.active { background: var(--gold); color: #000; border-color: var(--gold); }
-        .game-status-banner { background: #30363d; color: var(--gold); text-align: center; font-weight: 900; font-size: 0.75rem; padding: 4px; border-radius: 6px; margin-bottom: 6px; text-transform: uppercase; border: 1px solid #444; }
         .player-card { background: var(--surface); border-radius: 10px; padding: 8px; border: 2px solid var(--border); margin-bottom: 6px; position: relative; }
         .player-card.active { border-color: var(--gold); box-shadow: inset 0 0 10px rgba(255, 214, 0, 0.15); }
         .p-score { font-size: 3rem; font-weight: 900; line-height: 1; margin-right: 8px; }
         .sl-goal-box { background: #000; color: #fff; padding: 3px 6px; border-radius: 5px; display: inline-block; font-size: 0.65rem; font-weight: 900; margin-top: 3px; border: 1px solid #333; }
+        
         .ball, .mini-ball { border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #000; position: relative; box-shadow: inset -3px -3px 6px rgba(0,0,0,0.5), 1px 2px 4px rgba(0,0,0,0.4); }
-        .ball::after, .mini-ball::after { content: ''; position: absolute; top: 15%; left: 15%; width: 40%; height: 30%; background: rgba(255,255,255,0.3); border-radius: 50%; filter: blur(1px); }
         .ball { width: 42px; height: 42px; font-size: 1rem; }
-        .mini-ball { width: 16px; height: 16px; font-size: 0.5rem; }
-        .b9 { background-color: #fff !important; overflow: hidden; }
-        .b9::before { content: ''; position: absolute; width: 100%; height: 60%; background: var(--b9); top: 20%; left: 0; }
-        .b9 span { z-index: 1; background: #fff; border-radius: 50%; width: 55%; height: 55%; display: flex; align-items: center; justify-content: center; }
+        .mini-ball { width: 22px; height: 22px; font-size: 0.7rem; border: 2px solid transparent; }
+        .mini-ball.is-dead { border-color: var(--gold); box-shadow: 0 0 10px var(--gold); }
+
         .ball.pocketed { opacity: 0.1; transform: scale(0.8); pointer-events: none; }
         .ball.dead { opacity: 0.2; filter: grayscale(1); pointer-events: none; }
+        
         .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
         .btn-action { padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: #21262d; color: white; font-size: 0.75rem; font-weight: bold; }
+        
+        /* Locking mechanism */
+        .is-locked .ball, .is-locked .btn-action:not(.edit-toggle):not(.keep-lit) { pointer-events: none; opacity: 0.5; }
+        .is-locked .player-card { pointer-events: none; }
+
+        .edit-toggle { background: var(--gold); color: #000; font-size: 0.6rem; padding: 4px 8px; border-radius: 4px; border: none; font-weight: 900; margin-left: 8px; display: none; }
+
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 9999; align-items: center; justify-content: center; padding: 20px; }
-        .modal-content { background: var(--surface); padding: 15px; border-radius: 12px; border: 1px solid var(--gold); width: 100%; max-width: 320px; max-height: 80vh; overflow-y: auto; }
-        input, select { background: #000; border: 1px solid #333; color: #fff; padding: 10px; border-radius: 6px; width: 100%; box-sizing: border-box; margin-bottom: 6px; }
-        #match-select { background: #21262d; color: var(--gold); border: 1px solid #444; font-size: 0.7rem; padding: 4px; font-weight: bold; border-radius: 4px; width: auto; margin: 0; }
-        .match-over { filter: grayscale(1); pointer-events: none; opacity: 0.6; }
+        .modal-content { background: var(--surface); padding: 15px; border-radius: 12px; border: 1px solid var(--gold); width: 100%; max-width: 320px; text-align: center; }
+        input, select { background: #000; border: 1px solid #333; color: #fff; padding: 10px; border-radius: 6px; width: 100%; box-sizing: border-box; margin-bottom: 6px; font-weight: bold; }
+        
+        .special-win-tag { background: var(--gold); color: #000; padding: 2px 5px; border-radius: 3px; font-size: 0.55rem; font-weight: 900; margin-bottom: 4px; display: inline-block; }
+        
+        .btn-timer-ctrl { flex: 1; padding: 10px; font-weight: bold; border-radius: 6px; border: none; font-size: 0.75rem; cursor: pointer; }
     </style>
 </head>
-<body>
+<body id="main-body">
 
     <div class="header-compact">
         <div><div id="disp-h-name" style="font-size:0.55rem; color:#888;">HOME</div><div class="t-pts" id="team-h-total">0</div></div>
@@ -81,35 +75,36 @@
             <div class="stat-group"><span class="big-stat-label">TOTAL INN</span><span class="big-stat-value" id="ui-inn">0</span></div>
             <div class="divider"></div>
             <div class="stat-group"><span class="big-stat-label">GAME INN</span><span class="big-stat-value" id="ui-g-inn">0</span></div>
-            <div class="divider" id="match-dropdown-container"></div>
-            <div id="match-dropdown-container">
-                <select id="match-select" onchange="activeIdx=parseInt(this.value); render();">
-                    <option value="0">MATCH 1</option><option value="1">MATCH 2</option><option value="2">MATCH 3</option><option value="3">MATCH 4</option><option value="4">MATCH 5</option>
-                </select>
-            </div>
         </div>
         <div style="text-align: right;"><div id="disp-a-name" style="font-size:0.55rem; color:#888;">AWAY</div><div class="t-pts" id="team-a-total">0</div></div>
     </div>
 
-    <div class="nav-row" id="match-nav"></div>
+    <div class="nav-row" id="match-nav" style="display:flex; gap:3px; margin-bottom:6px;"></div>
 
     <div id="game-container">
         <div id="setup-view" class="player-card">
             <input type="text" id="team-h-input" placeholder="Home Team Name" oninput="syncNames()">
             <input type="text" id="team-a-input" placeholder="Away Team Name" oninput="syncNames()">
             <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 6px;">
-                <input type="text" id="p1-name" placeholder="P1 Name"><select id="p1-sl"></select>
-                <input type="text" id="p2-name" placeholder="P2 Name"><select id="p2-sl"></select>
+                <input type="text" id="p1-name" placeholder="P1 Name">
+                <select id="p1-sl-select"></select>
+                <input type="text" id="p2-name" placeholder="P2 Name">
+                <select id="p2-sl-select"></select>
             </div>
             <button class="btn-action" style="width:100%; background:var(--blue); color:#000; margin-top:8px;" onclick="startMatch('p1')">P1 WON LAG</button>
             <button class="btn-action" style="width:100%; background:var(--blue); color:#000; margin-top:6px;" onclick="startMatch('p2')">P2 WON LAG</button>
         </div>
 
         <div id="game-view" style="display:none; flex-direction: column;">
-            <div class="game-status-banner" id="game-banner">CURRENTLY PLAYING: <span id="ui-game-number">GAME 1</span></div>
+            <div class="game-status-banner">
+                <span id="banner-text">CURRENTLY PLAYING:</span> 
+                <select id="game-select" onchange="jumpToGame(this.value)"></select> ▾
+                <button id="edit-lock-btn" class="edit-toggle" onclick="toggleEdit()">EDIT</button>
+            </div>
+
             <div id="card-p1" class="player-card" onclick="setTurn('p1')">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div class="p-score" id="ui-p1-s">0</div>
+                    <div><div id="ui-p1-label" style="font-size:0.5rem; color:#888; font-weight:bold;">MATCH SCORE</div><div class="p-score" id="ui-p1-s">0</div></div>
                     <div style="flex:1;">
                         <span id="ui-p1-display" style="font-weight:900; font-size:0.85rem;">---</span><span id="lag-p1"></span>
                         <div class="sl-goal-box">SL <span id="ui-p1-sl">0</span> • GOAL <span id="ui-p1-t">0</span></div>
@@ -119,12 +114,13 @@
                         </div>
                     </div>
                 </div>
-                <div class="tray" id="tray-p1" style="display:flex; flex-wrap:wrap; gap:2px; margin-top:4px;"></div>
+                <div id="p1-badge-area" style="margin-top:5px; min-height:15px;"></div>
+                <div class="tray" id="tray-p1" style="display:flex; flex-wrap:wrap; gap:4px;"></div>
             </div>
 
             <div id="card-p2" class="player-card" onclick="setTurn('p2')">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div class="p-score" id="ui-p2-s">0</div>
+                    <div><div id="ui-p2-label" style="font-size:0.5rem; color:#888; font-weight:bold;">MATCH SCORE</div><div class="p-score" id="ui-p2-s">0</div></div>
                     <div style="flex:1;">
                         <span id="ui-p2-display" style="font-weight:900; font-size:0.85rem;">---</span><span id="lag-p2"></span>
                         <div class="sl-goal-box">SL <span id="ui-p2-sl">0</span> • GOAL <span id="ui-p2-t">0</span></div>
@@ -134,42 +130,56 @@
                         </div>
                     </div>
                 </div>
-                <div class="tray" id="tray-p2" style="display:flex; flex-wrap:wrap; gap:2px; margin-top:4px;"></div>
+                <div id="p2-badge-area" style="margin-top:5px; min-height:15px;"></div>
+                <div class="tray" id="tray-p2" style="display:flex; flex-wrap:wrap; gap:4px;"></div>
             </div>
 
-            <div class="game-status-banner dead-balls-banner" style="background:var(--gold); color:#000;">DEAD BALLS: <span id="ui-dead-total">0</span></div>
+            <div class="game-status-banner" style="background:var(--gold); color:#000;">DEAD BALLS: <span id="ui-dead-total">0</span></div>
             <div id="ball-rack" style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap; margin-bottom:10px; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 10px;"></div>
 
-            <div class="controls" id="controls-grid">
+            <div class="controls">
                 <button class="btn-action" onclick="addDef()">DEFENSE</button>
-                <button class="btn-action" onclick="undo()" style="color:var(--red)">UNDO</button>
-                <button class="btn-action" onclick="useTimeout()" style="background:var(--blue); color:#000;">TIMEOUT</button>
-                <button class="btn-action" onclick="showReport()">REPORT</button>
+                <button class="btn-action keep-lit" onclick="undo()" style="color:var(--red)">UNDO</button>
+                <button class="btn-action keep-lit" id="timeout-btn" onclick="useTimeout()" style="background:var(--blue); color:#000;">TIMEOUT</button>
+                <button class="btn-action keep-lit" onclick="showReport()">REPORT</button>
                 <button class="btn-action" onclick="document.getElementById('help-modal').style.display='flex'">HELP</button>
-                <button class="btn-action reset-btn" style="background:#333; color:var(--red); border-color:#444;" id="btn-reset" onclick="resetCurrentMatch()">RESET</button>
+                <button class="btn-action reset-btn keep-lit" onclick="resetCurrentMatch()" style="background:#333; color:var(--red);">RESET</button>
             </div>
         </div>
     </div>
 
-    <div id="timer-modal" class="modal"><div class="modal-content" style="text-align:center;"><h3 style="color:var(--gold); margin-top:0;">TIMEOUT</h3><div id="timer-display" style="font-size:4rem; font-weight:900; color:var(--gold);">60</div><button class="btn-action" style="width:100%; background:var(--red);" onclick="stopTimer()">STOP</button></div></div>
-    <div id="nine-modal" class="modal"><div class="modal-content"><h3>9-BALL WIN</h3><button class="btn-action" style="width:100%; margin-bottom:8px; background:var(--gold); color:#000;" onclick="handle9Win('pocket')">POCKETED (+2)</button><button class="btn-action" style="width:100%; margin-bottom:8px; background:var(--blue); color:#000;" onclick="handle9Win('snap')">9-ON-SNAP (+2)</button><button class="btn-action" style="width:100%; margin-bottom:8px; background:#2e7d32; color:#fff;" onclick="handle9Win('brun')">BREAK & RUN (+12)</button><button class="btn-action" style="width:100%;" onclick="document.getElementById('nine-modal').style.display='none'">CANCEL</button></div></div>
-    <div id="report-modal" class="modal"><div class="modal-content"><h3>Match Summary</h3><div id="report-body"></div><button class="btn-action" style="width:100%; margin-top:15px;" onclick="document.getElementById('report-modal').style.display='none'">CLOSE</button></div></div>
-    <div id="help-modal" class="modal"><div class="modal-content"><h3>Quick Help</h3><p><b>Single Tap:</b> Pocket Ball (+1)</p><p><b>Double Tap:</b> Dead Ball (DB)</p><p><b>9-Ball:</b> Opens scoring menu (+2 or +12 for B&R)</p><p><b>Innings:</b> Auto-track when lag winner's turn starts.</p><button class="btn-action" style="width:100%; margin-top:15px;" onclick="document.getElementById('help-modal').style.display='none'">CLOSE</button></div></div>
+    <div id="timer-modal" class="modal">
+        <div class="modal-content">
+            <h3 style="color:var(--gold);">TIMEOUT</h3>
+            <div id="timer-display" style="font-size:4rem; font-weight:900; color:var(--gold);">60</div>
+            <div style="display: flex; gap: 8px; margin-top: 15px;">
+                <button class="btn-timer-ctrl keep-lit" style="background: var(--red); color: #fff;" onclick="clearInterval(timerInterval)">STOP</button>
+                <button class="btn-timer-ctrl keep-lit" style="background: #444; color: #fff;" onclick="stopTimer()">CLOSE</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="nine-modal" class="modal"><div class="modal-content"><h3>9-BALL WIN</h3><button class="btn-action" style="width:100%; margin-bottom:8px; background:var(--gold); color:#000;" onclick="handle9Win('pocket')">POCKETED (+2)</button><button class="btn-action" style="width:100%; margin-bottom:8px; background:var(--blue); color:#000;" onclick="handle9Win('snap')">9-ON-SNAP (+2)</button><button class="btn-action" style="width:100%; margin-bottom:8px; background:#2e7d32; color:#fff;" onclick="handle9Win('brun')">BREAK & RUN (+2)</button><button class="btn-action" style="width:100%;" onclick="document.getElementById('nine-modal').style.display='none'">CANCEL</button></div></div>
+    
+    <div id="report-modal" class="modal"><div class="modal-content"><h3>Match Summary</h3><div id="report-body" style="text-align:left;"></div><button class="btn-action keep-lit" style="width:100%; margin-top:15px;" onclick="document.getElementById('report-modal').style.display='none'">CLOSE</button></div></div>
+    
+    <div id="help-modal" class="modal"><div class="modal-content"><h3>Quick Help</h3><p><b>Single Tap:</b> Pocket Ball (+1)</p><p><b>Double Tap:</b> Dead Ball (DB)</p><p><b>9-Ball:</b> Opens scoring menu</p><button class="btn-action keep-lit" style="width:100%; margin-top:15px;" onclick="document.getElementById('help-modal').style.display='none'">CLOSE</button></div></div>
 
     <script>
         const RACES = {1:14, 2:19, 3:25, 4:31, 5:38, 6:46, 7:55, 8:65, 9:75};
         const BALL_COLORS = ['#fff', '#f9e04b', '#0277bd', '#c62828', '#6a1b9a', '#ef6c00', '#2e7d32', '#5d4037', '#111', '#f9e04b'];
-        let activeIdx = 0, lastClickTime = 0, timerInterval = null;
+        let activeIdx = 0, lastClickTime = 0, timerInterval = null, viewingGameIdx = -1, isEditing = false;
+        
         let matches = Array.from({length:5}, () => ({
             started: false, turn: 'p1', totalInn: 0, gameInn: 0, lagWinner: '', deadTotal: 0,
-            p1: { name:'', sl:3, score:0, def:0, tray:[], timeouts:0 },
-            p2: { name:'', sl:3, score:0, def:0, tray:[], timeouts:0 },
+            p1: { name:'', sl:3, score:0, def:0, tray:[], timeouts:0, totalTimeouts:0, snaps: 0, brs: 0 },
+            p2: { name:'', sl:3, score:0, def:0, tray:[], timeouts:0, totalTimeouts:0, snaps: 0, brs: 0 },
             rackBalls: [], rackHistory: []
         }));
 
-        const s1 = document.getElementById('p1-sl'), s2 = document.getElementById('p2-sl');
-        for(let i=1;i<=9;i++) { s1.add(new Option('SL '+i, i)); s2.add(new Option('SL '+i, i)); }
-        s1.value = 3; s2.value = 3;
+        const sl1 = document.getElementById('p1-sl-select'), sl2 = document.getElementById('p2-sl-select');
+        for(let i=1;i<=9;i++) { sl1.add(new Option('SL '+i, i)); sl2.add(new Option('SL '+i, i)); }
+        sl1.value = 3; sl2.value = 3;
 
         function syncNames() {
             document.getElementById('disp-h-name').innerText = document.getElementById('team-h-input').value || "HOME";
@@ -180,44 +190,43 @@
             const nav = document.getElementById('match-nav'); nav.innerHTML = '';
             matches.forEach((m, i) => {
                 const b = document.createElement('button');
-                b.className = `nav-btn ${i === activeIdx ? 'active' : ''}`;
+                b.style.flex = "1"; b.style.padding = "6px 0"; b.style.borderRadius = "4px"; b.style.fontSize = "0.65rem"; b.style.fontWeight = "bold"; b.style.border = "1px solid var(--border)";
+                b.style.background = i === activeIdx ? "var(--gold)" : "#21262d";
+                b.style.color = i === activeIdx ? "#000" : "#8b949e";
                 b.innerText = `M ${i+1}`;
-                b.onclick = () => { activeIdx = i; render(); };
+                b.onclick = () => { activeIdx = i; viewingGameIdx = -1; isEditing = false; render(); };
                 nav.appendChild(b);
             });
-            document.getElementById('match-select').value = activeIdx;
         }
 
-        function resetCurrentMatch() {
-            if(confirm("Reset Match " + (activeIdx+1) + "?")) { matches[activeIdx].started = false; render(); }
+        function toggleEdit() {
+            isEditing = !isEditing;
+            render();
         }
 
         function startMatch(winner) {
             let m = matches[activeIdx];
             m.p1.name = document.getElementById('p1-name').value || "Player 1";
             m.p2.name = document.getElementById('p2-name').value || "Player 2";
-            m.p1.sl = parseInt(document.getElementById('p1-sl').value);
-            m.p2.sl = parseInt(document.getElementById('p2-sl').value);
+            m.p1.sl = parseInt(document.getElementById('p1-sl-select').value);
+            m.p2.sl = parseInt(document.getElementById('p2-sl-select').value);
             m.p1.score = 0; m.p2.score = 0; m.totalInn = 0; m.gameInn = 0; m.deadTotal = 0;
             m.p1.tray = []; m.p2.tray = []; m.rackBalls = []; m.rackHistory = [];
             m.p1.def = 0; m.p2.def = 0; m.p1.timeouts = 0; m.p2.timeouts = 0;
-            m.started = true; m.lagWinner = winner; m.turn = winner;
+            m.p1.totalTimeouts = 0; m.p2.totalTimeouts = 0; m.p1.snaps = 0; m.p1.brs = 0; m.p2.snaps = 0; m.p2.brs = 0;
+            m.started = true; m.lagWinner = winner; m.turn = winner; viewingGameIdx = -1; isEditing = false;
             render();
         }
 
         function handleBallClick(n) {
             let m = matches[activeIdx];
-            if (!m.started || m.p1.score >= RACES[m.p1.sl] || m.p2.score >= RACES[m.p2.sl]) return;
+            const isOver = m.p1.score >= RACES[m.p1.sl] || m.p2.score >= RACES[m.p2.sl];
+            if (!m.started || (isOver && !isEditing) || (viewingGameIdx !== -1 && viewingGameIdx !== m.rackHistory.length)) return;
             const now = Date.now();
             if (now - lastClickTime < 300) recordBall(n, true);
             else { 
                 lastClickTime = now; 
-                setTimeout(() => { 
-                    if (Date.now() - lastClickTime >= 300) {
-                        if (n === 9) document.getElementById('nine-modal').style.display='flex';
-                        else recordBall(n, false);
-                    }
-                }, 305);
+                setTimeout(() => { if (Date.now() - lastClickTime >= 300) { if (n === 9) document.getElementById('nine-modal').style.display='flex'; else recordBall(n, false); } }, 305);
             }
         }
 
@@ -225,59 +234,63 @@
             let m = matches[activeIdx];
             if (m.rackBalls.find(b => b.n === n)) return;
             m.rackBalls.push({ n, isDead, player: m.turn });
-            if (isDead) m.deadTotal++; else { m[m.turn].score++; m[m.turn].tray.push(n); }
+            if (isDead) { m.deadTotal++; m[m.turn].tray.push({ n, isDead: true }); } 
+            else { m[m.turn].score++; m[m.turn].tray.push({ n, isDead: false }); }
             render();
         }
 
         function handle9Win(type) {
             let m = matches[activeIdx];
             document.getElementById('nine-modal').style.display = 'none';
-            if (type === 'brun') {
-                m[m.turn].score += 12;
-                for(let i=1; i<=9; i++) m[m.turn].tray.push(i);
-            } else {
-                m[m.turn].score += 2;
-                m[m.turn].tray.push(9);
-            }
-            m.rackHistory.push({ type: type, player: m.turn });
-            m.rackBalls = []; m.gameInn = 0; m.deadTotal = 0;
-            m.p1.timeouts = 0; m.p2.timeouts = 0;
-            render();
-        }
+            if(type === 'snap') m[m.turn].snaps++;
+            if(type === 'brun') m[m.turn].brs++;
 
-        function setTurn(p) { 
-            let m = matches[activeIdx]; 
-            if (m.p1.score >= RACES[m.p1.sl] || m.p2.score >= RACES[m.p2.sl]) return;
-            if (m.turn !== p) { if(p === m.lagWinner) { m.totalInn++; m.gameInn++; } m.turn = p; } 
-            render(); 
+            const p1RackPts = m.rackBalls.filter(b => b.player === 'p1' && !b.isDead).length + (m.turn === 'p1' ? 2 : 0);
+            const p2RackPts = m.rackBalls.filter(b => b.player === 'p2' && !b.isDead).length + (m.turn === 'p2' ? 2 : 0);
+            
+            m[m.turn].score += 2; 
+            m[m.turn].tray.push({ n: 9, isDead: false });
+            m.rackBalls.push({ n: 9, isDead: false, player: m.turn });
+            m.rackHistory.push({ type, winner: m.turn, balls: [...m.rackBalls], p1Tray: [...m.p1.tray], p2Tray: [...m.p2.tray], deadTotal: m.deadTotal, p1Def: m.p1.def, p2Def: m.p2.def, p1TO: m.p1.timeouts, p2TO: m.p2.timeouts, gameInn: m.gameInn, p1RackPts, p2RackPts });
+            m.rackBalls = []; m.gameInn = 0; m.deadTotal = 0; m.p1.tray = []; m.p2.tray = []; m.p1.timeouts = 0; m.p2.timeouts = 0; viewingGameIdx = -1;
+            render();
         }
 
         function useTimeout() { 
-            let m = matches[activeIdx], p = m[m.turn]; 
-            if (p.timeouts < (p.sl <= 3 ? 2 : 1)) { p.timeouts++; render(); startTimer(); }
-        }
-
-        function addDef() { matches[activeIdx][matches[activeIdx].turn].def++; render(); }
-        
-        function undo() {
-            let m = matches[activeIdx]; if (m.rackBalls.length === 0) return;
-            let b = m.rackBalls.pop();
-            if (b.isDead) m.deadTotal--; else { m[b.player].score--; m[b.player].tray.pop(); }
-            render();
+            let m = matches[activeIdx], p = m[m.turn];
+            if (p.timeouts < (p.sl <= 3 ? 2 : 1)) { p.timeouts++; p.totalTimeouts++; render(); startTimer(); }
         }
 
         function startTimer() {
             let sec = 60; document.getElementById('timer-modal').style.display = 'flex';
-            const disp = document.getElementById('timer-display'); disp.innerText = sec; disp.style.color = 'var(--gold)';
+            const disp = document.getElementById('timer-display'); disp.innerText = sec;
             clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-                sec--; disp.innerText = sec;
-                if(sec <= 10) disp.style.color = 'var(--red)';
-                if(sec <= 0) { clearInterval(timerInterval); disp.innerText = "TIME!"; }
-            }, 1000);
+            timerInterval = setInterval(() => { sec--; disp.innerText = sec; if(sec <= 0) { clearInterval(timerInterval); disp.innerText = "TIME!"; } }, 1000);
         }
 
         function stopTimer() { clearInterval(timerInterval); document.getElementById('timer-modal').style.display = 'none'; }
+        
+        function jumpToGame(idx) { viewingGameIdx = parseInt(idx); render(); }
+        
+        function setTurn(p) { 
+            let m = matches[activeIdx]; 
+            const isOver = m.p1.score >= RACES[m.p1.sl] || m.p2.score >= RACES[m.p2.sl];
+            if ((isOver && !isEditing) || (viewingGameIdx !== -1 && viewingGameIdx !== m.rackHistory.length)) return;
+            if (m.turn !== p) { if(p === m.lagWinner) { m.totalInn++; m.gameInn++; } m.turn = p; } 
+            render(); 
+        }
+        function addDef() { matches[activeIdx][matches[activeIdx].turn].def++; render(); }
+        function undo() {
+            let m = matches[activeIdx]; if (m.rackBalls.length === 0) return;
+            let b = m.rackBalls.pop();
+            if (b.isDead) m.deadTotal--; else { m[b.player].score--; }
+            m[b.player].tray.pop();
+            render();
+        }
+
+        function resetCurrentMatch() {
+            if(confirm("Reset Match " + (activeIdx+1) + "?")) { matches[activeIdx].started = false; render(); }
+        }
 
         function render() {
             updateNav(); let m = matches[activeIdx];
@@ -286,34 +299,64 @@
             
             if (m.started) {
                 const isOver = m.p1.score >= RACES[m.p1.sl] || m.p2.score >= RACES[m.p2.sl];
-                document.getElementById('game-view').classList.toggle('match-over', isOver);
-                // Keep reset button clickable always
-                document.getElementById('btn-reset').style.pointerEvents = 'auto';
+                const shouldBeLocked = isOver && !isEditing;
                 
-                document.getElementById('game-banner').innerHTML = isOver ? "MATCH COMPLETE" : `CURRENTLY PLAYING: <span id="ui-game-number">GAME ${m.rackHistory.length + 1}</span>`;
+                document.getElementById('main-body').className = shouldBeLocked ? 'is-locked' : '';
+                const editBtn = document.getElementById('edit-lock-btn');
+                editBtn.style.display = isOver ? 'inline-block' : 'none';
+                editBtn.innerText = isEditing ? 'LOCK' : 'EDIT';
+                
+                const sel = document.getElementById('game-select');
+                sel.innerHTML = '';
+                for(let i=0; i <= m.rackHistory.length; i++) {
+                    const opt = new Option(`GAME ${i+1}`, i);
+                    if(viewingGameIdx === -1 && i === m.rackHistory.length) opt.selected = true;
+                    if(viewingGameIdx === i) opt.selected = true;
+                    sel.add(opt);
+                }
+
+                let isViewingHistory = (viewingGameIdx !== -1 && viewingGameIdx !== m.rackHistory.length);
+                let historyData = isViewingHistory ? m.rackHistory[viewingGameIdx] : null;
+
+                let bannerText = isOver ? "MATCH OVER" : "CURRENTLY PLAYING:";
+                if(isViewingHistory) bannerText = "VIEWING GAME:";
+                document.getElementById('banner-text').innerText = bannerText;
+                
+                document.getElementById('p1-badge-area').innerHTML = '';
+                document.getElementById('p2-badge-area').innerHTML = '';
+
+                if(isViewingHistory) {
+                    const badge = historyData.type === 'snap' ? '<span class="special-win-tag">9-ON-SNAP</span>' : historyData.type === 'brun' ? '<span class="special-win-tag">BREAK & RUN</span>' : '';
+                    if(badge) document.getElementById(`${historyData.winner}-badge-area`).innerHTML = badge;
+                }
+
+                document.getElementById('ui-p1-label').innerText = isViewingHistory ? "RACK PTS" : "MATCH SCORE";
+                document.getElementById('ui-p2-label').innerText = isViewingHistory ? "RACK PTS" : "MATCH SCORE";
+                document.getElementById('ui-p1-s').innerText = isViewingHistory ? historyData.p1RackPts : m.p1.score;
+                document.getElementById('ui-p2-s').innerText = isViewingHistory ? historyData.p2RackPts : m.p2.score;
                 document.getElementById('ui-p1-display').innerText = m.p1.name;
                 document.getElementById('ui-p2-display').innerText = m.p2.name;
                 document.getElementById('lag-p1').innerHTML = m.lagWinner === 'p1' ? '<span style="background:var(--blue); color:#000; font-size:0.5rem; padding:2px; border-radius:3px; margin-left:4px;">LAG</span>' : '';
                 document.getElementById('lag-p2').innerHTML = m.lagWinner === 'p2' ? '<span style="background:var(--blue); color:#000; font-size:0.5rem; padding:2px; border-radius:3px; margin-left:4px;">LAG</span>' : '';
-                document.getElementById('ui-p1-s').innerText = m.p1.score;
-                document.getElementById('ui-p2-s').innerText = m.p2.score;
                 document.getElementById('ui-p1-sl').innerText = m.p1.sl;
                 document.getElementById('ui-p2-sl').innerText = m.p2.sl;
                 document.getElementById('ui-p1-t').innerText = RACES[m.p1.sl];
                 document.getElementById('ui-p2-t').innerText = RACES[m.p2.sl];
                 document.getElementById('ui-inn').innerText = m.totalInn;
-                document.getElementById('ui-g-inn').innerText = m.gameInn;
-                document.getElementById('ui-dead-total').innerText = m.deadTotal;
-                document.getElementById('stat-def-p1').innerText = m.p1.def;
-                document.getElementById('stat-def-p2').innerText = m.p2.def;
-                document.getElementById('stat-to-p1').innerText = m.p1.timeouts;
-                document.getElementById('stat-to-p2').innerText = m.p2.timeouts;
-                document.getElementById('card-p1').classList.toggle('active', !isOver && m.turn === 'p1');
-                document.getElementById('card-p2').classList.toggle('active', !isOver && m.turn === 'p2');
+                document.getElementById('ui-g-inn').innerText = isViewingHistory ? historyData.gameInn : m.gameInn;
+                document.getElementById('ui-dead-total').innerText = isViewingHistory ? historyData.deadTotal : m.deadTotal;
+                document.getElementById('stat-def-p1').innerText = isViewingHistory ? historyData.p1Def : m.p1.def;
+                document.getElementById('stat-def-p2').innerText = isViewingHistory ? historyData.p2Def : m.p2.def;
+                document.getElementById('stat-to-p1').innerText = isViewingHistory ? historyData.p1TO : m.p1.timeouts;
+                document.getElementById('stat-to-p2').innerText = isViewingHistory ? historyData.p2TO : m.p2.timeouts;
+
+                document.getElementById('card-p1').classList.toggle('active', !isOver && !isViewingHistory && m.turn === 'p1');
+                document.getElementById('card-p2').classList.toggle('active', !isOver && !isViewingHistory && m.turn === 'p2');
                 
                 const rack = document.getElementById('ball-rack'); rack.innerHTML = '';
+                let displayBalls = isViewingHistory ? historyData.balls : m.rackBalls;
                 for(let i=1; i<=9; i++) {
-                    const bd = m.rackBalls.find(x => x.n === i);
+                    const bd = displayBalls.find(x => x.n === i);
                     const b = document.createElement('div');
                     b.className = `ball b${i} ${bd ? (bd.isDead ? 'dead' : 'pocketed') : ''}`;
                     b.style.backgroundColor = BALL_COLORS[i];
@@ -322,34 +365,44 @@
                     b.onclick = () => handleBallClick(i);
                     rack.appendChild(b);
                 }
-                
-                const drawTray = (p) => {
-                    const displayBalls = m[p].tray.slice(-15);
-                    return displayBalls.map(n => `<div class="mini-ball b${n}" style="background-color:${BALL_COLORS[n] || '#444'}"><span>${n > 9 ? '•' : n}</span></div>`).join('');
-                };
-                document.getElementById('tray-p1').innerHTML = drawTray('p1');
-                document.getElementById('tray-p2').innerHTML = drawTray('p2');
+                const drawTray = (trayData) => trayData.map(ballObj => `<div class="mini-ball b${ballObj.n} ${ballObj.isDead ? 'is-dead' : ''}" style="background-color:${BALL_COLORS[ballObj.n]}"><span>${ballObj.n}</span></div>`).join('');
+                document.getElementById('tray-p1').innerHTML = drawTray(isViewingHistory ? historyData.p1Tray : m.p1.tray);
+                document.getElementById('tray-p2').innerHTML = drawTray(isViewingHistory ? historyData.p2Tray : m.p2.tray);
             }
             calcTeam();
         }
 
         function calcTeam() {
             const g = (s, t, os, ot) => { 
-                if (s <= 0) return 0;
-                if (s >= t) { let r = os/ot; return r<=.2?20:r<=.4?19:r<=.55?18:r<=.7?17:r<=.85?16:15; } 
-                let r = s/t; return r<=.2?1:r<=.4?2:r<=.6?3:r<=.8?4:5; 
+                if (s >= t) { let r = os/ot; if(r <= .2) return 20; if(r <= .4) return 19; if(r <= .55) return 18; if(r <= .7) return 17; if(r <= .85) return 16; return 15; } 
+                let r = s/t; if(r <= .2) return 1; if(r <= .4) return 2; if(r <= .6) return 3; if(r <= .8) return 4; return 5; 
             };
-            let ht = 0, at = 0, hl = 0, al = 0;
-            matches.forEach(m => { if(m.started) { ht += g(m.p1.score, RACES[m.p1.sl], m.p2.score, RACES[m.p2.sl]); at += g(m.p2.score, RACES[m.p2.sl], m.p1.score, RACES[m.p1.sl]); if(m.lagWinner==='p1') hl++; else al++; } });
-            if(hl===5) ht+=5; if(al===5) at+=5;
+            let ht = 0, at = 0;
+            matches.forEach(m => { if(m.started && (m.p1.score >= RACES[m.p1.sl] || m.p2.score >= RACES[m.p2.sl])) { let p1Pts = m.p1.score >= RACES[m.p1.sl] ? g(m.p1.score, RACES[m.p1.sl], m.p2.score, RACES[m.p2.sl]) : 20 - g(m.p2.score, RACES[m.p2.sl], m.p1.score, RACES[m.p1.sl]); ht += p1Pts; at += (20 - p1Pts); } });
             document.getElementById('team-h-total').innerText = ht; document.getElementById('team-a-total').innerText = at;
         }
 
         function showReport() {
             let m = matches[activeIdx];
-            document.getElementById('report-body').innerHTML = `<h3>${m.p1.name} (SL${m.p1.sl})</h3><p>Score: ${m.p1.score}/${RACES[m.p1.sl]}</p><p>Defenses: ${m.p1.def}</p><hr><h3>${m.p2.name} (SL${m.p2.sl})</h3><p>Score: ${m.p2.score}/${RACES[m.p2.sl]}</p><p>Defenses: ${m.p2.def}</p><hr><p>Total Innings: ${m.totalInn}</p>`;
+            document.getElementById('report-body').innerHTML = `
+                <div style="padding:10px; border:1px solid var(--border); border-radius:8px;">
+                    <h3 style="color:var(--gold); margin:0;">${m.p1.name} (SL${m.p1.sl})</h3>
+                    <p>Points: ${m.p1.score}/${RACES[m.p1.sl]}</p>
+                    <p>Defenses: ${m.p1.def} | Timeouts: ${m.p1.totalTimeouts}</p>
+                    <p>9-on-Snap: ${m.p1.snaps} | Break & Run: ${m.p1.brs}</p>
+                </div>
+                <div style="padding:10px; border:1px solid var(--border); border-radius:8px; margin-top:10px;">
+                    <h3 style="color:var(--gold); margin:0;">${m.p2.name} (SL${m.p2.sl})</h3>
+                    <p>Points: ${m.p2.score}/${RACES[m.p2.sl]}</p>
+                    <p>Defenses: ${m.p2.def} | Timeouts: ${m.p2.totalTimeouts}</p>
+                    <p>9-on-Snap: ${m.p2.snaps} | Break & Run: ${m.p2.brs}</p>
+                </div>
+                <div style="margin-top:15px; text-align:center; font-weight:bold;">Total Match Innings: ${m.totalInn}</div>`;
             document.getElementById('report-modal').style.display = 'flex';
         }
+        
+        updateNav();
+        syncNames();
     </script>
 </body>
 </html>
