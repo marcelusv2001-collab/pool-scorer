@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Shays Leaderboard - Final Fix</title>
+    <title>Shays Leaderboard - Professional Overlay</title>
     <style>
         body { margin: 0; padding: 15px; background-color: rgba(0,0,0,0); font-family: 'Segoe UI', sans-serif; color: white; }
         .flex-container { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
@@ -17,7 +17,8 @@
         th { border-bottom: 2px solid #444; padding: 10px; text-align: left; color: #888; font-size: 0.8em; }
         td { padding: 12px 10px; border-bottom: 1px solid #222; font-size: 1.1em; vertical-align: middle; }
         .pts { text-align: right; font-weight: bold; color: #00d4ff; font-size: 1.3em; width: 60px; }
-        .team-sub { font-size: 0.75em; color: #777; display: block; margin-top: 2px; }
+        /* Style for the team name in parentheses */
+        .team-text { color: #888; font-size: 0.85em; margin-left: 8px; font-weight: normal; }
         #admin { background: #222; padding: 15px; margin-bottom: 20px; border-radius: 8px; display: flex; gap: 10px; }
         input { flex-grow: 1; padding: 10px; border-radius: 4px; border: none; background: #111; color: white; }
         button { padding: 10px 20px; cursor: pointer; background: #00d4ff; border: none; font-weight: bold; border-radius: 4px; color: black; }
@@ -27,28 +28,28 @@
 <body>
 
     <div id="admin">
-        <input type="text" id="sheetUrl" placeholder="Paste your Google Sheets 'Publish to Web' link here...">
+        <input type="text" id="sheetUrl" placeholder="Paste Google Sheets 'Publish to Web' CSV link...">
         <button onclick="fetchData()">Update Boards</button>
     </div>
 
     <div class="flex-container">
         <div class="board">
-            <h2>Player Standings</h2>
+            <h2>Player Leaderboard</h2>
             <table>
-                <thead><tr><th>#</th><th>Player</th><th class="pts">Wins</th></tr></thead>
+                <thead><tr><th>#</th><th>Player (Team)</th><th class="pts">Wins</th></tr></thead>
                 <tbody id="playerBody"></tbody>
             </table>
         </div>
 
         <div class="board">
-            <h2>Team Totals</h2>
+            <h2>Team Leaderboard</h2>
             <table>
-                <thead><tr><th>#</th><th>Team Name</th><th class="pts">Wins</th></tr></thead>
+                <thead><tr><th>#</th><th>Team Name</th><th class="pts">Total Wins</th></tr></thead>
                 <tbody id="teamBody"></tbody>
             </table>
         </div>
     </div>
-    <div id="status">System Ready. Paste link and click Update.</div>
+    <div id="status">Ready.</div>
 
     <script>
         async function fetchData() {
@@ -56,7 +57,7 @@
             const status = document.getElementById('status');
             if (!url) return;
 
-            status.innerText = "Connecting to Google Sheets...";
+            status.innerText = "Syncing...";
 
             try {
                 const response = await fetch(url);
@@ -68,8 +69,8 @@
 
                 lines.forEach((line, index) => {
                     if (index === 0 || !line.trim()) return;
-
-                    // This regex splits by Tab OR Comma OR Semicolon automatically
+                    
+                    // Split by tab, comma, or semicolon
                     let cols = line.split(/[\t,;]/);
                     
                     if (cols.length >= 3) {
@@ -85,10 +86,9 @@
                 });
 
                 render(players, teamTotals);
-                status.innerText = "Last Update: " + new Date().toLocaleTimeString();
+                status.innerText = "Updated: " + new Date().toLocaleTimeString();
             } catch (e) {
-                console.error(e);
-                status.innerText = "Error: Link invalid or not 'Published to Web'.";
+                status.innerText = "Sync Error: Check your published link.";
             }
         }
 
@@ -98,7 +98,7 @@
             document.getElementById('playerBody').innerHTML = players.map((p, i) => `
                 <tr>
                     <td style="color:#555; width:20px;">${i+1}</td>
-                    <td>${p.name}<span class="team-sub">${p.team}</span></td>
+                    <td>${p.name} <span class="team-text">(${p.team})</span></td>
                     <td class="pts">${p.wins}</td>
                 </tr>
             `).join('');
