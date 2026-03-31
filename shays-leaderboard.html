@@ -3,129 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shays Leaderboard - Live Data</title>
+    <title>Shays Leaderboard - Google Sheets Sync</title>
     <style>
-        body { margin: 0; padding: 10px; background-color: rgba(0, 0, 0, 0); font-family: 'Segoe UI', sans-serif; color: white; text-shadow: 2px 2px 3px #000; }
+        /* Transparent for OBS */
+        body {
+            margin: 0; padding: 10px; background-color: rgba(0, 0, 0, 0); 
+            font-family: 'Segoe UI', Arial, sans-serif; color: white;
+            text-shadow: 2px 2px 3px rgba(0,0,0,0.9);
+        }
         .flex-container { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
-        .board { flex: 1; min-width: 300px; max-width: 500px; background: rgba(15, 15, 15, 0.95); border-radius: 8px; padding: 15px; border-top: 4px solid #00d4ff; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        h2 { text-align: center; color: #00d4ff; text-transform: uppercase; margin-top: 0; }
+        .board {
+            flex: 1; min-width: 320px; max-width: 500px;
+            background: rgba(20, 20, 20, 0.9); border-radius: 10px;
+            padding: 15px; border-top: 5px solid #00d4ff;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.7);
+        }
+        h2 { text-align: center; margin-top: 0; color: #00d4ff; text-transform: uppercase; letter-spacing: 1px; }
         table { width: 100%; border-collapse: collapse; }
-        th { border-bottom: 1px solid #444; padding: 8px; text-align: left; color: #888; font-size: 0.8em; }
-        td { padding: 8px; border-bottom: 1px solid #222; font-size: 1em; }
-        #admin { background: #222; padding: 15px; margin-bottom: 15px; border-radius: 5px; display: flex; gap: 10px; align-items: center; text-shadow: none; }
-        input { flex-grow: 1; padding: 10px; border-radius: 4px; border: none; background: #111; color: white; }
-        button { padding: 10px 20px; cursor: pointer; background: #00d4ff; border: none; font-weight: bold; border-radius: 4px; color: black; }
-        #debug { font-size: 12px; color: #aaa; margin-top: 10px; text-align: center; }
+        th { border-bottom: 2px solid #333; padding: 10px; text-align: left; color: #aaa; font-size: 0.9em; }
+        td { padding: 10px; border-bottom: 1px solid #222; font-size: 1.1em; }
+        .pts { text-align: right; font-weight: bold; color: #00d4ff; }
+        #admin { background: #333; padding: 15px; margin-bottom: 20px; border-radius: 8px; display: flex; gap: 10px; }
+        input { flex-grow: 1; padding: 10px; border-radius: 4px; border: none; }
+        button { padding: 10px 20px; cursor: pointer; background: #00d4ff; border: none; font-weight: bold; border-radius: 4px; }
+        #status { font-size: 0.8em; color: #888; text-align: center; margin-top: 5px; }
     </style>
 </head>
 <body>
 
     <div id="admin">
-        <input type="text" id="urlInput" value="https://digitalpool.com/tournaments/shays-tourney/stats">
-        <button onclick="updateData()">Update Boards</button>
+        <input type="text" id="sheetUrl" placeholder="Paste Google Sheets TSV Link Here...">
+        <button onclick="fetchSheetData()">Sync Leaderboard</button>
     </div>
-
-    <div id="debug">System Status: Ready</div>
 
     <div class="flex-container">
         <div class="board">
-            <h2>Player Wins</h2>
+            <h2>Player Standings</h2>
             <table>
-                <thead><tr><th>#</th><th>Player</th><th style="text-align:right">Wins</th></tr></thead>
+                <thead><tr><th>Rank</th><th>Player</th><th class="pts">Wins</th></tr></thead>
                 <tbody id="playerBody"></tbody>
             </table>
         </div>
+
         <div class="board">
-            <h2>Team Totals</h2>
+            <h2>Team Rankings</h2>
             <table>
-                <thead><tr><th>#</th><th>Team</th><th style="text-align:right">Total</th></tr></thead>
+                <thead><tr><th>Rank</th><th>Team</th><th class="pts">Total</th></tr></thead>
                 <tbody id="teamBody"></tbody>
             </table>
         </div>
     </div>
+    <div id="status">Ready to sync.</div>
 
     <script>
-        async function updateData() {
-            const debug = document.getElementById('debug');
-            let url = document.getElementById('urlInput').value.trim();
-            
-            debug.innerText = "Attempting to connect via Corsproxy.io...";
+        async function fetchSheetData() {
+            const url = document.getElementById('sheetUrl').value.trim();
+            const status = document.getElementById('status');
+            if (!url) return;
 
-            // Extract the tournament slug
-            let slug = url.split('tournaments/')[1]?.split('/')[0];
-            if(!slug) {
-                debug.innerText = "Error: Link must be a Digital Pool tournament stats page.";
-                return;
-            }
-
-            const apiUrl = `https://api.digitalpool.com/v1/tournaments/${slug}/stats`;
-            
-            // New Primary Proxy: Corsproxy.io
-            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`;
+            status.innerText = "Syncing with Google Sheets...";
 
             try {
-                const response = await fetch(proxyUrl);
+                const response = await fetch(url);
+                const tsvData = await response.text();
                 
-                if (!response.ok) throw new Error("Connection failed (Status " + response.status + ")");
+                // Parse TSV rows
+                const rows = tsvData.split('\n').map(row => row.split('\t'));
                 
-                const data = await response.json();
-                const stats = data.stats || [];
-
-                if(stats.length === 0) {
-                    debug.innerText = "Success, but no stats found. Check if the tournament has started.";
-                    return;
-                }
-
                 let players = [];
                 let teams = {};
 
-                stats.forEach(s => {
-                    const name = s.player?.name || "Unknown";
-                    const team = (s.team && s.team.name) ? s.team.name : "Independent";
-                    
-                    // Split "15-5" to get the "15"
-                    const record = s.gameRecord || "0-0";
-                    const wins = parseInt(record.split('-')[0]) || 0;
+                // Skip header (i=1)
+                for (let i = 1; i < rows.length; i++) {
+                    const name = rows[i][0];
+                    const teamName = rows[i][1] || "Independent";
+                    const wins = parseInt(rows[i][2]) || 0;
 
-                    players.push({ name, wins });
-                    teams[team] = (teams[team] || 0) + wins;
-                });
-
-                // Sort Players and update UI
-                players.sort((a,b) => b.wins - a.wins);
-                document.getElementById('playerBody').innerHTML = players.slice(0, 15).map((p, i) => 
-                    `<tr><td>${i+1}</td><td>${p.name}</td><td style="text-align:right; font-weight:bold; color:#00d4ff;">${p.wins}</td></tr>`
-                ).join('');
-
-                // Sort Teams and update UI
-                const sortedTeams = Object.entries(teams).sort((a,b) => b[1] - a[1]);
-                document.getElementById('teamBody').innerHTML = sortedTeams.map((t, i) => 
-                    `<tr><td>${i+1}</td><td>${t[0]}</td><td style="text-align:right; font-weight:bold; color:#00d4ff;">${t[1]}</td></tr>`
-                ).join('');
-
-                debug.innerText = "Last Updated: " + new Date().toLocaleTimeString();
-                debug.style.color = "#00ff00";
-
-            } catch (e) {
-                debug.innerText = "Error: " + e.message + ". Trying backup proxy...";
-                debug.style.color = "#ff4444";
-                
-                // Fallback attempt with AllOrigins if the first one fails
-                try {
-                    const backupProxy = `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`;
-                    const res = await fetch(backupProxy);
-                    const resJson = await res.json();
-                    const resData = JSON.parse(resJson.contents);
-                    // (Repeat rendering logic here or refresh page if needed)
-                    debug.innerText = "Backup successful. Data loaded.";
-                } catch(err) {
-                    debug.innerText = "All proxies failed. Check your internet or if the tournament is Public.";
+                    if (name) {
+                        players.push({ name, wins });
+                        teams[teamName] = (teams[teamName] || 0) + wins;
+                    }
                 }
+
+                render(players, teams);
+                status.innerText = "Last Update: " + new Date().toLocaleTimeString();
+            } catch (e) {
+                console.error(e);
+                status.innerText = "Error: Check link and ensure 'Published to Web' as TSV.";
             }
         }
 
-        // Auto-run once on load if a URL is present
-        window.onload = () => { if(document.getElementById('urlInput').value) updateData(); };
+        function render(players, teams) {
+            // Player Board
+            const pBody = document.getElementById('playerBody');
+            const sortedPlayers = players.sort((a,b) => b.wins - a.wins).slice(0, 15);
+            pBody.innerHTML = sortedPlayers.map((p, i) => `
+                <tr><td>${i+1}</td><td>${p.name}</td><td class="pts">${p.wins}</td></tr>
+            `).join('');
+
+            // Team Board
+            const tBody = document.getElementById('teamBody');
+            const sortedTeams = Object.entries(teams).sort((a,b) => b[1] - a[1]);
+            tBody.innerHTML = sortedTeams.map((t, i) => `
+                <tr><td>${i+1}</td><td>${t[0]}</td><td class="pts">${t[1]}</td></tr>
+            `).join('');
+        }
     </script>
 </body>
 </html>
