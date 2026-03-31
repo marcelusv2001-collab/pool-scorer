@@ -1,1 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tournament & Team Leaderboard</title>
+    <style>
+        /* Transparent for OBS */
+        body {
+            margin: 0;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0); 
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: white;
+            text-shadow: 2px 2px 3px rgba(0,0,0,0.9);
+        }
+
+        .flex-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .board {
+            flex: 1;
+            min-width: 300px;
+            max-width: 500px;
+            background: rgba(15, 15, 15, 0.9);
+            border-radius: 8px;
+            padding: 15px;
+            border-top: 4px solid #00d4ff;
+        }
+
+        h2 { 
+            text-align: center; 
+            margin-top: 0; 
+            font-size: 1.2em; 
+            text-transform: uppercase; 
+            color: #00d4ff;
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { border-bottom: 1px solid #444; padding: 8px; text-align: left; font-size: 0.9em; color: #888; }
+        td { padding: 8px; border-bottom: 1px solid #222; font-size: 1em; }
+
+        .pts { text-align: right; font-weight: bold; color: #00d4ff; }
+        .rank { width: 30px; font-weight: bold; color: #666; }
+
+        /* Admin Controls */
+        #admin {
+            background: #222;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            text-shadow: none;
+        }
+        input { padding: 8px; width: 300px; border-radius: 4px; border: none; }
+        button { padding: 8px 15px; cursor: pointer; background: #00d4ff; border: none; font-weight: bold; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <div id="admin">
+        <input type="text" id="urlInput" placeholder="Paste Digital Pool Public URL...">
+        <button onclick="startTracking()">Update Boards</button>
+        <span id="status" style="margin-left:10px; font-size:0.8em;">Waiting...</span>
+    </div>
+
+    <div class="flex-container">
+        <div class="board">
+            <h2>Player Standings</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th class="rank">#</th>
+                        <th>Player</th>
+                        <th class="pts">Pts</th>
+                    </tr>
+                </thead>
+                <tbody id="playerBody"></tbody>
+            </table>
+        </div>
+
+        <div class="board">
+            <h2>Team Totals</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th class="rank">#</th>
+                        <th>Team</th>
+                        <th class="pts">Total</th>
+                    </tr>
+                </thead>
+                <tbody id="teamBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let interval;
+
+        async function updateData() {
+            const url = document.getElementById('urlInput').value;
+            if (!url) return;
+
+            document.getElementById('status').innerText = "Refreshing...";
+
+            try {
+                const proxy = "https://api.allorigins.win/get?url=";
+                const response = await fetch(`${proxy}${encodeURIComponent(url)}`);
+                const data = await response.json();
+                
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(data.contents, 'text/html');
+                const rows = doc.querySelectorAll('table tr');
+
+                let players = [];
+                let teams = {};
+
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    if (cells.length >= 5) {
+                        const name = cells[0].innerText.trim();
+                        const teamName = cells[2].innerText.trim() || "Independent";
+                        const points = parseFloat(cells[4].innerText.replace(/,/g, '')) || 0;
+
+                        // Add to player list
+                        players.push({ name, points });
+
+                        // Add to team totals
+                        teams[teamName] = (teams[teamName] || 0) + points;
+                    }
+                });
+
+                renderBoards(players, teams);
+                document.getElementById('status').innerText = "Last Update: " + new Date().toLocaleTimeString();
+            } catch (e) {
+                document.getElementById('status').innerText = "Error fetching data.";
+            }
+        }
+
+        function renderBoards(players, teams) {
+            // Render Players (Top 15)
+            const pBody = document.getElementById('playerBody');
+            const sortedPlayers = players.sort((a,b) => b.points - a.points).slice(0, 15);
+            pBody.innerHTML = sortedPlayers.map((p, i) => `
+                <tr>
+                    <td class="rank">${i+1}</td>
+                    <td>${p.name}</td>
+                    <td class="pts">${p.points}</td>
+                </tr>
+            `).join('');
+
+            // Render Teams
+            const tBody = document.getElementById('teamBody');
+            const sortedTeams = Object.entries(teams).sort((a,b) => b[1] - a[1]);
+            tBody.innerHTML = sortedTeams.map((t, i) => `
+                <tr>
+                    <td class="rank">${i+1}</td>
+                    <td>${t[0]}</td>
+                    <td class="pts">${t[1]}</td>
+                </tr>
+            `).join('');
+        }
+
+        function startTracking() {
+            updateData();
+            if (interval) clearInterval(interval);
+            interval = setInterval(updateData, 30000);
+        }
+    </script>
+</body>
+</html>
 
