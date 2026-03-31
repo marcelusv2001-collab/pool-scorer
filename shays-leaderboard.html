@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shays Leaderboard - Tournament & Team</title>
+    <title>Shays Leaderboard - Game Record Scraper</title>
     <style>
         /* Transparent for OBS Overlay */
         body {
@@ -49,7 +49,7 @@
         .pts { text-align: right; font-weight: bold; color: #00d4ff; }
         .rank { width: 30px; font-weight: bold; color: #666; }
 
-        /* Admin Controls - Hidden in OBS by using a Crop filter if needed */
+        /* Admin Controls - Hide using Alt+Drag in OBS */
         #admin {
             background: #222;
             padding: 15px;
@@ -77,26 +77,25 @@
             border-radius: 4px; 
             color: #000;
         }
-        button:hover { background: #00aacc; }
     </style>
 </head>
 <body>
 
     <div id="admin">
-        <input type="text" id="urlInput" placeholder="Paste Digital Pool Public URL here...">
+        <input type="text" id="urlInput" placeholder="Paste Digital Pool Stats URL...">
         <button onclick="startTracking()">Update Boards</button>
         <span id="status" style="margin-left:10px; font-size:0.8em; color: #888;">Waiting...</span>
     </div>
 
     <div class="flex-container">
         <div class="board">
-            <h2>Player Standings</h2>
+            <h2>Player Wins (Game Record)</h2>
             <table>
                 <thead>
                     <tr>
                         <th class="rank">#</th>
                         <th>Player</th>
-                        <th class="pts">Pts</th>
+                        <th class="pts">Wins</th>
                     </tr>
                 </thead>
                 <tbody id="playerBody"></tbody>
@@ -110,7 +109,7 @@
                     <tr>
                         <th class="rank">#</th>
                         <th>Team</th>
-                        <th class="pts">Total</th>
+                        <th class="pts">Total Wins</th>
                     </tr>
                 </thead>
                 <tbody id="teamBody"></tbody>
@@ -128,7 +127,6 @@
             document.getElementById('status').innerText = "Refreshing...";
 
             try {
-                // Using AllOrigins proxy to bypass CORS issues
                 const proxy = "https://api.allorigins.win/get?url=";
                 const response = await fetch(`${proxy}${encodeURIComponent(url)}`);
                 const data = await response.json();
@@ -136,23 +134,27 @@
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(data.contents, 'text/html');
                 
-                // Adjusting selector to find table rows
-                const rows = doc.querySelectorAll('table tr');
+                // Select rows from the stats table
+                const rows = doc.querySelectorAll('table tbody tr');
 
                 let players = [];
                 let teams = {};
 
                 rows.forEach(row => {
                     const cells = row.querySelectorAll('td');
-                    // Ensure we are hitting the right columns (Name, Team, Points)
-                    if (cells.length >= 5) {
+                    
+                    // We check cells.length to ensure it's a valid data row
+                    if (cells.length >= 4) {
                         const name = cells[0].innerText.trim();
                         const teamName = cells[2].innerText.trim() || "Independent";
-                        const points = parseFloat(cells[4].innerText.replace(/,/g, '')) || 0;
+                        
+                        // Extracting the first number from "Game Record" (e.g., "15 - 5")
+                        const recordRaw = cells[3].innerText.trim();
+                        const wins = parseInt(recordRaw.split('-')[0]) || 0;
 
-                        if (name) {
-                            players.push({ name, points });
-                            teams[teamName] = (teams[teamName] || 0) + points;
+                        if (name && name !== "Player") {
+                            players.push({ name, points: wins });
+                            teams[teamName] = (teams[teamName] || 0) + wins;
                         }
                     }
                 });
@@ -160,15 +162,16 @@
                 renderBoards(players, teams);
                 document.getElementById('status').innerText = "Last Update: " + new Date().toLocaleTimeString();
             } catch (e) {
-                console.error(e);
-                document.getElementById('status').innerText = "Error fetching data.";
+                console.error("Scrape Error:", e);
+                document.getElementById('status').innerText = "Error: Check URL/Table Format";
             }
         }
 
         function renderBoards(players, teams) {
-            // Render Players (Top 15)
+            // Player Standings (Top 15)
             const pBody = document.getElementById('playerBody');
             const sortedPlayers = players.sort((a,b) => b.points - a.points).slice(0, 15);
+            
             pBody.innerHTML = sortedPlayers.map((p, i) => `
                 <tr>
                     <td class="rank">${i+1}</td>
@@ -177,14 +180,15 @@
                 </tr>
             `).join('');
 
-            // Render Teams
+            // Team Totals
             const tBody = document.getElementById('teamBody');
             const sortedTeams = Object.entries(teams).sort((a,b) => b[1] - a[1]);
+            
             tBody.innerHTML = sortedTeams.map((t, i) => `
                 <tr>
                     <td class="rank">${i+1}</td>
                     <td>${t[0]}</td>
-                    <td class="pts">${t[1].toFixed(1)}</td>
+                    <td class="pts">${t[1]}</td>
                 </tr>
             `).join('');
         }
@@ -192,8 +196,8 @@
         function startTracking() {
             updateData();
             if (interval) clearInterval(interval);
-            // Auto-refresh every 30 seconds
-            interval = setInterval(updateData, 30000);
+            // Refresh every 60 seconds
+            interval = setInterval(updateData, 60000);
         }
     </script>
 </body>
