@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shays Leaderboard - Game Record Scraper</title>
+    <title>Shays Leaderboard - Tournament Stats</title>
     <style>
         /* Transparent for OBS Overlay */
         body {
@@ -49,7 +49,7 @@
         .pts { text-align: right; font-weight: bold; color: #00d4ff; }
         .rank { width: 30px; font-weight: bold; color: #666; }
 
-        /* Admin Controls - Hide using Alt+Drag in OBS */
+        /* Admin Controls - Hidden in OBS by using a Crop filter if needed */
         #admin {
             background: #222;
             padding: 15px;
@@ -77,12 +77,13 @@
             border-radius: 4px; 
             color: #000;
         }
+        button:hover { background: #00aacc; }
     </style>
 </head>
 <body>
 
     <div id="admin">
-        <input type="text" id="urlInput" placeholder="Paste Digital Pool Stats URL...">
+        <input type="text" id="urlInput" placeholder="Paste Digital Pool Stats URL here...">
         <button onclick="startTracking()">Update Boards</button>
         <span id="status" style="margin-left:10px; font-size:0.8em; color: #888;">Waiting...</span>
     </div>
@@ -121,39 +122,43 @@
         let interval;
 
         async function updateData() {
-            const url = document.getElementById('urlInput').value;
+            let url = document.getElementById('urlInput').value;
             if (!url) return;
 
             document.getElementById('status').innerText = "Refreshing...";
 
+            // Automatically format the URL to hit the Digital Pool API directly
+            let apiUrl = url;
+            if (url.includes("digitalpool.com/tournaments/") && !url.includes("api.digitalpool.com")) {
+                // Extracts the tournament slug and converts to API endpoint
+                const slug = url.split("tournaments/")[1].split("/")[0];
+                apiUrl = `https://api.digitalpool.com/v1/tournaments/${slug}/stats`;
+            }
+
             try {
+                // Using AllOrigins to handle CORS
                 const proxy = "https://api.allorigins.win/get?url=";
-                const response = await fetch(`${proxy}${encodeURIComponent(url)}`);
-                const data = await response.json();
+                const response = await fetch(`${proxy}${encodeURIComponent(apiUrl)}`);
+                const result = await response.json();
                 
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(data.contents, 'text/html');
-                
-                // Select rows from the stats table
-                const rows = doc.querySelectorAll('table tbody tr');
+                // Parse the JSON content returned from the proxy
+                const data = JSON.parse(result.contents);
+                const statsList = data.stats || [];
 
                 let players = [];
                 let teams = {};
 
-                rows.forEach(row => {
-                    const cells = row.querySelectorAll('td');
+                statsList.forEach(entry => {
+                    const name = entry.player ? entry.player.name : "Unknown Player";
+                    const teamName = entry.team ? entry.team.name : "Independent";
                     
-                    // We check cells.length to ensure it's a valid data row
-                    if (cells.length >= 4) {
-                        const name = cells[0].innerText.trim();
-                        const teamName = cells[2].innerText.trim() || "Independent";
-                        
-                        // Extracting the first number from "Game Record" (e.g., "15 - 5")
-                        const recordRaw = cells[3].innerText.trim();
-                        const wins = parseInt(recordRaw.split('-')[0]) || 0;
+                    // Extracts first number (wins) from the record string (e.g., "15-5")
+                    const record = entry.gameRecord || "0-0";
+                    const wins = parseInt(record.split('-')[0]) || 0;
 
-                        if (name && name !== "Player") {
-                            players.push({ name, points: wins });
+                    if (name) {
+                        players.push({ name, points: wins });
+                        if (teamName) {
                             teams[teamName] = (teams[teamName] || 0) + wins;
                         }
                     }
@@ -162,13 +167,13 @@
                 renderBoards(players, teams);
                 document.getElementById('status').innerText = "Last Update: " + new Date().toLocaleTimeString();
             } catch (e) {
-                console.error("Scrape Error:", e);
-                document.getElementById('status').innerText = "Error: Check URL/Table Format";
+                console.error("Fetch Error:", e);
+                document.getElementById('status').innerText = "Data Error: Check URL or Permissions.";
             }
         }
 
         function renderBoards(players, teams) {
-            // Player Standings (Top 15)
+            // Render Players (Top 15)
             const pBody = document.getElementById('playerBody');
             const sortedPlayers = players.sort((a,b) => b.points - a.points).slice(0, 15);
             
@@ -180,7 +185,7 @@
                 </tr>
             `).join('');
 
-            // Team Totals
+            // Render Teams
             const tBody = document.getElementById('teamBody');
             const sortedTeams = Object.entries(teams).sort((a,b) => b[1] - a[1]);
             
@@ -196,7 +201,7 @@
         function startTracking() {
             updateData();
             if (interval) clearInterval(interval);
-            // Refresh every 60 seconds
+            // Auto-refresh every 60 seconds
             interval = setInterval(updateData, 60000);
         }
     </script>
