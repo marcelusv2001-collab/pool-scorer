@@ -2,110 +2,109 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>MVP TV - Tournament Leaderboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MVP TV - Leaderboard Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Anton&family=Roboto:wght@700;900&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #00d4ff; --gold: #ffd700; --bg: #0a0a0a; }
+        :root { --primary: #00d4ff; --gold: #ffd700; --bg: #050505; }
         
         * { box-sizing: border-box; }
         html, body {
-            margin: 0; padding: 0; width: 100vw; height: 100vh;
-            background-color: #000; overflow: hidden;
-            font-family: 'Roboto', sans-serif; color: #fff;
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: #000; color: #fff;
+            font-family: 'Roboto', sans-serif; overflow: hidden;
             display: flex; flex-direction: column;
         }
 
-        /* 16:9 Ratio Container */
-        .tv-canvas {
-            width: 100%; height: 100%;
-            display: flex; flex-direction: column;
-            background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
-        }
-
+        /* Responsive Header */
         header {
-            height: 15%; display: flex; justify-content: space-between; align-items: center;
-            padding: 0 50px; background: rgba(0,0,0,0.8);
-            border-bottom: 5px solid var(--primary);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            flex: 0 0 auto; height: clamp(60px, 12vh, 100px);
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 20px; background: #000; border-bottom: 3px solid var(--primary);
         }
-        .logo-img { height: 80px; filter: drop-shadow(0 0 10px rgba(255,215,0,0.3)); }
-        header h1 { font-family: 'Anton', sans-serif; font-size: 4rem; text-transform: uppercase; margin: 0; letter-spacing: 6px; color: #fff; }
+        .logo-box img { height: clamp(30px, 8vh, 60px); object-fit: contain; }
+        header h1 { 
+            font-family: 'Anton', sans-serif; font-size: clamp(1.2rem, 4vw, 2.5rem); 
+            text-transform: uppercase; margin: 0; letter-spacing: 2px; text-align: center;
+        }
 
+        /* Main Viewport */
         .main-stage {
-            height: 75%; display: flex; gap: 40px; padding: 40px;
+            flex: 1 1 auto; display: flex; gap: 15px; padding: 15px;
+            overflow: hidden; min-height: 0;
         }
 
         .board {
             flex: 1; display: flex; flex-direction: column;
-            background: rgba(15, 15, 15, 0.95); border: 2px solid #333;
-            border-radius: 20px; overflow: hidden; position: relative;
+            background: rgba(20, 20, 20, 0.95); border-radius: 10px;
+            border: 1px solid #333; overflow: hidden;
         }
 
         .board-header {
-            background: #111; padding: 20px; text-align: center;
-            font-family: 'Anton'; font-size: 2.2rem; color: var(--primary);
-            border-bottom: 3px solid #222; text-transform: uppercase;
+            background: #111; padding: 10px; text-align: center;
+            font-family: 'Anton'; font-size: clamp(0.9rem, 2vw, 1.4rem);
+            color: var(--primary); border-bottom: 2px solid #222;
         }
 
-        .scroll-container { flex-grow: 1; overflow: hidden; position: relative; }
-        .scroll-content { position: absolute; width: 100%; top: 0; left: 0; padding: 10px 30px; transition: transform 0.1s linear; }
+        .scroll-container { flex: 1; overflow: hidden; position: relative; }
+        .scroll-content { position: absolute; width: 100%; top: 0; left: 0; padding: 5px 15px; }
 
         table { width: 100%; border-collapse: collapse; }
-        td { padding: 22px 10px; border-bottom: 1px solid #222; font-size: 1.6rem; font-weight: 700; }
+        td { padding: 12px 5px; border-bottom: 1px solid #1a1a1a; font-size: clamp(0.8rem, 1.5vw, 1.1rem); font-weight: 700; }
         
-        .rank { color: var(--gold); width: 70px; text-align: center; font-size: 1.8rem; font-family: 'Anton'; }
-        .pts { text-align: right; color: var(--primary); font-size: 2.2rem; width: 110px; font-weight: 900; font-family: 'Anton'; }
-        .team-tag { color: #777; font-size: 1rem; font-weight: 400; margin-left: 15px; font-style: italic; }
+        .rank { color: var(--gold); width: 35px; text-align: center; }
+        .pts { text-align: right; color: var(--primary); width: 60px; font-weight: 900; }
+        .team-tag { color: #777; font-size: 0.8em; margin-left: 5px; font-weight: 400; }
 
+        /* Fixed Footer - Always Visible */
         footer {
-            height: 10%; background: #111; display: flex; align-items: center;
-            justify-content: space-between; padding: 0 50px; border-top: 2px solid #333;
+            flex: 0 0 auto; background: #111; padding: 10px 20px;
+            border-top: 2px solid #333; display: flex; flex-wrap: wrap;
+            align-items: center; justify-content: center; gap: 10px;
+            z-index: 100;
         }
-        .controls { display: flex; align-items: center; gap: 20px; }
-        input[type="text"] { background: #000; border: 1px solid #444; color: #fff; padding: 12px; width: 400px; border-radius: 5px; font-size: 1rem; }
-        button { background: var(--primary); color: #000; border: none; padding: 12px 25px; font-weight: 900; cursor: pointer; border-radius: 5px; text-transform: uppercase; }
-        .speed-box { display: flex; align-items: center; gap: 10px; color: #888; font-size: 0.9rem; }
+        .control-group { display: flex; align-items: center; gap: 8px; }
+        input[type="text"] { 
+            background: #000; border: 1px solid #555; color: #fff; 
+            padding: 8px; width: 200px; border-radius: 4px; font-size: 0.9rem;
+        }
+        button { 
+            background: var(--primary); color: #000; border: none; 
+            padding: 8px 15px; font-weight: 900; border-radius: 4px; cursor: pointer;
+        }
+        #status { font-size: 0.7rem; color: var(--gold); width: 100%; text-align: center; }
     </style>
 </head>
 <body>
 
-<div class="tv-canvas">
-    <header>
-        <img class="logo-img" src="https://i.postimg.cc/mD363K0P/1000030204.png" alt="MVP TV">
-        <h1>Tournament Leaderboard</h1>
-        <img class="logo-img" src="https://i.postimg.cc/fRF1X6R5/1000038471.png" alt="Fifth Ward">
-    </header>
+<header>
+    <div class="logo-box"><img src="https://i.postimg.cc/mD363K0P/1000030204.png" alt="MVP TV"></div>
+    <h1>Tournament Leaderboard</h1>
+    <div class="logo-box"><img src="https://i.postimg.cc/fRF1X6R5/1000038471.png" alt="FW Logo"></div>
+</header>
 
-    <div class="main-stage">
-        <div class="board">
-            <div class="board-header">Player Standings</div>
-            <div class="scroll-container" id="pCont">
-                <div class="scroll-content" id="pList"></div>
-            </div>
-        </div>
-        <div class="board">
-            <div class="board-header">Team Rankings</div>
-            <div class="scroll-container" id="tCont">
-                <div class="scroll-content" id="tList"></div>
-            </div>
-        </div>
+<div class="main-stage">
+    <div class="board">
+        <div class="board-header">Player Standings</div>
+        <div class="scroll-container" id="pCont"><div class="scroll-content" id="pList"></div></div>
     </div>
-
-    <footer>
-        <div class="controls">
-            <input type="text" id="sheetUrl" placeholder="Paste Google CSV/TSV Link Here">
-            <button onclick="updateData()">Sync Data</button>
-        </div>
-        <div class="controls">
-            <div class="speed-box">
-                <span>Scroll Speed</span>
-                <input type="range" id="speed" min="0" max="10" value="3">
-            </div>
-            <button id="pBtn" onclick="toggleScroll()" style="background:var(--gold)">Pause</button>
-        </div>
-        <div id="status" style="color:var(--primary); font-family:'Anton'">System Ready</div>
-    </footer>
+    <div class="board">
+        <div class="board-header">Team Rankings</div>
+        <div class="scroll-container" id="tCont"><div class="scroll-content" id="tList"></div></div>
+    </div>
 </div>
+
+<footer>
+    <div class="control-group">
+        <input type="text" id="sheetUrl" placeholder="Paste Google CSV Link">
+        <button onclick="updateData()">Sync</button>
+    </div>
+    <div class="control-group">
+        <input type="range" id="speed" min="0" max="10" value="3" style="width:80px;">
+        <button onclick="toggleScroll()" id="pBtn">Pause</button>
+    </div>
+    <div id="status">Ready - Paste link and click Sync</div>
+</footer>
 
 <script>
     let scrollPos = 0;
@@ -119,6 +118,7 @@
     async function updateData() {
         const url = document.getElementById('sheetUrl').value.trim();
         if(!url) return;
+        document.getElementById('status').innerText = "Syncing...";
         try {
             const res = await fetch(url);
             const text = await res.text();
@@ -136,8 +136,10 @@
             });
 
             render(p, t);
-            document.getElementById('status').innerText = "Last Sync: " + new Date().toLocaleTimeString();
-        } catch(e) { alert("Check Link Format (Must be Published CSV)"); }
+            document.getElementById('status').innerText = "Sync Complete: " + new Date().toLocaleTimeString();
+        } catch(e) { 
+            document.getElementById('status').innerText = "Sync Error - Check Link";
+        }
     }
 
     function render(players, teams) {
@@ -156,14 +158,14 @@
 
     function loop() {
         if(scrolling) {
-            const speed = document.getElementById('speed').value / 10;
+            const speed = document.getElementById('speed').value / 15;
             const pList = document.getElementById('pList');
             const tList = document.getElementById('tList');
             const contH = document.getElementById('pCont').offsetHeight;
 
             if(pList.offsetHeight > contH) {
                 scrollPos += speed;
-                if(scrollPos > pList.offsetHeight + 50) scrollPos = -contH;
+                if(scrollPos > pList.offsetHeight + 40) scrollPos = -contH;
                 pList.style.transform = `translateY(${-scrollPos}px)`;
                 tList.style.transform = `translateY(${-scrollPos}px)`;
             }
