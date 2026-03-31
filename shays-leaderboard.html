@@ -2,28 +2,31 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Shays Leaderboard - Live Sync</title>
+    <title>Shays Leaderboard - Sync Fix</title>
     <style>
-        body { margin: 0; padding: 20px; background-color: rgba(0,0,0,0); font-family: 'Segoe UI', sans-serif; color: white; }
-        .flex-container { display: flex; gap: 30px; justify-content: center; }
+        body { margin: 0; padding: 15px; background-color: rgba(0,0,0,0); font-family: 'Segoe UI', sans-serif; color: white; }
+        .flex-container { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
         .board { 
-            flex: 1; background: rgba(15, 15, 15, 0.9); border-radius: 10px; 
-            padding: 20px; border-top: 4px solid #00d4ff; box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+            flex: 1; min-width: 320px; max-width: 500px;
+            background: rgba(20, 20, 20, 0.95); border-radius: 12px; 
+            padding: 20px; border-top: 5px solid #00d4ff; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
         }
-        h2 { text-align: center; color: #00d4ff; margin-top: 0; text-transform: uppercase; font-size: 1.1em; }
-        table { width: 100%; border-collapse: collapse; }
-        th { border-bottom: 2px solid #333; padding: 10px; text-align: left; color: #888; font-size: 0.8em; }
-        td { padding: 10px; border-bottom: 1px solid #222; }
-        .pts { text-align: right; font-weight: bold; color: #00d4ff; }
+        h2 { text-align: center; color: #00d4ff; margin-top: 0; text-transform: uppercase; letter-spacing: 1px; font-size: 1.2em; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { border-bottom: 2px solid #444; padding: 10px; text-align: left; color: #888; font-size: 0.85em; }
+        td { padding: 12px 10px; border-bottom: 1px solid #333; font-size: 1.05em; }
+        .pts { text-align: right; font-weight: bold; color: #00d4ff; font-family: monospace; font-size: 1.2em; }
+        .team-label { font-size: 0.8em; color: #aaa; display: block; margin-top: 2px; }
         #admin { background: #222; padding: 15px; margin-bottom: 20px; border-radius: 8px; display: flex; gap: 10px; }
-        input { flex-grow: 1; padding: 8px; border-radius: 4px; border: none; }
-        button { padding: 8px 15px; cursor: pointer; background: #00d4ff; border: none; font-weight: bold; border-radius: 4px; }
+        input { flex-grow: 1; padding: 10px; border-radius: 4px; border: none; background: #111; color: white; }
+        button { padding: 10px 20px; cursor: pointer; background: #00d4ff; border: none; font-weight: bold; border-radius: 4px; color: black; }
     </style>
 </head>
 <body>
 
     <div id="admin">
-        <input type="text" id="sheetUrl" placeholder="Paste Google Sheets Published TSV Link...">
+        <input type="text" id="sheetUrl" placeholder="Paste Google Sheets Link Here...">
         <button onclick="fetchData()">Update Boards</button>
     </div>
 
@@ -31,7 +34,7 @@
         <div class="board">
             <h2>Player Leaderboard</h2>
             <table>
-                <thead><tr><th>#</th><th>Player</th><th class="pts">Wins</th></tr></thead>
+                <thead><tr><th>#</th><th>Player / Team</th><th class="pts">Wins</th></tr></thead>
                 <tbody id="playerBody"></tbody>
             </table>
         </div>
@@ -39,7 +42,7 @@
         <div class="board">
             <h2>Team Leaderboard</h2>
             <table>
-                <thead><tr><th>#</th><th>Team</th><th class="pts">Total Wins</th></tr></thead>
+                <thead><tr><th>#</th><th>Team Name</th><th class="pts">Total Wins</th></tr></thead>
                 <tbody id="teamBody"></tbody>
             </table>
         </div>
@@ -52,44 +55,54 @@
 
             try {
                 const response = await fetch(url);
-                const tsv = await response.text();
-                const rows = tsv.split('\n').map(r => r.split('\t'));
+                const text = await response.text();
+                const lines = text.split(/\r?\n/);
 
                 let players = [];
                 let teamTotals = {};
 
-                // Process rows (Skip header i=0)
-                for (let i = 1; i < rows.length; i++) {
-                    const name = rows[i][0]?.trim();
-                    const team = rows[i][1]?.trim() || "Independent";
-                    const wins = parseInt(rows[i][2]) || 0;
+                lines.forEach((line, index) => {
+                    if (index === 0 || !line.trim()) return; // Skip header/empty
 
-                    if (name) {
-                        // Add to individual list
-                        players.push({ name, wins });
-                        
-                        // Add to team sum
+                    // Handle Tab OR Comma separation automatically
+                    let cols = line.includes('\t') ? line.split('\t') : line.split(',');
+                    
+                    if (cols.length >= 3) {
+                        const name = cols[0].trim();
+                        const team = cols[1].trim() || "Independent";
+                        const wins = parseInt(cols[2]) || 0;
+
+                        players.push({ name, team, wins });
                         teamTotals[team] = (teamTotals[team] || 0) + wins;
                     }
-                }
+                });
 
                 render(players, teamTotals);
             } catch (e) {
-                alert("Sync Error: Ensure the sheet is Published to Web as TSV.");
+                console.error(e);
+                alert("Data Error: Please check your Google Sheet link.");
             }
         }
 
         function render(players, teamTotals) {
-            // Render Players (Sorted by wins)
+            // Render Players
             players.sort((a,b) => b.wins - a.wins);
             document.getElementById('playerBody').innerHTML = players.map((p, i) => `
-                <tr><td>${i+1}</td><td>${p.name}</td><td class="pts">${p.wins}</td></tr>
+                <tr>
+                    <td style="width:20px; color:#666;">${i+1}</td>
+                    <td>${p.name}<span class="team-label">${p.team}</span></td>
+                    <td class="pts">${p.wins}</td>
+                </tr>
             `).join('');
 
-            // Render Teams (Sorted by combined wins)
+            // Render Teams
             const sortedTeams = Object.entries(teamTotals).sort((a,b) => b[1] - a[1]);
             document.getElementById('teamBody').innerHTML = sortedTeams.map((t, i) => `
-                <tr><td>${i+1}</td><td>${t[0]}</td><td class="pts">${t[1]}</td></tr>
+                <tr>
+                    <td style="width:20px; color:#666;">${i+1}</td>
+                    <td>${t[0]}</td>
+                    <td class="pts">${t[1]}</td>
+                </tr>
             `).join('');
         }
     </script>
