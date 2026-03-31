@@ -2,118 +2,101 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MVP TV - Leaderboard Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MVP TV Leaderboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Anton&family=Roboto:wght@700;900&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #00d4ff; --gold: #ffd700; --bg: #050505; }
-        
+        :root { --primary: #00d4ff; --gold: #ffd700; }
         * { box-sizing: border-box; }
-        html, body {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            background-color: #000; color: #fff;
-            font-family: 'Roboto', sans-serif; overflow: hidden;
-            display: flex; flex-direction: column;
+        
+        /* Forces the app to fit the screen exactly */
+        html, body { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background: #000; color: #fff; font-family: 'Roboto', sans-serif;
+            display: flex; flex-direction: column; overflow: hidden;
         }
 
-        /* Responsive Header */
+        /* HEADER: Restricted height so it can't block the footer */
         header {
-            flex: 0 0 auto; height: clamp(60px, 12vh, 100px);
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 0 20px; background: #000; border-bottom: 3px solid var(--primary);
+            flex: 0 0 60px; display: flex; justify-content: space-between; 
+            align-items: center; padding: 0 15px; border-bottom: 2px solid var(--primary);
+            background: #000;
         }
-        .logo-box img { height: clamp(30px, 8vh, 60px); object-fit: contain; }
-        header h1 { 
-            font-family: 'Anton', sans-serif; font-size: clamp(1.2rem, 4vw, 2.5rem); 
-            text-transform: uppercase; margin: 0; letter-spacing: 2px; text-align: center;
-        }
+        header h1 { font-family: 'Anton'; font-size: 1.1rem; text-transform: uppercase; margin: 0; letter-spacing: 1px; }
+        .logo-img { height: 35px; }
 
-        /* Main Viewport */
+        /* MAIN AREA: Takes up remaining space */
         .main-stage {
-            flex: 1 1 auto; display: flex; gap: 15px; padding: 15px;
-            overflow: hidden; min-height: 0;
+            flex: 1; display: flex; gap: 8px; padding: 10px; min-height: 0;
         }
-
         .board {
             flex: 1; display: flex; flex-direction: column;
-            background: rgba(20, 20, 20, 0.95); border-radius: 10px;
-            border: 1px solid #333; overflow: hidden;
+            background: #111; border-radius: 8px; border: 1px solid #333; overflow: hidden;
         }
-
-        .board-header {
-            background: #111; padding: 10px; text-align: center;
-            font-family: 'Anton'; font-size: clamp(0.9rem, 2vw, 1.4rem);
-            color: var(--primary); border-bottom: 2px solid #222;
+        .board-header { 
+            background: #222; padding: 6px; text-align: center; 
+            font-family: 'Anton'; color: var(--primary); font-size: 0.85rem;
         }
-
         .scroll-container { flex: 1; overflow: hidden; position: relative; }
-        .scroll-content { position: absolute; width: 100%; top: 0; left: 0; padding: 5px 15px; }
+        .scroll-content { position: absolute; width: 100%; top: 0; padding: 5px; }
 
+        /* TABLE STYLING */
         table { width: 100%; border-collapse: collapse; }
-        td { padding: 12px 5px; border-bottom: 1px solid #1a1a1a; font-size: clamp(0.8rem, 1.5vw, 1.1rem); font-weight: 700; }
-        
-        .rank { color: var(--gold); width: 35px; text-align: center; }
-        .pts { text-align: right; color: var(--primary); width: 60px; font-weight: 900; }
-        .team-tag { color: #777; font-size: 0.8em; margin-left: 5px; font-weight: 400; }
+        td { padding: 8px 4px; border-bottom: 1px solid #222; font-size: 0.85rem; font-weight: 700; }
+        .rank { color: var(--gold); width: 25px; }
+        .pts { text-align: right; color: var(--primary); font-weight: 900; }
 
-        /* Fixed Footer - Always Visible */
+        /* FOOTER: Anchored to the bottom - Mechanical Necessity */
         footer {
-            flex: 0 0 auto; background: #111; padding: 10px 20px;
-            border-top: 2px solid #333; display: flex; flex-wrap: wrap;
-            align-items: center; justify-content: center; gap: 10px;
-            z-index: 100;
+            flex: 0 0 auto; background: #1a1a1a; padding: 12px;
+            border-top: 2px solid #333; display: flex; flex-direction: column; gap: 8px;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
         }
-        .control-group { display: flex; align-items: center; gap: 8px; }
+        .input-row { display: flex; gap: 8px; }
         input[type="text"] { 
-            background: #000; border: 1px solid #555; color: #fff; 
-            padding: 8px; width: 200px; border-radius: 4px; font-size: 0.9rem;
+            flex: 1; background: #000; border: 1px solid #555; 
+            color: #fff; padding: 8px; border-radius: 4px; font-size: 14px;
         }
         button { 
-            background: var(--primary); color: #000; border: none; 
-            padding: 8px 15px; font-weight: 900; border-radius: 4px; cursor: pointer;
+            background: var(--primary); border: none; padding: 8px 12px; 
+            font-weight: 900; border-radius: 4px; cursor: pointer; color: #000;
         }
-        #status { font-size: 0.7rem; color: var(--gold); width: 100%; text-align: center; }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="logo-box"><img src="https://i.postimg.cc/mD363K0P/1000030204.png" alt="MVP TV"></div>
-    <h1>Tournament Leaderboard</h1>
-    <div class="logo-box"><img src="https://i.postimg.cc/fRF1X6R5/1000038471.png" alt="FW Logo"></div>
-</header>
+    <img class="logo-img" src="https://i.postimg.cc/mD363K0P/1000030204.png"> <h1>Tournament Leaderboard</h1>
+    <img class="logo-img" src="https://i.postimg.cc/fRF1X6R5/1000038471.png"> </header>
 
 <div class="main-stage">
     <div class="board">
-        <div class="board-header">Player Standings</div>
+        <div class="board-header">Players</div>
         <div class="scroll-container" id="pCont"><div class="scroll-content" id="pList"></div></div>
     </div>
     <div class="board">
-        <div class="board-header">Team Rankings</div>
+        <div class="board-header">Teams</div>
         <div class="scroll-container" id="tCont"><div class="scroll-content" id="tList"></div></div>
     </div>
 </div>
 
 <footer>
-    <div class="control-group">
-        <input type="text" id="sheetUrl" placeholder="Paste Google CSV Link">
+    <div class="input-row">
+        <input type="text" id="sheetUrl" placeholder="Paste CSV Link Here">
         <button onclick="updateData()">Sync</button>
     </div>
-    <div class="control-group">
-        <input type="range" id="speed" min="0" max="10" value="3" style="width:80px;">
-        <button onclick="toggleScroll()" id="pBtn">Pause</button>
+    <div style="display:flex; justify-content: space-between; align-items:center;">
+        <span id="status" style="font-size:11px; color:var(--gold)">Ready</span>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <input type="range" id="speed" min="0" max="10" value="3" style="width:60px;">
+            <button onclick="toggleScroll()" id="pBtn" style="background:#444; color:white; padding:4px 8px; font-size:11px;">Pause</button>
+        </div>
     </div>
-    <div id="status">Ready - Paste link and click Sync</div>
 </footer>
 
 <script>
-    let scrollPos = 0;
-    let scrolling = true;
-
-    function toggleScroll() {
-        scrolling = !scrolling;
-        document.getElementById('pBtn').innerText = scrolling ? "Pause" : "Resume";
-    }
+    let scrollPos = 0, scrolling = true;
+    function toggleScroll() { scrolling = !scrolling; document.getElementById('pBtn').innerText = scrolling ? "Pause" : "Resume"; }
 
     async function updateData() {
         const url = document.getElementById('sheetUrl').value.trim();
@@ -124,50 +107,37 @@
             const text = await res.text();
             const lines = text.split(/\r?\n/);
             let p = [], t = {};
-
             lines.forEach((l, i) => {
                 if(i === 0 || !l.trim()) return;
                 let c = l.split(/[\t,;]/);
                 if(c.length >= 3) {
-                    const name = c[0].trim(), team = c[1].trim() || "Independent", wins = parseInt(c[2]) || 0;
+                    const name = c[0].trim(), team = c[1].trim() || "Ind", wins = parseInt(c[2]) || 0;
                     p.push({name, team, wins});
                     t[team] = (t[team] || 0) + wins;
                 }
             });
-
             render(p, t);
-            document.getElementById('status').innerText = "Sync Complete: " + new Date().toLocaleTimeString();
-        } catch(e) { 
-            document.getElementById('status').innerText = "Sync Error - Check Link";
-        }
+            document.getElementById('status').innerText = "Updated: " + new Date().toLocaleTimeString();
+        } catch(e) { document.getElementById('status').innerText = "Link Error"; }
     }
 
     function render(players, teams) {
         players.sort((a,b) => b.wins - a.wins);
         const sortedT = Object.entries(teams).sort((a,b) => b[1] - a[1]);
-
-        document.getElementById('pList').innerHTML = players.map((p, i) => `
-            <table><tr><td class="rank">${i+1}</td><td>${p.name}<span class="team-tag">(${p.team})</span></td><td class="pts">${p.wins}</td></tr></table>
-        `).join('');
-
-        document.getElementById('tList').innerHTML = sortedT.map((t, i) => `
-            <table><tr><td class="rank">${i+1}</td><td>${t[0]}</td><td class="pts">${t[1]}</td></tr></table>
-        `).join('');
+        document.getElementById('pList').innerHTML = players.map((p, i) => `<table><tr><td class="rank">${i+1}</td><td>${p.name} (${p.team})</td><td class="pts">${p.wins}</td></tr></table>`).join('');
+        document.getElementById('tList').innerHTML = sortedT.map((t, i) => `<table><tr><td class="rank">${i+1}</td><td>${t[0]}</td><td class="pts">${t[1]}</td></tr></table>`).join('');
         scrollPos = 0;
     }
 
     function loop() {
         if(scrolling) {
-            const speed = document.getElementById('speed').value / 15;
-            const pList = document.getElementById('pList');
-            const tList = document.getElementById('tList');
-            const contH = document.getElementById('pCont').offsetHeight;
-
+            const pList = document.getElementById('pList'), contH = document.getElementById('pCont').offsetHeight;
+            const speed = document.getElementById('speed').value / 20;
             if(pList.offsetHeight > contH) {
                 scrollPos += speed;
-                if(scrollPos > pList.offsetHeight + 40) scrollPos = -contH;
+                if(scrollPos > pList.offsetHeight + 20) scrollPos = -contH;
                 pList.style.transform = `translateY(${-scrollPos}px)`;
-                tList.style.transform = `translateY(${-scrollPos}px)`;
+                document.getElementById('tList').style.transform = `translateY(${-scrollPos}px)`;
             }
         }
         requestAnimationFrame(loop);
