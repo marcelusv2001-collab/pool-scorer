@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MVP TV - Scoreboard Controller</title>
+    <style>
+        :root {
+            --bg-dark: #0a0a0a;
+            --panel-bg: #141416;
+            --espn-red: #cc0000;
+            --gold: #ffcc00;
+            --text-white: #ffffff;
+            --text-gray: #8e8e93;
+            --border-color: #2c2c2e;
+            --cyan: #00f3ff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #1c1c1e;
+            margin: 0;
+            padding: 20px;
+            color: var(--text-white);
+        }
+
+        #control-panel {
+            background-color: var(--panel-bg);
+            border: 3px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 1100px;
+            margin: 0 auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+
+        .panel-header {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--espn-red);
+            text-align: center;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .control-section {
+            background: #1c1c1e;
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .control-section h3 {
+            margin-top: 0;
+            margin-bottom: 12px;
+            font-size: 14px;
+            color: var(--gold);
+            text-transform: uppercase;
+            border-bottom: 1px solid #2c2c2e;
+            padding-bottom: 6px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .input-group label {
+            font-size: 11px;
+            color: var(--text-gray);
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        input[type="text"], select, input[type="number"] {
+            background: #2c2c2e;
+            border: 1px solid #48484a;
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .custom-skill-input {
+            margin-top: 6px;
+            background: #3a3a3c;
+            border: 1px solid #555;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn-row button {
+            flex: 1;
+            padding: 8px;
+            background: #3a3a3c;
+            border: none;
+            color: white;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-row button:hover { background: #48484a; }
+        .btn-plus { background: #34c759 !important; }
+        .btn-plus:hover { background: #30d158 !important; }
+        .btn-minus { background: #ff3b30 !important; }
+        .btn-minus:hover { background: #ff453a !important; }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #2c2c2e;
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="control-panel">
+        <div class="panel-header">MVP TV - INTERACTIVE OVERLAY CONTROLLER</div>
+        
+        <div class="control-grid">
+            <!-- Team 1 & Player 1 Section -->
+            <div class="control-section">
+                <h3>Team & Player 1 (Left)</h3>
+                <div class="input-group">
+                    <label>Team Name</label>
+                    <input type="text" id="ctrl-team-a" value="Eastern Team" oninput="updateData()">
+                </div>
+                <div class="input-group">
+                    <label>Team Score</label>
+                    <div class="btn-row">
+                        <button class="btn-minus" onclick="adjustValue('score-team-a', -1)">-</button>
+                        <button class="btn-plus" onclick="adjustValue('score-team-a', 1)">+</button>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Player Name</label>
+                    <input type="text" id="ctrl-player-a" value="M. Vazquez" oninput="updateData()">
+                </div>
+                <div class="input-group">
+                    <label>Player Score</label>
+                    <div class="btn-row">
+                        <button class="btn-minus" onclick="adjustValue('score-player-a', -1)">-</button>
+                        <button class="btn-plus" onclick="adjustValue('score-player-a', 1)">+</button>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Race Target</label>
+                    <div class="btn-row">
+                        <button class="btn-minus" onclick="adjustValue('race-a', -1)">-</button>
+                        <button class="btn-plus" onclick="adjustValue('race-a', 1)">+</button>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Skill Level</label>
+                    <select id="ctrl-skill-a" onchange="handleSkillChange('a')">
+                        <option value="SL 2">SL 2</option>
+                        <option value="SL 3">SL 3</option>
+                        <option value="SL 4">SL 4</option>
+                        <option value="SL 5">SL 5</option>
+                        <option value="SL 6" selected>SL 6</option>
+                        <option value="SL 7">SL 7</option>
+                        <option value="SL 8">SL 8</option>
+                        <option value="SL 9">SL 9</option>
+                        <option value="CUSTOM">Custom/Text...</option>
+                    </select>
+                    <input type="text" id="ctrl-skill-a-custom" class="custom-skill-input hidden" placeholder="Enter custom SL..." oninput="updateData()">
+                </div>
+                <button style="width:100%; margin-top:10px; background:#007aff; color:white; border:none; padding:8px; font-weight:bold; border-radius:4px; cursor:pointer;" onclick="setActiveShooter('a')">Set Active Shooter</button>
+            </div>
+
+            <!-- Team 2 & Player 2 Section -->
+            <div class="control-section">
+                <h3>Team & Player 2 (Right)</h3>
+                <div class="input-group">
+                    <label>Team Name</label>
+                    <input type="text" id="ctrl-team-b" value="Western Team" oninput="updateData()">
+                </div>
+                <div class="input-group">
+                    <label>Team Score</label>
+                    <div class="btn-row">
+                        <button class="btn-minus" onclick="adjustValue('score-team-b', -1)">-</button>
+                        <button class="btn-plus" onclick="adjustValue('score-team-b', 1)">+</button>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Player Name</label>
+                    <input type="text" id="ctrl-player-b" value="J. Smith" oninput="updateData()">
+                </div>
+                <div class="input-group">
+                    <label>Player Score</label>
+                    <div class="btn-row">
+                        <button class="btn-minus" onclick="adjustValue('score-player-b', -1)">-</button>
+                        <button class="btn-plus" onclick="adjustValue('score-player-b', 1)">+</button>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Race Target</label>
+                    <div class="btn-row">
+                        <button class="btn-minus" onclick="adjustValue('race-b', -1)">-</button>
+                        <button class="btn-plus" onclick="adjustValue('race-b', 1)">+</button>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Skill Level</label>
+                    <select id="ctrl-skill-b" onchange="handleSkillChange('b')">
+                        <option value="SL 2">SL 2</option>
+                        <option value="SL 3">SL 3</option>
+                        <option value="SL 4" selected>SL 4</option>
+                        <option value="SL 5">SL 5</option>
+                        <option value="SL 6">SL 6</option>
+                        <option value="SL 7">SL 7</option>
+                        <option value="SL 8">SL 8</option>
+                        <option value="SL 9">SL 9</option>
+                        <option value="CUSTOM">Custom/Text...</option>
+                    </select>
+                    <input type="text" id="ctrl-skill-b-custom" class="custom-skill-input hidden" placeholder="Enter custom SL..." oninput="updateData()">
+                </div>
+                <button style="width:100%; margin-top:10px; background:#007aff; color:white; border:none; padding:8px; font-weight:bold; border-radius:4px; cursor:pointer;" onclick="setActiveShooter('b')">Set Active Shooter</button>
+            </div>
+
+            <!-- Global Match & Multimedia Controls -->
+            <div class="control-section">
+                <h3>Global & Media</h3>
+                <div class="input-group">
+                    <label>Event Title</label>
+                    <input type="text" id="ctrl-title" value="Championship Series - Match 1" oninput="updateData()">
+                </div>
+                <div class="input-group">
+                    <label>Game Type</label>
+                    <select id="ctrl-game-type" onchange="handleGameTypeChange()">
+                        <option value="8ball">8-Ball</option>
+                        <option value="9ball">9-Ball</option>
+                        <option value="10ball">10-Ball</option>
+                        <option value="straight">Straight Pool</option>
+                        <option value="UPLOAD">Custom Upload...</option>
+                    </select>
+                    <input type="file" id="game-icon-uploader" accept="image/*" class="hidden" style="margin-top: 6px;" onchange="handleGameIconUpload(event)">
+                </div>
+                <div class="input-group">
+                    <label>Commentators</label>
+                    <input type="text" id="ctrl-comms" value="Booth: M. Vazquez & Co." oninput="updateData()">
+                </div>
+                <div class="input-group">
+                    <label>Match Set Level</label>
+                    <div class="btn-row">
+                        <button class="btn-minus" onclick="adjustValue('set-count', -1)">-</button>
+                        <button class="btn-plus" onclick="adjustValue('set-count', 1)">+</button>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Logo Upload</label>
+                    <input type="file" id="logo-uploader" accept="image/*" onchange="handleLogoUpload(event)">
+                </div>
+                <div class="input-group">
+                    <label>Slideshow Folder (Images)</label>
+                    <input type="file" id="carousel-uploader" accept="image/*" multiple onchange="handleCarouselUpload(event)">
+                </div>
+                <div class="input-group">
+                    <label>Slideshow Speed (Sec)</label>
+                    <input type="range" id="carousel-speed" min="1" max="15" value="4" oninput="updateCarouselSpeed(this.value)">
+                    <span style="font-size:11px; text-align:right" id="speed-label">4 seconds</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Visibility / Utility Controls -->
+        <div class="control-section" style="margin-top:20px;">
+            <h3>Broadcast Element Visibility Toggles</h3>
+            <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px;">
+                <div class="toggle-container" style="background: var(--espn-red); grid-column: span 3;">
+                    <span style="font-weight: bold;">[ALL ELEMENTS]</span>
+                    <input type="checkbox" id="vis-all" checked onchange="toggleAllElements(this.checked)">
+                </div>
+                
+                <div class="toggle-container">
+                    <span>Entire Scoreboard</span>
+                    <input type="checkbox" id="vis-banner" checked onchange="updateData()">
+                </div>
+                <div class="toggle-container">
+                    <span>Event Header</span>
+                    <input type="checkbox" id="vis-header" checked onchange="updateData()">
+                </div>
+                <div class="toggle-container">
+                    <span>Commentator Bar</span>
+                    <input type="checkbox" id="vis-comms" checked onchange="updateData()">
+                </div>
+                <div class="toggle-container">
+                    <span>Logo Box</span>
+                    <input type="checkbox" id="vis-logo" checked onchange="updateData()">
+                </div>
+                <div class="toggle-container">
+                    <span>Game Icon</span>
+                    <input type="checkbox" id="vis-icon" checked onchange="updateData()">
+                </div>
+                <div class="toggle-container">
+                    <span>Active Shooter Dot</span>
+                    <input type="checkbox" id="vis-dots" checked onchange="updateData()">
+                </div>
+                <div class="toggle-container">
+                    <span>Shot Clock</span>
+                    <input type="checkbox" id="vis-clock" checked onchange="updateData()">
+                </div>
+                <div class="toggle-container">
+                    <span>Carousel Window</span>
+                    <input type="checkbox" id="vis-carousel" checked onchange="updateData()">
+                </div>
+                <div class="toggle-container">
+                    <span>Match Set Level</span>
+                    <input type="checkbox" id="vis-set-count" checked onchange="updateData()">
+                </div>
+
+                <div class="toggle-container" style="grid-column: span 3; background: #222; text-align: center; justify-content: center; font-weight: bold; font-size: 11px; color: var(--gold); letter-spacing: 1px; padding: 4px;">
+                    INDIVIDUAL DATA FIELDS
+                </div>
+                <div class="toggle-container">
+                    <span>Team Names (L/R)</span>
+                    <input type="checkbox" id="vis-teams" checked onchange="updateData()">
+                </div>
+                <div class="toggle-container">
+                    <span>Team Scores (L/R)</span>
+                    <input type="checkbox" id="vis-team-scores" checked onchange="updateData()">
+                </div>
+                <div class="toggle-container">
+                    <span>Player Names (L/R)</span>
+                    <input type="checkbox" id="vis-players" checked onchange="updateData()">
+                </div>
+                <div class="toggle-container">
+                    <span>Player Scores (L/R)</span>
+                    <input type="checkbox" id="vis-player-scores" checked onchange="updateData()">
+                </div>
+                <div class="toggle-container">
+                    <span>Races / Targets (L/R)</span>
+                    <input type="checkbox" id="vis-races" checked onchange="updateData()">
+                </div>
+                <div class="toggle-container">
+                    <span>Skill Levels (L/R)</span>
+                    <input type="checkbox" id="vis-skills" checked onchange="updateData()">
+                </div>
+            </div>
+
+            <div style="margin-top:15px; display:flex; gap:10px; align-items:center; background:#2c2c2e; padding:10px; border-radius:6px;">
+                <span style="font-weight:bold; font-size:13px; color:var(--gold)">SHOT CLOCK CONTROLLER:</span>
+                <button style="background:#34c759; color:white; border:none; padding:6px 12px; font-weight:bold; border-radius:4px; cursor:pointer;" onclick="startShotClock()">Start</button>
+                <button style="background:#ff9500; color:white; border:none; padding:6px 12px; font-weight:bold; border-radius:4px; cursor:pointer;" onclick="stopShotClock()">Stop</button>
+                <button style="background:#ff3b30; color:white; border:none; padding:6px 12px; font-weight:bold; border-radius:4px; cursor:pointer;" onclick="resetShotClock()">Reset (30s)</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let state = {
+            scorePlayerA: 0,
+            scorePlayerB: 0,
+            scoreTeamA: 0,
+            scoreTeamB: 0,
+            raceA: 4,
+            raceB: 5,
+            setCount: 1,
+            activeShooter: 'a',
+            shotClockValue: 30,
+            shotClockRunning: false,
+            logoData: "",
+            gameIcon: "",
+            gameSelectionType: "8ball",
+            carouselImages: [],
+            carouselSpeed: 4000
+        };
+
+        let shotClockInterval = null;
+        let overlayWindow = null;
+
+        function launchOverlay() {
+            overlayWindow = window.open('overlay.html', 'MVP_TV_Overlay', 'width=1920,height=1080,menubar=no,status=no,titlebar=no');
+            setTimeout(sendStateToOverlay, 500);
+        }
+
+        function sendStateToOverlay() {
+            if (overlayWindow && !overlayWindow.closed) {
+                overlayWindow.postMessage({ type: 'UPDATE_SCOREBOARD', data: state }, '*');
+            }
+        }
+
+        function handleSkillChange(player) {
+            const selectEl = document.getElementById(`ctrl-skill-${player}`);
+            const customInput = document.getElementById(`ctrl-skill-${player}-custom`);
+            if (selectEl.value === 'CUSTOM') {
+                customInput.classList.remove('hidden');
+            } else {
+                customInput.classList.add('hidden');
+            }
+            updateData();
+        }
+
+        function handleGameTypeChange() {
+            const selectEl = document.getElementById('ctrl-game-type');
+            const uploaderEl = document.getElementById('game-icon-uploader');
+            
+            state.gameSelectionType = selectEl.value;
+
+            if (selectEl.value === 'UPLOAD') {
+                uploaderEl.classList.remove('hidden');
+            } else {
+                uploaderEl.classList.add('hidden');
+                state.gameIcon = ""; // Clear out uploaded asset if stock option chosen
+            }
+            updateData();
+        }
+
+        function toggleAllElements(checked) {
+            const elements = [
+                'vis-banner', 'vis-header', 'vis-comms', 'vis-logo',
+                'vis-icon', 'vis-dots', 'vis-clock', 'vis-carousel', 'vis-set-count',
+                'vis-teams', 'vis-team-scores', 'vis-players', 'vis-player-scores',
+                'vis-races', 'vis-skills'
+            ];
+            elements.forEach(id => {
+                document.getElementById(id).checked = checked;
+            });
+            updateData();
+        }
+
+        function updateData() {
+            state.title = document.getElementById('ctrl-title').value;
+            state.comms = document.getElementById('ctrl-comms').value;
+            state.teamA = document.getElementById('ctrl-team-a').value;
+            state.playerA = document.getElementById('ctrl-player-a').value;
+
+            const skillASelect = document.getElementById('ctrl-skill-a').value;
+            state.skillA = (skillASelect === 'CUSTOM') ? document.getElementById('ctrl-skill-a-custom').value : skillASelect;
+
+            state.teamB = document.getElementById('ctrl-team-b').value;
+            state.playerB = document.getElementById('ctrl-player-b').value;
+
+            const skillBSelect = document.getElementById('ctrl-skill-b').value;
+            state.skillB = (skillBSelect === 'CUSTOM') ? document.getElementById('ctrl-skill-b-custom').value : skillBSelect;
+
+            state.visBanner = document.getElementById('vis-banner').checked;
+            state.visHeader = document.getElementById('vis-header').checked;
+            state.visComms = document.getElementById('vis-comms').checked;
+            state.visLogo = document.getElementById('vis-logo').checked;
+            state.visIcon = document.getElementById('vis-icon').checked;
+            state.visDots = document.getElementById('vis-dots').checked;
+            state.visClock = document.getElementById('vis-clock').checked;
+            state.visCarousel = document.getElementById('vis-carousel').checked;
+            state.visSetCount = document.getElementById('vis-set-count').checked;
+
+            state.visTeams = document.getElementById('vis-teams').checked;
+            state.visTeamScores = document.getElementById('vis-team-scores').checked;
+            state.visPlayers = document.getElementById('vis-players').checked;
+            state.visPlayerScores = document.getElementById('vis-player-scores').checked;
+            state.visRaces = document.getElementById('vis-races').checked;
+            state.visSkills = document.getElementById('vis-skills').checked;
+
+            const elements = [
+                'vis-banner', 'vis-header', 'vis-comms', 'vis-logo',
+                'vis-icon', 'vis-dots', 'vis-clock', 'vis-carousel', 'vis-set-count',
+                'vis-teams', 'vis-team-scores', 'vis-players', 'vis-player-scores',
+                'vis-races', 'vis-skills'
+            ];
+            const allChecked = elements.every(id => document.getElementById(id).checked);
+            const noneChecked = elements.every(id => !document.getElementById(id).checked);
+            
+            const masterCheckbox = document.getElementById('vis-all');
+            if (allChecked) {
+                masterCheckbox.checked = true;
+                masterCheckbox.indeterminate = false;
+            } else if (noneChecked) {
+                masterCheckbox.checked = false;
+                masterCheckbox.indeterminate = false;
+            } else {
+                masterCheckbox.indeterminate = true;
+            }
+
+            sendStateToOverlay();
+        }
+
+        function adjustValue(variable, amount) {
+            if (variable === 'score-player-a') state.scorePlayerA = Math.max(0, state.scorePlayerA + amount);
+            if (variable === 'score-player-b') state.scorePlayerB = Math.max(0, state.scorePlayerB + amount);
+            if (variable === 'score-team-a') state.scoreTeamA = Math.max(0, state.scoreTeamA + amount);
+            if (variable === 'score-team-b') state.scoreTeamB = Math.max(0, state.scoreTeamB + amount);
+            if (variable === 'race-a') state.raceA = Math.max(1, state.raceA + amount);
+            if (variable === 'race-b') state.raceB = Math.max(1, state.raceB + amount);
+            if (variable === 'set-count') state.setCount = Math.max(1, state.setCount + amount);
+            updateData();
+        }
+
+        function setActiveShooter(team) {
+            state.activeShooter = team;
+            resetShotClock();
+            startShotClock();
+            updateData();
+        }
+
+        function startShotClock() {
+            if (shotClockInterval) clearInterval(shotClockInterval);
+            state.shotClockRunning = true;
+            shotClockInterval = setInterval(() => {
+                if (state.shotClockValue > 0) {
+                    state.shotClockValue--;
+                    sendStateToOverlay();
+                } else {
+                    clearInterval(shotClockInterval);
+                    state.shotClockRunning = false;
+                    sendStateToOverlay();
+                }
+            }, 1000);
+            updateData();
+        }
+
+        function stopShotClock() {
+            if (shotClockInterval) clearInterval(shotClockInterval);
+            state.shotClockRunning = false;
+            updateData();
+        }
+
+        function resetShotClock() {
+            stopShotClock();
+            state.shotClockValue = 30;
+            updateData();
+        }
+
+        function handleLogoUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    state.logoData = e.target.result;
+                    updateData();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function handleGameIconUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    state.gameIcon = e.target.result;
+                    updateData();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function handleCarouselUpload(event) {
+            const files = event.target.files;
+            state.carouselImages = [];
+            if (files.length > 0) {
+                let loaded = 0;
+                for (let i = 0; i < files.length; i++) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        state.carouselImages.push(e.target.result);
+                        loaded++;
+                        if (loaded === files.length) {
+                            updateData();
+                        }
+                    };
+                    reader.readAsDataURL(files[i]);
+                }
+            }
+        }
+
+        function updateCarouselSpeed(val) {
+            document.getElementById('speed-label').innerText = val + " seconds";
+            state.carouselSpeed = val * 1000;
+            updateData();
+        }
+
+        window.onload = function() {
+            const header = document.querySelector('.panel-header');
+            const launchBtn = document.createElement('button');
+            launchBtn.innerText = "🚀 LAUNCH LIVE OVERLAY WINDOW";
+            launchBtn.style.cssText = "display: block; margin: 10px auto 0 auto; background: #34c759; color: white; border: none; padding: 10px 20px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 14px; letter-spacing: 1px;";
+            launchBtn.onclick = launchOverlay;
+            header.appendChild(launchBtn);
+            
+            updateData();
+        };
+    </script>
+</body>
+</html>
