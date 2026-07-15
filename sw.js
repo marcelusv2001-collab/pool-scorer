@@ -10,6 +10,7 @@ const ASSETS = [
   './bracket maker.html',
   './tuesday-8ball-18.html',
   './shays-leaderboard.html',
+    './controller.html',
   './manifest.json',
   './sw.js',         // Cache the service worker itself
   'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'
