@@ -190,7 +190,7 @@
 <footer>
     <div class="score-chip"><span><span id="h-score">0</span></span></div>
     <div class="actions">
-        <button class="btn-submit" onclick="handleSubmit()">Submit & Text</button>
+        <button class="btn-submit" onclick="handleSubmit()">Submit & Save</button>
         <button class="btn-copy" onclick="copyResults()">📋 Copy Text</button>
     </div>
     <div class="score-chip"><span><span id="v-score">0</span></span></div>
@@ -438,7 +438,55 @@
         return msg + `\nTr=⭐ 8bb=🔥`;
     }
 
-    function handleSubmit() {
+    async function handleSubmit() {
+        const hTeam = (document.getElementById('h-team').value || "Home").toUpperCase();
+        const vTeam = (document.getElementById('v-team').value || "Visiting").toUpperCase();
+        
+        const payload = {
+            homeTeam: hTeam,
+            visitTeam: vTeam,
+            homeScore: document.getElementById('h-score').innerText,
+            visitScore: document.getElementById('v-score').innerText,
+            date: document.getElementById('week-selector').value || new Date().toISOString().split('T')[0],
+            games: state.map(g => ({
+                id: g.id,
+                homePlayer: g.h,
+                visitPlayer: g.v,
+                homeTR: g.hTR,
+                home8B: g.h8B,
+                visitTR: g.vTR,
+                visit8B: g.v8B,
+                winner: g.win
+            }))
+        };
+
+        // Replace with your actual backend / Google Apps Script Web App URL
+        const ENDPOINT_URL = "YOUR_BACKEND_OR_APPS_SCRIPT_WEB_APP_URL_HERE";
+
+        try {
+            const response = await fetch(ENDPOINT_URL, {
+                method: 'POST',
+                mode: 'cors',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                alert("Score sheet submitted successfully for administrator review!");
+            } else {
+                alert("Error submitting score sheet. Use the copy text fallback if necessary.");
+            }
+        } catch (error) {
+            console.error("Submission failed:", error);
+            if (confirm("Network submission failed. Would you like to use the text message/clipboard fallback instead?")) {
+                fallbackTextShare();
+            }
+        }
+    }
+
+    function fallbackTextShare() {
         const msg = buildMessage();
         if (navigator.share) navigator.share({ text: msg }).catch(() => {});
         else window.location.href = `sms:?body=${encodeURIComponent(msg)}`;
