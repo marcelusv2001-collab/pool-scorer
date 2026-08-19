@@ -198,7 +198,7 @@
 
         <!-- WEEKLY REVIEW & EDIT QUEUE -->
         <div class="card" id="review-card" style="display:none;">
-            <div style="display:flex; justify- space-between; align-items:center; margin-bottom:10px;">
+            <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom:10px;">
                 <h2 style="border:none; margin:0;">2. Review & Approve Matches</h2>
                 <div style="display:flex; gap: 8px;">
                     <button class="btn btn-secondary" style="font-size:0.75rem; padding:4px 8px;" onclick="addBlankMatchRow()">+ Add Match Row</button>
@@ -459,14 +459,59 @@
 </div>
 
 <script>
+    // --- DEFAULT SEED DATA ---
+    const DEFAULT_ROSTERS = {
+        "5TH WARD SHARKS": ["John Doe", "Mike Smith", "Dave Miller", "Chris Pratt"],
+        "CORNER POCKET": ["Sarah Connor", "Kyle Reese", "T-800", "John Connor"],
+        "RACK 'EM UP": ["Bob Johnson", "Alice Walker", "Charlie Brown", "Lucy Van Pelt"],
+        "LEBANON BREAKERS": ["Tom Brady", "Bill Belichick", "Julian Edelman", "Rob Gronkowski"]
+    };
+
+    const DEFAULT_SCHEDULE = [
+        { date: "2026-09-03 19:00", home: "5TH WARD SHARKS", visit: "CORNER POCKET" },
+        { date: "2026-09-03 19:00", home: "RACK 'EM UP", visit: "LEBANON BREAKERS" },
+        { date: "2026-09-10 19:00", home: "CORNER POCKET", visit: "RACK 'EM UP" },
+        { date: "2026-09-10 19:00", home: "LEBANON BREAKERS", visit: "5TH WARD SHARKS" },
+        { date: "2026-09-17 19:00", home: "5TH WARD SHARKS", visit: "RACK 'EM UP" },
+        { date: "2026-09-17 19:00", home: "CORNER POCKET", visit: "LEBANON BREAKERS" }
+    ];
+
+    const DEFAULT_MATCHES = [
+        {
+            date: "2026-09-03",
+            homeTeam: "5TH WARD SHARKS",
+            visitTeam: "CORNER POCKET",
+            homeScore: 3,
+            visitScore: 2,
+            games: [
+                { homePlayer: "John Doe", visitPlayer: "Sarah Connor", winner: "h", home8B: true, homeTR: false, visit8B: false, visitTR: false },
+                { homePlayer: "Mike Smith", visitPlayer: "Kyle Reese", winner: "v", home8B: false, homeTR: false, visit8B: false, visitTR: true },
+                { homePlayer: "Dave Miller", visitPlayer: "T-800", winner: "h", home8B: false, homeTR: true, visit8B: false, visitTR: false },
+                { homePlayer: "Chris Pratt", visitPlayer: "John Connor", winner: "v", home8B: false, homeTR: false, visit8B: false, visitTR: false },
+                { homePlayer: "John Doe", visitPlayer: "Kyle Reese", winner: "h", home8B: false, homeTR: false, visit8B: false, visitTR: false }
+            ]
+        },
+        {
+            date: "2026-09-03",
+            homeTeam: "RACK 'EM UP",
+            visitTeam: "LEBANON BREAKERS",
+            homeScore: 1,
+            visitScore: 4,
+            games: [
+                { homePlayer: "Bob Johnson", visitPlayer: "Tom Brady", winner: "v", home8B: false, homeTR: false, visit8B: true, visitTR: false },
+                { homePlayer: "Alice Walker", visitPlayer: "Bill Belichick", winner: "v", home8B: false, homeTR: false, visit8B: false, visitTR: false },
+                { homePlayer: "Charlie Brown", visitPlayer: "Julian Edelman", winner: "h", home8B: false, homeTR: false, visit8B: false, visitTR: false },
+                { homePlayer: "Lucy Van Pelt", visitPlayer: "Rob Gronkowski", winner: "v", home8B: false, homeTR: false, visit8B: false, visitTR: true },
+                { homePlayer: "Bob Johnson", visitPlayer: "Rob Gronkowski", winner: "v", home8B: false, homeTR: false, visit8B: false, visitTR: false }
+            ]
+        }
+    ];
+
     // --- APP DATA STORAGE STRUCTURES ---
     let DB = {
-        rosters: JSON.parse(localStorage.getItem('admin_rosters')) || {
-            "5TH WARD SHARKS": ["John Doe", "Mike Smith", "Dave Miller"],
-            "CORNER POCKET": ["Sarah Connor", "Kyle Reese", "T-800"]
-        },
-        schedule: JSON.parse(localStorage.getItem('admin_schedule')) || [],
-        matches: JSON.parse(localStorage.getItem('admin_matches')) || []
+        rosters: JSON.parse(localStorage.getItem('admin_rosters')) || DEFAULT_ROSTERS,
+        schedule: JSON.parse(localStorage.getItem('admin_schedule')) || DEFAULT_SCHEDULE,
+        matches: JSON.parse(localStorage.getItem('admin_matches')) || DEFAULT_MATCHES
     };
 
     function saveDB() {
@@ -1105,15 +1150,19 @@
     }
 
     function clearAllData() {
-        if (confirm('RESET ALL DATA? This deletes stored rosters, schedule, and recorded matches.')) {
+        if (confirm('RESET ALL DATA? This resets stored rosters, schedule, and recorded matches back to default seed data.')) {
             localStorage.clear();
-            DB = { rosters: {}, schedule: [], matches: [] };
+            DB = {
+                rosters: JSON.parse(JSON.stringify(DEFAULT_ROSTERS)),
+                schedule: JSON.parse(JSON.stringify(DEFAULT_SCHEDULE)),
+                matches: JSON.parse(JSON.stringify(DEFAULT_MATCHES))
+            };
             saveDB();
         }
     }
 
     // --- INITIALIZATION ---
-    refreshAllViews();
+    saveDB();
 </script>
 </body>
 </html>
