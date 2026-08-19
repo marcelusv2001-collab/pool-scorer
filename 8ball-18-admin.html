@@ -574,12 +574,28 @@
                 if (cols[5]) {
                     try { parsedGames = JSON.parse(cols[5]); } catch(e) { parsedGames = []; }
                 }
+                
+                let hScore = parseInt(cols[3]) || 0;
+                let vScore = parseInt(cols[4]) || 0;
+
+                // Auto-calculate score from parsed rack/game array if populated
+                if (parsedGames && parsedGames.length > 0) {
+                    let calculatedHome = 0;
+                    let calculatedVisit = 0;
+                    parsedGames.forEach(g => {
+                        if (g.winner === 'h') calculatedHome++;
+                        if (g.winner === 'v') calculatedVisit++;
+                    });
+                    hScore = calculatedHome;
+                    vScore = calculatedVisit;
+                }
+
                 pendingBatch.push({
                     date: cols[0] || new Date().toISOString().slice(0, 10),
                     homeTeam: cols[1] || "",
                     visitTeam: cols[2] || "",
-                    homeScore: parseInt(cols[3]) || 0,
-                    visitScore: parseInt(cols[4]) || 0,
+                    homeScore: hScore,
+                    visitScore: vScore,
                     games: parsedGames
                 });
             }
@@ -677,7 +693,7 @@
         alert('Copied to clipboard! Paste directly into Google Sheets using Ctrl+V.');
     }
 
-    // --- GAME BREAKDOWN MODAL LOGIC ---
+    // --- GAME BREAKDOWN MODAL LOGIC & AUTO-CALCULATION ---
     function openGameModal(matchIdx) {
         currentEditingMatchIndex = matchIdx;
         const match = pendingBatch[matchIdx];
@@ -699,6 +715,48 @@
         currentEditingMatchIndex = null;
     }
 
+    function syncModalGamesToState() {
+        if (currentEditingMatchIndex === null || !pendingBatch[currentEditingMatchIndex]) return;
+        const games = pendingBatch[currentEditingMatchIndex].games;
+
+        games.forEach((g, idx) => {
+            const hp = document.getElementById(`g-hp-${idx}`);
+            const vp = document.getElementById(`g-vp-${idx}`);
+            const win = document.getElementById(`g-win-${idx}`);
+            const h8b = document.getElementById(`g-h8b-${idx}`);
+            const htr = document.getElementById(`g-htr-${idx}`);
+            const v8b = document.getElementById(`g-v8b-${idx}`);
+            const vtr = document.getElementById(`g-vtr-${idx}`);
+
+            if (hp) g.homePlayer = hp.value.trim();
+            if (vp) g.visitPlayer = vp.value.trim();
+            if (win) g.winner = win.value;
+            if (h8b) g.home8B = h8b.checked;
+            if (htr) g.homeTR = htr.checked;
+            if (v8b) g.visit8B = v8b.checked;
+            if (vtr) g.visitTR = vtr.checked;
+        });
+    }
+
+    function recalculateModalScore() {
+        syncModalGamesToState();
+        if (currentEditingMatchIndex === null || !pendingBatch[currentEditingMatchIndex]) return;
+        const match = pendingBatch[currentEditingMatchIndex];
+        
+        let homeWins = 0;
+        let visitWins = 0;
+
+        if (match.games && Array.isArray(match.games)) {
+            match.games.forEach(g => {
+                if (g.winner === 'h') homeWins++;
+                if (g.winner === 'v') visitWins++;
+            });
+        }
+
+        match.homeScore = homeWins;
+        match.visitScore = visitWins;
+    }
+
     function renderModalGames() {
         if (currentEditingMatchIndex === null || !pendingBatch[currentEditingMatchIndex]) return;
         const games = pendingBatch[currentEditingMatchIndex].games;
@@ -712,18 +770,18 @@
         tbody.innerHTML = games.map((g, idx) => `
             <tr>
                 <td style="font-weight:bold; color:var(--gold);">${idx + 1}</td>
-                <td><input type="text" value="${escapeHtml(g.homePlayer || '')}" id="g-hp-${idx}" placeholder="Home Player"></td>
-                <td><input type="text" value="${escapeHtml(g.visitPlayer || '')}" id="g-vp-${idx}" placeholder="Visit Player"></td>
+                <td><input type="text" value="${escapeHtml(g.homePlayer || '')}" id="g-hp-${idx}" placeholder="Home Player" onchange="syncModalGamesToState()"></td>
+                <td><input type="text" value="${escapeHtml(g.visitPlayer || '')}" id="g-vp-${idx}" placeholder="Visit Player" onchange="syncModalGamesToState()"></td>
                 <td>
-                    <select id="g-win-${idx}" style="margin:0;">
+                    <select id="g-win-${idx}" style="margin:0;" onchange="recalculateModalScore()">
                         <option value="h" ${g.winner === 'h' ? 'selected' : ''}>Home Win</option>
                         <option value="v" ${g.winner === 'v' ? 'selected' : ''}>Visit Win</option>
                     </select>
                 </td>
-                <td><input type="checkbox" id="g-h8b-${idx}" ${g.home8B ? 'checked' : ''}></td>
-                <td><input type="checkbox" id="g-htr-${idx}" ${g.homeTR ? 'checked' : ''}></td>
-                <td><input type="checkbox" id="g-v8b-${idx}" ${g.visit8B ? 'checked' : ''}></td>
-                <td><input type="checkbox" id="g-vtr-${idx}" ${g.visitTR ? 'checked' : ''}></td>
+                <td><input type="checkbox" id="g-h8b-${idx}" ${g.home8B ? 'checked' : ''} onchange="syncModalGamesToState()"></td>
+                <td><input type="checkbox" id="g-htr-${idx}" ${g.homeTR ? 'checked' : ''} onchange="syncModalGamesToState()"></td>
+                <td><input type="checkbox" id="g-v8b-${idx}" ${g.visit8B ? 'checked' : ''} onchange="syncModalGamesToState()"></td>
+                <td><input type="checkbox" id="g-vtr-${idx}" ${g.visitTR ? 'checked' : ''} onchange="syncModalGamesToState()"></td>
                 <td>
                     <button onclick="deleteModalGameRow(${idx})" style="background:none; border:none; color:var(--visit); cursor:pointer; font-weight:bold;">✕</button>
                 </td>
@@ -733,15 +791,19 @@
 
     function addModalGameRow() {
         if (currentEditingMatchIndex === null || !pendingBatch[currentEditingMatchIndex]) return;
+        syncModalGamesToState();
         pendingBatch[currentEditingMatchIndex].games.push({
             homePlayer: "", visitPlayer: "", winner: "h", home8B: false, homeTR: false, visit8B: false, visitTR: false
         });
+        recalculateModalScore();
         renderModalGames();
     }
 
     function deleteModalGameRow(gameIdx) {
         if (currentEditingMatchIndex === null || !pendingBatch[currentEditingMatchIndex]) return;
+        syncModalGamesToState();
         pendingBatch[currentEditingMatchIndex].games.splice(gameIdx, 1);
+        recalculateModalScore();
         renderModalGames();
     }
 
@@ -761,35 +823,7 @@
         match.homeTeam = document.getElementById('modal-match-home').value.trim();
         match.visitTeam = document.getElementById('modal-match-visit').value.trim();
 
-        const games = match.games;
-        let homeScoreCalc = 0;
-        let visitScoreCalc = 0;
-
-        games.forEach((g, idx) => {
-            const hp = document.getElementById(`g-hp-${idx}`);
-            const vp = document.getElementById(`g-vp-${idx}`);
-            const win = document.getElementById(`g-win-${idx}`);
-            const h8b = document.getElementById(`g-h8b-${idx}`);
-            const htr = document.getElementById(`g-htr-${idx}`);
-            const v8b = document.getElementById(`g-v8b-${idx}`);
-            const vtr = document.getElementById(`g-vtr-${idx}`);
-
-            if (hp) g.homePlayer = hp.value.trim();
-            if (vp) g.visitPlayer = vp.value.trim();
-            if (win) g.winner = win.value;
-            if (h8b) g.home8B = h8b.checked;
-            if (htr) g.homeTR = htr.checked;
-            if (v8b) g.visit8B = v8b.checked;
-            if (vtr) g.visitTR = vtr.checked;
-
-            if (g.winner === 'h') homeScoreCalc++;
-            if (g.winner === 'v') visitScoreCalc++;
-        });
-
-        if (games.length > 0) {
-            match.homeScore = homeScoreCalc;
-            match.visitScore = visitScoreCalc;
-        }
+        recalculateModalScore();
 
         closeGameModal();
         renderWeeklyReviewTable();
