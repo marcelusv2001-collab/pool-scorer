@@ -178,7 +178,7 @@
         <div class="card">
             <h2>1. Import Weekly TSV File</h2>
             <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">
-                Upload the <code>.tsv</code> file emailed by the scoring app, or paste the raw TSV content directly. Each line represents 1 whole match.
+                Upload the <code>.tsv</code> file emailed by the scoring app, or paste the raw TSV content directly.
             </p>
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; align-items: start;">
@@ -490,20 +490,6 @@
                 { homePlayer: "Chris Pratt", visitPlayer: "John Connor", winner: "v", home8B: false, homeTR: false, visit8B: false, visitTR: false },
                 { homePlayer: "John Doe", visitPlayer: "Kyle Reese", winner: "h", home8B: false, homeTR: false, visit8B: false, visitTR: false }
             ]
-        },
-        {
-            date: "2026-09-03",
-            homeTeam: "RACK 'EM UP",
-            visitTeam: "LEBANON BREAKERS",
-            homeScore: 1,
-            visitScore: 4,
-            games: [
-                { homePlayer: "Bob Johnson", visitPlayer: "Tom Brady", winner: "v", home8B: false, homeTR: false, visit8B: true, visitTR: false },
-                { homePlayer: "Alice Walker", visitPlayer: "Bill Belichick", winner: "v", home8B: false, homeTR: false, visit8B: false, visitTR: false },
-                { homePlayer: "Charlie Brown", visitPlayer: "Julian Edelman", winner: "h", home8B: false, homeTR: false, visit8B: false, visitTR: false },
-                { homePlayer: "Lucy Van Pelt", visitPlayer: "Rob Gronkowski", winner: "v", home8B: false, homeTR: false, visit8B: false, visitTR: true },
-                { homePlayer: "Bob Johnson", visitPlayer: "Rob Gronkowski", winner: "v", home8B: false, homeTR: false, visit8B: false, visitTR: false }
-            ]
         }
     ];
 
@@ -558,60 +544,154 @@
         processTSVText(document.getElementById('tsv-raw-input').value);
     }
 
+    // Helper method to tokenize line respecting embedded JSON arrays or quotes
+    function tokenizeLine(line) {
+        let delimiter = line.includes('\t') ? '\t' : ',';
+        let cols = [];
+        let cur = '';
+        let inQuotes = false;
+        let bracketDepth = 0;
+
+        for (let i = 0; i < line.length; i++) {
+            let c = line[i];
+            if (c === '"') {
+                inQuotes = !inQuotes;
+            } else if (c === '[' && !inQuotes) {
+                bracketDepth++;
+                cur += c;
+            } else if (c === ']' && !inQuotes) {
+                if (bracketDepth > 0) bracketDepth--;
+                cur += c;
+            } else if (c === delimiter && !inQuotes && bracketDepth === 0) {
+                cols.push(cur.trim().replace(/^"|"$/g, ''));
+                cur = '';
+            } else {
+                cur += c;
+            }
+        }
+        cols.push(cur.trim().replace(/^"|"$/g, ''));
+        return cols;
+    }
+
     function processTSVText(text) {
-        if (!text.trim()) {
+        if (!text || !text.trim()) {
             document.getElementById('review-card').style.display = 'none';
             pendingBatch = [];
             return;
         }
         
-        const lines = text.trim().split(/\r?\n/);
+        const lines = text.trim().split(/\r?\n/).filter(l => l.trim().length > 0);
         pendingBatch = [];
 
-        lines.forEach((line, idx) => {
-            if (idx === 0 && (line.toLowerCase().includes('home') || line.toLowerCase().includes('date'))) return;
-            
-            let cols = line.includes('\t') ? line.split('\t') : line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-            cols = cols.map(c => c.trim().replace(/^"|"$/g, ''));
+        if (lines.length === 0) return;
 
-            if (cols.length >= 4) {
-                let parsedGames = [];
-                
-                for (let i = 3; i < cols.length; i++) {
-                    if (cols[i].startsWith('[')) {
-                        try { 
-                            parsedGames = JSON.parse(cols[i]); 
+        const headerLine = lines[0].toLowerCase();
+
+        // MODE 1: Game-by-Game format (GameID, WinnerName, WinnerTeam, LoserName, LoserTeam, TableRun, EightBallBreak)
+        if (headerLine.includes('winnername') || headerLine.includes('losername') || headerLine.includes('winnerteam')) {
+            let parsedGames = [];
+            let homeTeam = "";
+            let visitTeam = "";
+
+            for (let i = 1; i < lines.length; i++) {
+                const cols = tokenizeLine(lines[i]);
+                if (cols.length >= 5) {
+                    const winnerName = cols[1];
+                    const winnerTeam = cols[2];
+                    const loserName = cols[3];
+                    const loserTeam = cols[4];
+                    const tableRun = (cols[5] || '').toLowerCase() === 'true';
+                    const eightBallBreak = (cols[6] || '').toLowerCase() === 'true';
+
+                    if (!homeTeam && winnerTeam) homeTeam = winnerTeam;
+                    if (winnerTeam && winnerTeam !== homeTeam && !visitTeam) visitTeam = winnerTeam;
+                    if (loserTeam && loserTeam !== homeTeam && !visitTeam) visitTeam = loserTeam;
+
+                    const isHomeWinner = (winnerTeam === homeTeam);
+
+                    parsedGames.push({
+                        homePlayer: isHomeWinner ? winnerName : loserName,
+                        visitPlayer: isHomeWinner ? loserName : winnerName,
+                        winner: isHomeWinner ? 'h' : 'v',
+                        home8B: isHomeWinner ? eightBallBreak : false,
+                        homeTR: isHomeWinner ? tableRun : false,
+                        visit8B: !isHomeWinner ? eightBallBreak : false,
+                        visitTR: !isHomeWinner ? tableRun : false
+                    });
+                }
+            }
+
+            let hScore = 0, vScore = 0;
+            parsedGames.forEach(g => {
+                if (g.winner === 'h') hScore++;
+                if (g.winner === 'v') vScore++;
+            });
+
+            pendingBatch.push({
+                date: new Date().toISOString().slice(0, 10),
+                homeTeam: homeTeam || "Home Team",
+                visitTeam: visitTeam || "Visiting Team",
+                homeScore: hScore,
+                visitScore: vScore,
+                games: parsedGames
+            });
+        } 
+        // MODE 2: Match-level rows (Date, Home, Visit, HomeScore, VisitScore, JSON)
+        else {
+            lines.forEach((line) => {
+                if (line.toLowerCase().startsWith('date') || line.toLowerCase().startsWith('home')) return;
+
+                const cols = tokenizeLine(line);
+
+                if (cols.length >= 3) {
+                    let parsedGames = [];
+                    let gamesJsonIndex = -1;
+
+                    for (let i = 0; i < cols.length; i++) {
+                        if (cols[i].startsWith('[')) {
+                            gamesJsonIndex = i;
+                            try {
+                                parsedGames = JSON.parse(cols[i]);
+                            } catch(e) {
+                                parsedGames = [];
+                            }
                             break;
-                        } catch(e) { 
-                            parsedGames = []; 
                         }
                     }
-                }
 
-                let hScore = parseInt(cols[3]) || 0;
-                let vScore = parseInt(cols[4]) || 0;
+                    let hScore = 0;
+                    let vScore = 0;
 
-                if (parsedGames && parsedGames.length > 0) {
-                    let calculatedHome = 0;
-                    let calculatedVisit = 0;
-                    parsedGames.forEach(g => {
-                        if (g.winner === 'h') calculatedHome++;
-                        if (g.winner === 'v') calculatedVisit++;
+                    if (gamesJsonIndex >= 3) {
+                        hScore = parseInt(cols[gamesJsonIndex - 2]) || 0;
+                        vScore = parseInt(cols[gamesJsonIndex - 1]) || 0;
+                    } else if (cols.length >= 5) {
+                        hScore = parseInt(cols[3]) || 0;
+                        vScore = parseInt(cols[4]) || 0;
+                    }
+
+                    if (parsedGames && parsedGames.length > 0) {
+                        let calculatedHome = 0;
+                        let calculatedVisit = 0;
+                        parsedGames.forEach(g => {
+                            if (g.winner === 'h') calculatedHome++;
+                            if (g.winner === 'v') calculatedVisit++;
+                        });
+                        hScore = calculatedHome;
+                        vScore = calculatedVisit;
+                    }
+
+                    pendingBatch.push({
+                        date: cols[0] || new Date().toISOString().slice(0, 10),
+                        homeTeam: cols[1] || "",
+                        visitTeam: cols[2] || "",
+                        homeScore: hScore,
+                        visitScore: vScore,
+                        games: parsedGames
                     });
-                    hScore = calculatedHome;
-                    vScore = calculatedVisit;
                 }
-
-                pendingBatch.push({
-                    date: cols[0] || new Date().toISOString().slice(0, 10),
-                    homeTeam: cols[1] || "",
-                    visitTeam: cols[2] || "",
-                    homeScore: hScore,
-                    visitScore: vScore,
-                    games: parsedGames
-                });
-            }
-        });
+            });
+        }
 
         renderWeeklyReviewTable();
     }
@@ -1155,22 +1235,7 @@
         lines.forEach((line) => {
             if (!line.trim()) return;
 
-            let cols = [];
-            let cur = '';
-            let inQuotes = false;
-            for (let i = 0; i < line.length; i++) {
-                let c = line[i];
-                if (c === '"') {
-                    inQuotes = !inQuotes;
-                } else if (c === ',' && !inQuotes) {
-                    cols.push(cur.trim().replace(/^"|"$/g, ''));
-                    cur = '';
-                } else {
-                    cur += c;
-                }
-            }
-            cols.push(cur.trim().replace(/^"|"$/g, ''));
-
+            let cols = tokenizeLine(line);
             const recordType = cols[0] ? cols[0].toUpperCase() : '';
 
             if (recordType === 'ROSTER' && cols.length >= 3) {
