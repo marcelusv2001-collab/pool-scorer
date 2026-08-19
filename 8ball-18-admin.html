@@ -389,13 +389,14 @@
         <div class="card">
             <h2>CSV Data Management</h2>
             <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;">
-                Export matches into CSV format or upload an existing CSV file to sync database records directly.
+                Export/Import combined <code>ROSTER</code> and <code>SCHEDULE</code> CSV files. You can upload a CSV exported from Google Sheets to sync both team rosters and the season schedule at the same time.
             </p>
-            <textarea id="csv-output" class="tsv-monospaced" rows="10" placeholder="CSV output will generate here or paste raw CSV text to import..."></textarea>
+            <textarea id="csv-output" class="tsv-monospaced" rows="10" placeholder="Combined ROSTER and SCHEDULE CSV data will output here or paste raw CSV text to import..."></textarea>
             
             <div style="display: flex; gap: 10px; margin-top: 10px;">
                 <button class="btn" onclick="generateCSV()">🔄 Generate Fresh CSV</button>
                 <button class="btn btn-secondary" onclick="document.getElementById('csv-file-input').click()">📂 Import CSV File</button>
+                <button class="btn btn-secondary" onclick="parseAndImportCSV(document.getElementById('csv-output').value)">📥 Import Text Below</button>
                 <input type="file" id="csv-file-input" accept=".csv,.txt" style="display:none;" onchange="handleCSVFileUpload(event)">
             </div>
         </div>
@@ -965,12 +966,22 @@
         }
     }
 
-    // --- CSV EXPORT, IMPORT AND SYSTEM RESET ---
+    // --- CSV EXPORT, COMBINED IMPORT AND SYSTEM RESET ---
     function generateCSV() {
-        let lines = ['Date,HomeTeam,VisitTeam,HomeScore,VisitScore'];
-        DB.matches.forEach(m => {
-            lines.push(`${m.date},"${m.homeTeam}","${m.visitTeam}",${m.homeScore},${m.visitScore}`);
+        let lines = ['Type,Field1,Field2,Field3'];
+        
+        // Output ROSTER entries
+        Object.keys(DB.rosters).forEach(team => {
+            DB.rosters[team].forEach(player => {
+                lines.push(`ROSTER,"${team}","${player}",`);
+            });
         });
+
+        // Output SCHEDULE entries
+        DB.schedule.forEach(s => {
+            lines.push(`SCHEDULE,"${s.home}","${s.visit}","${s.date}"`);
+        });
+
         document.getElementById('csv-output').value = lines.join('\n');
     }
 
@@ -986,37 +997,57 @@
     }
 
     function parseAndImportCSV(csvText) {
-        if (!csvText.trim()) return;
+        if (!csvText || !csvText.trim()) {
+            alert('CSV data is empty.');
+            return;
+        }
+
         const lines = csvText.trim().split(/\r?\n/);
-        let importedCount = 0;
+        let importedRosters = {};
+        let importedSchedule = [];
+        let rosterCount = 0;
+        let schedCount = 0;
 
         lines.forEach((line, idx) => {
-            if (idx === 0 && line.toLowerCase().includes('hometeam')) return; // skip header
+            if (!line.trim()) return;
             
-            // Regex to handle quoted CSV entries like "5TH WARD SHARKS"
-            const cols = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(',');
-            if (cols && cols.length >= 5) {
-                const clean = cols.map(c => c.replace(/^"|"$/g, '').trim());
-                const matchRecord = {
-                    date: clean[0] || new Date().toISOString().slice(0, 10),
-                    homeTeam: clean[1] || "",
-                    visitTeam: clean[2] || "",
-                    homeScore: parseInt(clean[3]) || 0,
-                    visitScore: parseInt(clean[4]) || 0,
-                    games: []
-                };
-                if (matchRecord.homeTeam && matchRecord.visitTeam) {
-                    DB.matches.push(matchRecord);
-                    importedCount++;
+            // Regex to parse CSV fields with double-quote handling
+            const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(',');
+            if (!matches) return;
+
+            const cols = matches.map(c => c.replace(/^"|"$/g, '').trim());
+            const recordType = cols[0] ? cols[0].toUpperCase() : '';
+
+            // Handle ROSTER rows: Type, Team, Player
+            if (recordType === 'ROSTER' && cols.length >= 3) {
+                const team = cols[1];
+                const player = cols[2];
+                if (team && player) {
+                    if (!importedRosters[team]) importedRosters[team] = [];
+                    importedRosters[team].push(player);
+                    rosterCount++;
+                }
+            } 
+            // Handle SCHEDULE rows: Type, HomeTeam, VisitTeam, Date
+            else if (recordType === 'SCHEDULE' && cols.length >= 4) {
+                const home = cols[1];
+                const visit = cols[2];
+                const date = cols[3];
+                if (home && visit && date) {
+                    importedSchedule.push({ date: date, home: home, visit: visit });
+                    schedCount++;
                 }
             }
         });
 
-        if (importedCount > 0) {
+        if (rosterCount > 0 || schedCount > 0) {
+            if (rosterCount > 0) DB.rosters = importedRosters;
+            if (schedCount > 0) DB.schedule = importedSchedule;
+            
             saveDB();
-            alert(`Successfully imported ${importedCount} match records from CSV.`);
+            alert(`CSV Import Successful!\n- Rosters loaded: ${Object.keys(importedRosters).length} teams (${rosterCount} players)\n- Schedule loaded: ${schedCount} matches`);
         } else {
-            alert('No valid match records found in CSV file.');
+            alert('No valid ROSTER or SCHEDULE rows found. Ensure rows start with "ROSTER" or "SCHEDULE".');
         }
     }
 
