@@ -1,222 +1,968 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Data Export & Import Tab</title>
-  <!-- PapaParse CDN for CSV parsing and unparsing -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      padding: 20px;
-      background-color: #f4f5f7;
-      color: #333;
-    }
-
-    .export-import-panel {
-      max-width: 600px;
-      margin: 0 auto;
-      background: #ffffff;
-      padding: 24px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-
-    .section-group {
-      margin-bottom: 20px;
-    }
-
-    .section-group h2 {
-      margin-top: 0;
-      border-bottom: 2px solid #eaeaea;
-      padding-bottom: 8px;
-      font-size: 1.2rem;
-      color: #111;
-    }
-
-    .import-group {
-      margin-bottom: 15px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    label {
-      font-weight: 600;
-      font-size: 0.9rem;
-    }
-
-    input[type="url"],
-    input[type="file"] {
-      padding: 8px 12px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      font-size: 0.9rem;
-    }
-
-    button {
-      padding: 10px 16px;
-      background-color: #0066cc;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background-color 0.2s ease;
-    }
-
-    button:hover {
-      background-color: #0052a3;
-    }
-
-    hr {
-      border: 0;
-      border-top: 1px solid #eee;
-      margin: 20px 0;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>League Admin Portal</title>
+    <style>
+        :root {
+            --slate-dark: #0f172a;
+            --slate-card: #1e293b;
+            --gold: #f59e0b;
+            --home: #3b82f6;
+            --visit: #ef4444;
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+        body {
+            background-color: #020617;
+            color: var(--text-light);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 16px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        h1, h2, h3 {
+            margin-top: 0;
+        }
+        .nav-tabs {
+            display: flex;
+            gap: 8px;
+            border-bottom: 2px solid #334155;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 8px 16px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 6px 6px 0 0;
+            white-space: nowrap;
+        }
+        .tab-btn.active {
+            background: var(--slate-card);
+            color: var(--gold);
+            border-bottom: 2px solid var(--gold);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .card {
+            background: var(--slate-card);
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 12px;
+        }
+        label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px 12px;
+            background: var(--slate-dark);
+            border: 1px solid #334155;
+            color: #fff;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 0.9rem;
+        }
+        .btn {
+            background: var(--gold);
+            color: #000;
+            font-weight: bold;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: inline-block;
+        }
+        .btn-danger {
+            background: var(--visit);
+            color: #fff;
+        }
+        .btn-secondary {
+            background: #475569;
+            color: #fff;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #334155;
+        }
+        th {
+            color: var(--gold);
+        }
+        .badge {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        .badge-home { background: rgba(59, 130, 246, 0.2); color: var(--home); }
+        .badge-visit { background: rgba(239, 68, 68, 0.2); color: var(--visit); }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            justify-content: center; align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: var(--slate-card);
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 20px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+    </style>
 </head>
 <body>
 
-<div class="export-import-panel">
-  <!-- Export Section -->
-  <div class="section-group">
-    <h2>Export Local Data</h2>
-    <p>Download your current data as a CSV backup file.</p>
-    <button id="btnExportCsv">Export Data to CSV</button>
-  </div>
+<div class="container">
+    <h1>League Admin Portal</h1>
 
-  <hr>
-
-  <!-- Import Section -->
-  <div class="section-group">
-    <h2>Import Data</h2>
-    
-    <!-- Option A: File Upload -->
-    <div class="import-group">
-      <label for="csvFileInput">Upload CSV File:</label>
-      <input type="file" id="csvFileInput" accept=".csv" />
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('import')">Weekly Import</button>
+        <button class="tab-btn" onclick="switchTab('standings')">Standings & Stats</button>
+        <button class="tab-btn" onclick="switchTab('rosters')">Rosters</button>
+        <button class="tab-btn" onclick="switchTab('schedule')">Schedule</button>
+        <button class="tab-btn" onclick="switchTab('history')">Match History</button>
+        <button class="tab-btn" onclick="switchTab('sync')">App Sync / CSV</button>
     </div>
 
-    <!-- Option B: Google Sheets URL -->
-    <div class="import-group">
-      <label for="sheetUrlInput">Or Google Sheets Published CSV URL:</label>
-      <input type="url" id="sheetUrlInput" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv" />
-      <button id="btnFetchSheet">Import from URL</button>
+    <!-- TAB: IMPORT -->
+    <div id="tab-import" class="tab-content active">
+        <div class="card">
+            <h2>Weekly Data Import</h2>
+            <div class="form-group">
+                <label>Paste TSV / Text Data</label>
+                <textarea id="tsv-raw-input" rows="5" placeholder="Paste raw match data here..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Or Upload File (.tsv, .txt, .csv)</label>
+                <input type="file" id="tsv-file-input" accept=".tsv,.txt,.csv" onchange="handleFileUpload(event)">
+            </div>
+            <button class="btn" onclick="parseTSVInput()">Process Import</button>
+        </div>
+
+        <div id="review-card" class="card" style="display:none;">
+            <h3>Review Pending Matches</h3>
+            <div style="overflow-x:auto;">
+                <table id="review-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Home Team</th>
+                            <th>Visit Team</th>
+                            <th>Home Score</th>
+                            <th>Visit Score</th>
+                            <th>Games</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div style="margin-top:12px; display:flex; gap:8px;">
+                <button class="btn" onclick="approveWeeklyMatches()">Approve & Save All</button>
+                <button class="btn btn-secondary" onclick="addBlankMatchRow()">Add Match Row</button>
+                <button class="btn btn-danger" onclick="resetWeeklyImport()">Clear Pending</button>
+            </div>
+        </div>
+
+        <div id="export-card" class="card" style="display:none;">
+            <h3>Export Data for Google Sheets</h3>
+            <textarea id="sheet-copy-box" rows="4" readonly></textarea>
+            <br><br>
+            <button class="btn" onclick="copySheetData()">Copy to Clipboard</button>
+        </div>
     </div>
-  </div>
+
+    <!-- TAB: STANDINGS -->
+    <div id="tab-standings" class="tab-content">
+        <div class="card">
+            <h2>Team Standings</h2>
+            <table id="team-standings-table">
+                <thead>
+                    <tr><th>Team</th><th>Wins</th><th>Losses</th><th>Win %</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div class="card">
+            <h2>Player Leaderboard</h2>
+            <table id="player-stats-table">
+                <thead>
+                    <tr><th>Player</th><th>Team</th><th>Wins</th><th>Table Runs</th><th>8-Break</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- TAB: ROSTERS -->
+    <div id="tab-rosters" class="tab-content">
+        <div class="card">
+            <h2>Roster Management</h2>
+            <div class="form-group">
+                <label>Team Name</label>
+                <input type="text" id="roster-team-name" placeholder="e.g. BREAKERS">
+            </div>
+            <div class="form-group">
+                <label>Player Names (One per line)</label>
+                <textarea id="roster-player-names" rows="4" placeholder="Player 1&#10;Player 2"></textarea>
+            </div>
+            <button class="btn" onclick="saveRoster()">Save Roster</button>
+        </div>
+        <div class="card">
+            <h3>Current Rosters</h3>
+            <div id="roster-display"></div>
+        </div>
+    </div>
+
+    <!-- TAB: SCHEDULE -->
+    <div id="tab-schedule" class="tab-content">
+        <div class="card">
+            <h2>Auto-Generate Schedule</h2>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div class="form-group"><label>Start Date</label><input type="date" id="sched-start-date"></div>
+                <div class="form-group"><label>End Date</label><input type="date" id="sched-end-date"></div>
+                <div class="form-group"><label>Day of Week</label>
+                    <select id="sched-dow">
+                        <option value="1">Monday</option><option value="2">Tuesday</option>
+                        <option value="3">Wednesday</option><option value="4">Thursday</option>
+                        <option value="5">Friday</option><option value="6">Saturday</option>
+                        <option value="0">Sunday</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Time</label><input type="time" id="sched-time" value="19:00"></div>
+                <div class="form-group"><label>Frequency (Weeks)</label><input type="number" id="sched-freq" value="1" min="1"></div>
+                <div class="form-group"><label>Round-Robin Cycles</label><input type="number" id="sched-rounds" value="1" min="1"></div>
+            </div>
+            <div class="form-group"><label>Blackout / Holiday Dates (YYYY-MM-DD, comma-separated)</label><input type="text" id="sched-holidays"></div>
+            <button class="btn" onclick="generateAutoSchedule()">Generate Schedule</button>
+        </div>
+
+        <div class="card">
+            <h2>Add Single Match Entry</h2>
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
+                <div class="form-group"><label>Date</label><input type="date" id="sched-date"></div>
+                <div class="form-group"><label>Home Team</label><select id="sched-home-team"></select></div>
+                <div class="form-group"><label>Visiting Team</label><select id="sched-visit-team"></select></div>
+            </div>
+            <button class="btn" onclick="addScheduleEntry()">Add Match</button>
+        </div>
+
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3>Scheduled Matches <span id="sched-count-badge" class="badge badge-home">0</span></h3>
+                <button class="btn btn-danger" style="font-size:0.75rem;" onclick="clearSchedule()">Clear Schedule</button>
+            </div>
+            <table id="schedule-table">
+                <thead><tr><th>Date & Time</th><th>Home</th><th>Visitor</th><th>Action</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- TAB: HISTORY -->
+    <div id="tab-history" class="tab-content">
+        <div class="card">
+            <h2>Finalized Match Log</h2>
+            <div id="matches-list"></div>
+        </div>
+    </div>
+
+    <!-- TAB: SYNC -->
+    <div id="tab-sync" class="tab-content">
+        <div class="card">
+            <h2>CSV App Export / Sync</h2>
+            <button class="btn" onclick="generateCSV()">Generate CSV Export</button>
+            <br><br>
+            <textarea id="csv-output" rows="8" readonly></textarea>
+        </div>
+        <div class="card">
+            <h2>Database Maintenance</h2>
+            <button class="btn btn-danger" onclick="clearAllData()">Reset All Local Database Data</button>
+        </div>
+    </div>
+
+</div>
+
+<!-- GAME LOGGING MODAL -->
+<div id="game-modal" class="modal">
+    <div class="modal-content">
+        <h3>Edit Individual Games</h3>
+        <p id="modal-match-info" style="color:var(--text-muted); font-size:0.85rem;"></p>
+        <div id="games-container"></div>
+        <br>
+        <button class="btn" onclick="addGameRowToModal()">+ Add Game</button>
+        <button class="btn btn-secondary" onclick="saveGamesFromModal()">Save & Close</button>
+    </div>
 </div>
 
 <script>
-  // Key used in LocalStorage to store your app's data array
-  const STORAGE_KEY = 'app_local_data';
+    // --- DATABASE STATE ---
+    let DB = {
+        rosters: JSON.parse(localStorage.getItem('admin_rosters')) || {},
+        schedule: JSON.parse(localStorage.getItem('admin_schedule')) || [],
+        matches: JSON.parse(localStorage.getItem('admin_matches')) || []
+    };
 
-  /**
-   * Helper to retrieve current local storage data
-   */
-  function getLocalData() {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    try {
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) {
-      console.error('Error reading local storage:', e);
-      return [];
-    }
-  }
+    let pendingBatch = [];
+    let currentEditingMatchIndex = null;
 
-  /**
-   * Export local storage array to CSV
-   */
-  function exportToCsv() {
-    const data = getLocalData();
-    if (!data || data.length === 0) {
-      alert('No data available to export.');
-      return;
+    function saveDB() {
+        localStorage.setItem('admin_rosters', JSON.stringify(DB.rosters));
+        localStorage.setItem('admin_schedule', JSON.stringify(DB.schedule));
+        localStorage.setItem('admin_matches', JSON.stringify(DB.matches));
+        refreshAllViews();
     }
 
-    const csv = Papa.unparse(data);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'backup_data.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-
-  /**
-   * Validate schema before restoring
-   */
-  function isValidSchema(data) {
-    return Array.isArray(data) && data.length > 0 && typeof data[0] === 'object';
-  }
-
-  /**
-   * Save parsed dataset into local storage and update state
-   */
-  function restoreLocalData(data) {
-    if (!isValidSchema(data)) {
-      alert('Invalid CSV format or empty dataset.');
-      return;
+    function escapeHtml(str) {
+        return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
-    
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    alert('Data successfully imported and restored!');
-    window.location.reload();
-  }
 
-  /**
-   * Handle direct file upload (.csv)
-   */
-  function importFromLocalFile(file) {
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      dynamicTyping: true,
-      complete: (results) => {
-        restoreLocalData(results.data);
-      },
-      error: (err) => {
-        console.error('File parsing error:', err);
-        alert('Failed to parse CSV file.');
-      }
-    });
-  }
+    function formatDateLocal(d) {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
 
-  /**
-   * Handle public Google Sheets CSV link
-   */
-  function importFromGoogleSheetUrl(csvUrl) {
-    Papa.parse(csvUrl, {
-      download: true,
-      header: true,
-      skipEmptyLines: true,
-      dynamicTyping: true,
-      complete: (results) => {
-        restoreLocalData(results.data);
-      },
-      error: (err) => {
-        console.error('Fetch error:', err);
-        alert('Failed to fetch CSV from provided URL.');
-      }
-    });
-  }
+    // --- TAB NAVIGATION ---
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        
+        const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
+        if (btn) btn.classList.add('active');
+        document.getElementById(`tab-${tabId}`).classList.add('active');
+    }
 
-  // Event Listeners
-  document.getElementById('btnExportCsv').addEventListener('click', exportToCsv);
+    // --- IMPORT SYSTEM ---
+    function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('tsv-raw-input').value = e.target.result;
+        };
+        reader.readAsText(file);
+    }
 
-  document.getElementById('csvFileInput').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) importFromLocalFile(file);
-  });
+    function parseTSVInput() {
+        const raw = document.getElementById('tsv-raw-input').value.trim();
+        if (!raw) {
+            alert("Please paste text or select a file to process.");
+            return;
+        }
 
-  document.getElementById('btnFetchSheet').addEventListener('click', () => {
-    const url = document.getElementById('sheetUrlInput').value.trim();
-    if (url) importFromGoogleSheetUrl(url);
-  });
+        const lines = raw.split(/\r?\n/).filter(line => line.trim().length > 0);
+        pendingBatch = [];
+
+        lines.forEach(line => {
+            const cols = line.split('\t').map(c => c.trim());
+            
+            // Skip header lines
+            if (cols[0] && cols[0].toUpperCase() === 'DATE') return;
+
+            let date = cols[0] || formatDateLocal(new Date());
+            let homeTeam = cols[1] || "";
+            let visitTeam = cols[2] || "";
+            let homeScore = parseInt(cols[3]) || 0;
+            let visitScore = parseInt(cols[4]) || 0;
+            let games = [];
+
+            if (cols[5]) {
+                try {
+                    games = JSON.parse(cols[5]);
+                } catch(e) {
+                    games = [];
+                }
+            }
+
+            pendingBatch.push({ date, homeTeam, visitTeam, homeScore, visitScore, games });
+        });
+
+        renderWeeklyReviewTable();
+        document.getElementById('review-card').style.display = 'block';
+    }
+
+    function renderWeeklyReviewTable() {
+        const tbody = document.querySelector('#review-table tbody');
+        const teams = Object.keys(DB.rosters);
+
+        if (pendingBatch.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">No pending entries.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = pendingBatch.map((m, idx) => {
+            const teamOptions = teams.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+            
+            const homeSelect = `<select onchange="pendingBatch[${idx}].homeTeam = this.value">
+                <option value="">Select Team</option>
+                ${teams.map(t => `<option value="${escapeHtml(t)}" ${t === m.homeTeam ? 'selected' : ''}>${escapeHtml(t)}</option>`).join('')}
+            </select>`;
+
+            const visitSelect = `<select onchange="pendingBatch[${idx}].visitTeam = this.value">
+                <option value="">Select Team</option>
+                ${teams.map(t => `<option value="${escapeHtml(t)}" ${t === m.visitTeam ? 'selected' : ''}>${escapeHtml(t)}</option>`).join('')}
+            </select>`;
+
+            return `
+                <tr>
+                    <td><input type="date" value="${m.date}" onchange="pendingBatch[${idx}].date = this.value"></td>
+                    <td>${homeSelect}</td>
+                    <td>${visitSelect}</td>
+                    <td><input type="number" value="${m.homeScore}" style="width:60px;" onchange="pendingBatch[${idx}].homeScore = parseInt(this.value)||0"></td>
+                    <td><input type="number" value="${m.visitScore}" style="width:60px;" onchange="pendingBatch[${idx}].visitScore = parseInt(this.value)||0"></td>
+                    <td>
+                        <button class="btn btn-secondary" style="font-size:0.75rem; padding:4px 8px;" onclick="openGameModal(${idx})">
+                            ${(m.games && m.games.length > 0) ? m.games.length + ' Games' : 'Log Games'}
+                        </button>
+                    </td>
+                    <td>
+                        <button class="btn" style="font-size:0.65rem; padding:2px 6px;" onclick="approveSingleMatch(${idx})">Approve</button>
+                        <button class="btn btn-danger" style="font-size:0.65rem; padding:2px 6px;" onclick="deletePendingRow(${idx})">✕</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // --- GAME EDITING MODAL ---
+    function openGameModal(matchIndex) {
+        currentEditingMatchIndex = matchIndex;
+        const match = pendingBatch[matchIndex];
+        if (!match.homeTeam || !match.visitTeam) {
+            alert("Please select both Home and Visiting teams first.");
+            return;
+        }
+
+        document.getElementById('modal-match-info').innerText = `${match.homeTeam} (Home) VS ${match.visitTeam} (Visitor) - ${match.date}`;
+        
+        if (!match.games) match.games = [];
+        renderModalGamesList();
+        document.getElementById('game-modal').style.display = 'flex';
+    }
+
+    function closeGameModal() {
+        document.getElementById('game-modal').style.display = 'none';
+        currentEditingMatchIndex = null;
+    }
+
+    function renderModalGamesList() {
+        const match = pendingBatch[currentEditingMatchIndex];
+        const container = document.getElementById('games-container');
+        
+        const homeRoster = DB.rosters[match.homeTeam] || [];
+        const visitRoster = DB.rosters[match.visitTeam] || [];
+
+        const homeOptions = homeRoster.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+        const visitOptions = visitRoster.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+
+        container.innerHTML = match.games.map((g, gIdx) => `
+            <div style="background:var(--slate-dark); border:1px solid #334155; padding:10px; margin-bottom:8px; border-radius:6px; font-size:0.85rem;">
+                <div style="font-weight:bold; color:var(--gold); margin-bottom:4px;">Game ${gIdx + 1}</div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                    <div>
+                        <label style="color:var(--home);">Home Player</label>
+                        <select id="modal-hp-${gIdx}">
+                            <option value="">Select</option>
+                            ${homeRoster.map(p => `<option value="${escapeHtml(p)}" ${p === g.homePlayer ? 'selected' : ''}>${escapeHtml(p)}</option>`).join('')}
+                        </select>
+                        <label><input type="checkbox" id="modal-h8b-${gIdx}" ${g.home8B ? 'checked' : ''}> 8-Break</label>
+                        <label><input type="checkbox" id="modal-htr-${gIdx}" ${g.homeTR ? 'checked' : ''}> Table Run</label>
+                    </div>
+                    <div>
+                        <label style="color:var(--visit);">Visiting Player</label>
+                        <select id="modal-vp-${gIdx}">
+                            <option value="">Select</option>
+                            ${visitRoster.map(p => `<option value="${escapeHtml(p)}" ${p === g.visitPlayer ? 'selected' : ''}>${escapeHtml(p)}</option>`).join('')}
+                        </select>
+                        <label><input type="checkbox" id="modal-v8b-${gIdx}" ${g.visit8B ? 'checked' : ''}> 8-Break</label>
+                        <label><input type="checkbox" id="modal-vtr-${gIdx}" ${g.visitTR ? 'checked' : ''}> Table Run</label>
+                    </div>
+                </div>
+                <div style="margin-top:6px;">
+                    <label>Winner:</label>
+                    <select id="modal-w-${gIdx}">
+                        <option value="">-- None --</option>
+                        <option value="h" ${g.winner === 'h' ? 'selected' : ''}>Home Player</option>
+                        <option value="v" ${g.winner === 'v' ? 'selected' : ''}>Visiting Player</option>
+                    </select>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function addGameRowToModal() {
+        const match = pendingBatch[currentEditingMatchIndex];
+        match.games.push({ homePlayer: "", visitPlayer: "", winner: "", home8B: false, homeTR: false, visit8B: false, visitTR: false });
+        renderModalGamesList();
+    }
+
+    function saveGamesFromModal() {
+        const match = pendingBatch[currentEditingMatchIndex];
+        const games = match.games;
+        
+        let homeScoreCalc = 0;
+        let visitScoreCalc = 0;
+
+        games.forEach((g, idx) => {
+            const hp = document.getElementById(`modal-hp-${idx}`);
+            const vp = document.getElementById(`modal-vp-${idx}`);
+            const w = document.getElementById(`modal-w-${idx}`);
+            const h8b = document.getElementById(`modal-h8b-${idx}`);
+            const htr = document.getElementById(`modal-htr-${idx}`);
+            const v8b = document.getElementById(`modal-v8b-${idx}`);
+            const vtr = document.getElementById(`modal-vtr-${idx}`);
+
+            if (hp) g.homePlayer = hp.value;
+            if (vp) g.visitPlayer = vp.value;
+            if (w) g.winner = w.value;
+            if (h8b) g.home8B = h8b.checked;
+            if (htr) g.homeTR = htr.checked;
+            if (v8b) g.visit8B = v8b.checked;
+            if (vtr) g.visitTR = vtr.checked;
+
+            if (g.winner === 'h') homeScoreCalc++;
+            else if (g.winner === 'v') visitScoreCalc++;
+        });
+
+        if (games.length > 0) {
+            match.homeScore = homeScoreCalc;
+            match.visitScore = visitScoreCalc;
+        }
+
+        closeGameModal();
+        renderWeeklyReviewTable();
+    }
+
+    function addBlankMatchRow() {
+        pendingBatch.push({
+            date: formatDateLocal(new Date()),
+            homeTeam: "",
+            visitTeam: "",
+            homeScore: 0,
+            visitScore: 0,
+            games: []
+        });
+        renderWeeklyReviewTable();
+    }
+
+    function deletePendingRow(index) {
+        pendingBatch.splice(index, 1);
+        renderWeeklyReviewTable();
+    }
+
+    function resetWeeklyImport() {
+        pendingBatch = [];
+        document.getElementById('tsv-raw-input').value = '';
+        document.getElementById('tsv-file-input').value = '';
+        document.getElementById('review-card').style.display = 'none';
+    }
+
+    function approveSingleMatch(index) {
+        const match = pendingBatch[index];
+        if (!match || !match.homeTeam || !match.visitTeam) {
+            alert("Please select both Home and Visiting teams before approving.");
+            return;
+        }
+        DB.matches.push({ ...match, id: Date.now() + Math.random() });
+        pendingBatch.splice(index, 1);
+        renderWeeklyReviewTable();
+        saveDB();
+    }
+
+    function approveWeeklyMatches() {
+        if (pendingBatch.length === 0) return;
+        const invalid = pendingBatch.some(m => !m.homeTeam || !m.visitTeam);
+        if (invalid) {
+            if (!confirm("Some rows are missing Team names. Do you still want to finalize valid rows?")) return;
+        }
+
+        let approvedDataForSheets = "DATE\tHOME TEAM\tVISIT TEAM\tHOME PTS\tVISIT PTS\tGAMES_JSON\n";
+
+        const remaining = [];
+        pendingBatch.forEach(m => {
+            if (m.homeTeam && m.visitTeam) {
+                DB.matches.push({ ...m, id: Date.now() + Math.random() });
+                approvedDataForSheets += `${m.date}\t${m.homeTeam}\t${m.visitTeam}\t${m.homeScore}\t${m.visitScore}\t${JSON.stringify(m.games || [])}\n`;
+            } else {
+                remaining.push(m);
+            }
+        });
+
+        pendingBatch = remaining;
+        saveDB();
+
+        document.getElementById('sheet-copy-box').value = approvedDataForSheets.trim();
+        document.getElementById('export-card').style.display = 'block';
+        renderWeeklyReviewTable();
+    }
+
+    function copySheetData() {
+        const copyText = document.getElementById("sheet-copy-box");
+        copyText.select();
+        navigator.clipboard.writeText(copyText.value);
+        alert("Data copied to clipboard! Paste directly into Google Sheets.");
+    }
+
+    function deleteMatch(id) {
+        if (!confirm("Delete this finalized match entry? Standings will update automatically.")) return;
+        DB.matches = DB.matches.filter(m => m.id !== id);
+        saveDB();
+    }
+
+    // --- STANDINGS & LEADERBOARD CALCULATIONS ---
+    function calculateStandings() {
+        let teamStats = {};
+        let playerStats = {};
+
+        Object.keys(DB.rosters).forEach(team => {
+            teamStats[team] = { wins: 0, losses: 0, total: 0 };
+            DB.rosters[team].forEach(p => {
+                playerStats[p] = { name: p, team: team, wins: 0, tr: 0, eightB: 0 };
+            });
+        });
+
+        DB.matches.forEach(m => {
+            if (m.homeTeam) {
+                if (!teamStats[m.homeTeam]) teamStats[m.homeTeam] = { wins: 0, losses: 0, total: 0 };
+                teamStats[m.homeTeam].wins += (m.homeScore || 0);
+                teamStats[m.homeTeam].losses += (m.visitScore || 0);
+                teamStats[m.homeTeam].total += ((m.homeScore || 0) + (m.visitScore || 0));
+            }
+            if (m.visitTeam) {
+                if (!teamStats[m.visitTeam]) teamStats[m.visitTeam] = { wins: 0, losses: 0, total: 0 };
+                teamStats[m.visitTeam].wins += (m.visitScore || 0);
+                teamStats[m.visitTeam].losses += (m.homeScore || 0);
+                teamStats[m.visitTeam].total += ((m.homeScore || 0) + (m.visitScore || 0));
+            }
+
+            if (m.games && Array.isArray(m.games)) {
+                m.games.forEach(g => {
+                    if (g.homePlayer) {
+                        if (!playerStats[g.homePlayer]) playerStats[g.homePlayer] = { name: g.homePlayer, team: m.homeTeam || "Unknown", wins: 0, tr: 0, eightB: 0 };
+                        if (g.winner === 'h') playerStats[g.homePlayer].wins++;
+                        if (g.homeTR) playerStats[g.homePlayer].tr++;
+                        if (g.home8B) playerStats[g.homePlayer].eightB++;
+                    }
+                    if (g.visitPlayer) {
+                        if (!playerStats[g.visitPlayer]) playerStats[g.visitPlayer] = { name: g.visitPlayer, team: m.visitTeam || "Unknown", wins: 0, tr: 0, eightB: 0 };
+                        if (g.winner === 'v') playerStats[g.visitPlayer].wins++;
+                        if (g.visitTR) playerStats[g.visitPlayer].tr++;
+                        if (g.visit8B) playerStats[g.visitPlayer].eightB++;
+                    }
+                });
+            }
+        });
+
+        // Render Team Standings
+        const standingsArr = Object.keys(teamStats).map(t => ({
+            name: t,
+            wins: teamStats[t].wins,
+            losses: teamStats[t].losses,
+            pct: teamStats[t].total > 0 ? (teamStats[t].wins / teamStats[t].total * 100).toFixed(1) : "0.0"
+        })).sort((a, b) => b.wins - a.wins || b.pct - a.pct);
+
+        document.querySelector('#team-standings-table tbody').innerHTML = standingsArr.length ? standingsArr.map(s => `
+            <tr>
+                <td><strong>${escapeHtml(s.name)}</strong></td>
+                <td>${s.wins}</td>
+                <td>${s.losses}</td>
+                <td><span class="badge badge-home">${s.pct}%</span></td>
+            </tr>
+        `).join('') : `<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No match data logged yet.</td></tr>`;
+
+        // Render Player Leaderboard
+        const playersArr = Object.values(playerStats).sort((a, b) => b.wins - a.wins || b.tr - a.tr || b.eightB - a.eightB);
+        document.querySelector('#player-stats-table tbody').innerHTML = playersArr.length ? playersArr.map(p => `
+            <tr>
+                <td><strong>${escapeHtml(p.name)}</strong></td>
+                <td style="font-size:0.75rem; color:var(--text-muted);">${escapeHtml(p.team)}</td>
+                <td><strong>${p.wins}</strong></td>
+                <td>${p.tr > 0 ? `<span class="badge badge-visit">${p.tr}</span>` : '0'}</td>
+                <td>${p.eightB > 0 ? `<span class="badge badge-home">${p.eightB}</span>` : '0'}</td>
+            </tr>
+        `).join('') : `<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No player records found.</td></tr>`;
+    }
+
+    // --- ROSTER MANAGEMENT ---
+    function saveRoster() {
+        const teamName = document.getElementById('roster-team-name').value.trim().toUpperCase();
+        const playersRaw = document.getElementById('roster-player-names').value.trim();
+        if (!teamName || !playersRaw) {
+            alert("Please fill in both Team Name and Player List.");
+            return;
+        }
+        const players = playersRaw.split('\n').map(p => p.trim()).filter(p => p.length > 0);
+        DB.rosters[teamName] = players;
+        saveDB();
+        document.getElementById('roster-team-name').value = '';
+        document.getElementById('roster-player-names').value = '';
+    }
+
+    function deleteRoster(team) {
+        if (!confirm(`Delete roster for ${team}?`)) return;
+        delete DB.rosters[team];
+        saveDB();
+    }
+
+    function renderRosters() {
+        const container = document.getElementById('roster-display');
+        const teams = Object.keys(DB.rosters);
+        if (teams.length === 0) {
+            container.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem;">No rosters created yet.</p>`;
+            return;
+        }
+        container.innerHTML = teams.map(t => `
+            <div style="background:var(--slate-dark); border:1px solid #334155; padding:12px; border-radius:8px; margin-bottom:10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <h3 style="color:var(--gold); font-size:0.95rem;">${escapeHtml(t)}</h3>
+                    <button class="btn btn-danger" style="font-size:0.65rem; padding:2px 6px;" onclick="deleteRoster('${escapeHtml(t)}')">Delete</button>
+                </div>
+                <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.4;">${DB.rosters[t].map(p => escapeHtml(p)).join(', ')}</p>
+            </div>
+        `).join('');
+
+        // Update dropdowns in Schedule tab
+        const homeSel = document.getElementById('sched-home-team');
+        const visitSel = document.getElementById('sched-visit-team');
+        const options = `<option value="">Select Team</option>` + teams.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+        homeSel.innerHTML = options;
+        visitSel.innerHTML = options;
+    }
+
+    // --- SCHEDULE GENERATOR & MANAGEMENT ---
+    function generateAutoSchedule() {
+        const teams = Object.keys(DB.rosters);
+        if (teams.length < 2) {
+            alert("Please add at least 2 teams in Roster Management before generating a schedule.");
+            return;
+        }
+
+        const startDateVal = document.getElementById('sched-start-date').value;
+        const endDateVal = document.getElementById('sched-end-date').value;
+        const targetDOW = parseInt(document.getElementById('sched-dow').value);
+        const defaultTime = document.getElementById('sched-time').value || "19:00";
+        const frequencyWeeks = parseInt(document.getElementById('sched-freq').value) || 1;
+        const roundMultiplier = parseInt(document.getElementById('sched-rounds').value) || 1;
+        const holidaysRaw = document.getElementById('sched-holidays').value;
+        const blackouts = holidaysRaw.split(',').map(s => s.trim()).filter(s => s.length > 0);
+
+        if (!startDateVal) {
+            alert("Please select a Start Date.");
+            return;
+        }
+
+        let scheduleList = [...teams];
+        if (scheduleList.length % 2 !== 0) scheduleList.push("BYE");
+
+        const numTeams = scheduleList.length;
+        const roundsPerCycle = numTeams - 1;
+        const matchesPerRound = numTeams / 2;
+
+        let rawMatchups = [];
+        for (let r = 0; r < roundMultiplier; r++) {
+            let tempTeams = [...scheduleList];
+            for (let round = 0; round < roundsPerCycle; round++) {
+                let roundPairs = [];
+                for (let i = 0; i < matchesPerRound; i++) {
+                    let home = tempTeams[i];
+                    let visit = tempTeams[numTeams - 1 - i];
+                    if (home !== "BYE" && visit !== "BYE") {
+                        if ((round + r) % 2 === 1) {
+                            roundPairs.push({ home: visit, visit: home });
+                        } else {
+                            roundPairs.push({ home: home, visit: visit });
+                        }
+                    }
+                }
+                rawMatchups.push(roundPairs);
+                tempTeams.splice(1, 0, tempTeams.pop());
+            }
+        }
+
+        let currDate = new Date(startDateVal + 'T00:00:00');
+        while (currDate.getDay() !== targetDOW) {
+            currDate.setDate(currDate.getDate() + 1);
+        }
+
+        let generatedSchedule = [];
+        const maxEndDate = endDateVal ? new Date(endDateVal + 'T23:59:59') : null;
+
+        for (let roundIdx = 0; roundIdx < rawMatchups.length; roundIdx++) {
+            let dateStr = formatDateLocal(currDate);
+            while (blackouts.includes(dateStr)) {
+                currDate.setDate(currDate.getDate() + (7 * frequencyWeeks));
+                dateStr = formatDateLocal(currDate);
+            }
+
+            if (maxEndDate && currDate > maxEndDate) break;
+
+            const pairs = rawMatchups[roundIdx];
+            pairs.forEach(p => {
+                generatedSchedule.push({
+                    id: Date.now() + Math.random(),
+                    date: `${dateStr} ${defaultTime}`,
+                    home: p.home,
+                    visit: p.visit
+                });
+            });
+
+            currDate.setDate(currDate.getDate() + (7 * frequencyWeeks));
+        }
+
+        DB.schedule = generatedSchedule;
+        saveDB();
+    }
+
+    function addScheduleEntry() {
+        const date = document.getElementById('sched-date').value;
+        const home = document.getElementById('sched-home-team').value;
+        const visit = document.getElementById('sched-visit-team').value;
+        const defaultTime = document.getElementById('sched-time').value || "19:00";
+
+        if (!date || !home || !visit) {
+            alert("Please select Date, Home Team, and Visiting Team.");
+            return;
+        }
+        if (home === visit) {
+            alert("Home and Visitor teams must be different.");
+            return;
+        }
+
+        DB.schedule.push({ id: Date.now(), date: `${date} ${defaultTime}`, home, visit });
+        DB.schedule.sort((a, b) => a.date.localeCompare(b.date));
+        saveDB();
+    }
+
+    function deleteScheduleEntry(id) {
+        DB.schedule = DB.schedule.filter(s => s.id !== id);
+        saveDB();
+    }
+
+    function clearSchedule() {
+        if (!confirm("Are you sure you want to clear the entire schedule?")) return;
+        DB.schedule = [];
+        saveDB();
+    }
+
+    function renderSchedule() {
+        const tbody = document.querySelector('#schedule-table tbody');
+        const countBadge = document.getElementById('sched-count-badge');
+        countBadge.innerText = `${DB.schedule.length} Matches`;
+
+        if (DB.schedule.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No scheduled matches yet.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = DB.schedule.map(s => `
+            <tr>
+                <td>${escapeHtml(s.date)}</td>
+                <td><span class="badge badge-home">${escapeHtml(s.home)}</span></td>
+                <td><span class="badge badge-visit">${escapeHtml(s.visit)}</span></td>
+                <td>
+                    <button onclick="deleteScheduleEntry(${s.id})" style="background:none; border:none; color:var(--visit); cursor:pointer; font-weight:bold;">✕</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // --- HISTORICAL MATCH LIST ---
+    function renderMatchesList() {
+        const container = document.getElementById('matches-list');
+        if (DB.matches.length === 0) {
+            container.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem;">No finalized matches stored in database.</p>`;
+            return;
+        }
+
+        container.innerHTML = DB.matches.map(m => `
+            <div style="background:var(--slate-dark); border:1px solid #334155; padding:12px; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <span style="font-size:0.75rem; color:var(--text-muted);">${escapeHtml(m.date)}</span>
+                    <div style="font-weight:bold; margin-top:4px; font-size:0.9rem;">
+                        <span style="color:var(--home);">${escapeHtml(m.homeTeam)} (${m.homeScore})</span>
+                        <span style="color:var(--text-muted); font-size:0.8rem; margin: 0 6px;">VS</span>
+                        <span style="color:var(--visit);">${escapeHtml(m.visitTeam)} (${m.visitScore})</span>
+                    </div>
+                </div>
+                <button class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="deleteMatch(${m.id})">Delete</button>
+            </div>
+        `).join('');
+    }
+
+    // --- CSV GENERATOR FOR APP SYNC ---
+    function generateCSV() {
+        let csv = "Type,ID,Field1,Field2,Field3,Field4\n";
+
+        Object.keys(DB.rosters).forEach(team => {
+            csv += `ROSTER,${team},"${DB.rosters[team].join(',')}",,,\n`;
+        });
+
+        DB.schedule.forEach(s => {
+            csv += `SCHEDULE,${s.id},${s.date},${s.home},${s.visit},\n`;
+        });
+
+        DB.matches.forEach(m => {
+            csv += `MATCH,${m.id},${m.date},${m.homeTeam},${m.visitTeam},${m.homeScore}-${m.visitScore}\n`;
+        });
+
+        document.getElementById('csv-output').value = csv;
+    }
+
+    // --- RESET ALL DATA ---
+    function clearAllData() {
+        if (!confirm("⚠️ WARNING: This will reset all saved rosters, schedules, and matches. Continue?")) return;
+        localStorage.removeItem('admin_rosters');
+        localStorage.removeItem('admin_schedule');
+        localStorage.removeItem('admin_matches');
+        DB = { rosters: {}, schedule: [], matches: [] };
+        saveDB();
+    }
+
+    function refreshAllViews() {
+        renderRosters();
+        renderSchedule();
+        renderMatchesList();
+        calculateStandings();
+        generateCSV();
+    }
+
+    // Initialize app view on load
+    refreshAllViews();
 </script>
-
 </body>
 </html>
