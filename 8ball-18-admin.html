@@ -231,13 +231,25 @@ function doPost(e) {
         const container = document.getElementById('roster-display');
         let html = "";
         for (let team in DB.rosters) {
-            html += `<div style="margin-bottom:15px;">
-                <strong style="color:var(--gold);">${team}</strong> (${DB.rosters[team].length} players)
+            html += `<div style="margin-bottom:15px; background: var(--slate-dark); padding: 12px; border-radius: 8px; border: 1px solid #334155;">
+                <div style="display:flex; justify-between; align-items:center; margin-bottom: 8px;">
+                    <strong style="color:var(--gold);">${team}</strong>
+                    <button onclick="deleteTeam('${team}')" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;">Delete Team</button>
+                </div>
+                <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom: 6px;">${DB.rosters[team].length} Players:</div>
                 <ul style="padding-left:20px; font-size:0.85rem; color:#cbd5e1;">
                     ${DB.rosters[team].map(p => `<li>${p}</li>`).join('')}
                 </ul>
             </div>`;
         }
+        container.innerHTML = html || "<p style='color:var(--text-muted);'>No rosters configured yet.</p>";
+        
+        // Update schedule dropdowns
+        const homeSel = document.getElementById('sched-home-team');
+        const visitSel = document.getElementById('sched-visit-team');
+        const options = '<option value="">Select Team</option>' + Object.keys(DB.rosters).map(t => `<option value="${t}">${t}</option>`).join('');
+        homeSel.innerHTML = options; visitSel.innerHTML = options;
+    }
         container.innerHTML = html || "<p style='color:var(--text-muted);'>No rosters configured yet.</p>";
         
         // Update schedule dropdowns
