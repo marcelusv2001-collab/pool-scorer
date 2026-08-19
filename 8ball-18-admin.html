@@ -51,7 +51,7 @@
             width: 100%; padding: 10px; background: var(--slate-dark); border: 1px solid #334155;
             color: white; border-radius: 6px; margin-bottom: 10px; font-size: 0.85rem;
         }
-        input:focus, select:focus { border-color: var(--gold); outline: none; }
+        input:focus, select:focus, textarea:focus { border-color: var(--gold); outline: none; }
 
         button.btn {
             background: var(--gold); color: black; border: none; padding: 10px 16px;
@@ -63,23 +63,21 @@
         .badge { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
         .badge-home { background: var(--home); color: white; }
         .badge-visit { background: var(--visit); color: white; }
-
-        .stat-val { font-size: 1.5rem; font-weight: bold; color: var(--gold); }
     </style>
 </head>
 <body>
 
 <header>
     <h1>🎱 Lebanon 8-Ball Admin Portal</h1>
-    <span id="date-display" style="font-size: 0.8rem; color: var(--text-muted);"></span>
+    <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 6px 10px;" onclick="clearAllData()">⚠️ Reset Admin Data</button>
 </header>
 
 <nav>
-    <button class="active" onclick="switchTab('matches')">📊 Match Submissions</button>
-    <button onclick="switchTab('standings')">🏆 Standings & Player Stats</button>
-    <button onclick="switchTab('rosters')">👥 Roster Management</button>
-    <button onclick="switchTab('schedule')">📅 Schedule Setup</button>
-    <button onclick="switchTab('export')">⚙️ Export & API Setup</button>
+    <button class="active" onclick="switchTab('matches', this)">📊 Match Submissions</button>
+    <button onclick="switchTab('standings', this)">🏆 Standings & Player Stats</button>
+    <button onclick="switchTab('rosters', this)">👥 Roster Management</button>
+    <button onclick="switchTab('schedule', this)">📅 Schedule Setup</button>
+    <button onclick="switchTab('export', this)">⚙️ Export & API Setup</button>
 </nav>
 
 <main>
@@ -90,9 +88,7 @@
             <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">
                 Review submitted match results from team captains. Approved matches update official standings automatically.
             </p>
-            <div id="matches-list">
-                <!-- Dynamic table insertion -->
-            </div>
+            <div id="matches-list"></div>
         </div>
     </div>
 
@@ -168,21 +164,6 @@
             <textarea id="csv-output" rows="10" readonly onclick="this.select()"></textarea>
             <button class="btn" onclick="generateCSV()">Generate Fresh CSV</button>
         </div>
-
-        <div class="card">
-            <h2>Google Apps Script Backend Code</h2>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;">
-                Want automatic cloud synchronization? Paste this code into a Google Apps Script linked to your Google Sheet to act as a free API endpoint.
-            </p>
-            <textarea id="script-output" rows="8" readonly>
-function doPost(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Submissions");
-  var data = JSON.parse(e.postData.contents);
-  sheet.appendRow([new Date(), data.date, data.homeTeam, data.visitTeam, data.homeScore, data.visitScore, JSON.stringify(data.games)]);
-  return ContentService.createTextOutput(JSON.stringify({"result":"success"})).setMimeType(ContentService.MimeType.JSON);
-}
-            </textarea>
-        </div>
     </div>
 </main>
 
@@ -199,8 +180,6 @@ function doPost(e) {
         matches: JSON.parse(localStorage.getItem('admin_matches')) || []
     };
 
-    document.getElementById('date-display').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
-
     function saveDB() {
         localStorage.setItem('admin_rosters', JSON.stringify(DB.rosters));
         localStorage.setItem('admin_schedule', JSON.stringify(DB.schedule));
@@ -208,11 +187,15 @@ function doPost(e) {
         refreshAllViews();
     }
 
-    function switchTab(tabId) {
+    function switchTab(tabId, btn) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('nav button').forEach(el => el.classList.remove('active'));
         document.getElementById(`tab-${tabId}`).classList.add('active');
-        event.target.classList.add('active');
+        if (btn) btn.classList.add('active');
+    }
+
+    function escapeHtml(str) {
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
     // --- ROSTER MANAGEMENT ---
@@ -227,36 +210,58 @@ function doPost(e) {
         document.getElementById('roster-player-names').value = "";
     }
 
+    function deleteTeam(teamName) {
+        if (confirm(`Are you sure you want to delete "${teamName}" and all its players?`)) {
+            delete DB.rosters[teamName];
+            saveDB();
+        }
+    }
+
+    function deletePlayer(teamName, pIdx) {
+        if (DB.rosters[teamName]) {
+            DB.rosters[teamName].splice(pIdx, 1);
+            saveDB();
+        }
+    }
+
     function renderRosters() {
         const container = document.getElementById('roster-display');
         let html = "";
-        for (let team in DB.rosters) {
-            html += `<div style="margin-bottom:15px; background: var(--slate-dark); padding: 12px; border-radius: 8px; border: 1px solid #334155;">
-                <div style="display:flex; justify-between; align-items:center; margin-bottom: 8px;">
-                    <strong style="color:var(--gold);">${team}</strong>
-                    <button onclick="deleteTeam('${team}')" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;">Delete Team</button>
-                </div>
-                <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom: 6px;">${DB.rosters[team].length} Players:</div>
-                <ul style="padding-left:20px; font-size:0.85rem; color:#cbd5e1;">
-                    ${DB.rosters[team].map(p => `<li>${p}</li>`).join('')}
-                </ul>
-            </div>`;
+        const teams = Object.keys(DB.rosters);
+
+        if (teams.length === 0) {
+            container.innerHTML = "<p style='color:var(--text-muted);'>No rosters configured yet.</p>";
+        } else {
+            teams.forEach(team => {
+                const players = DB.rosters[team] || [];
+                const safeTeam = team.replace(/'/g, "\\'");
+                html += `<div style="margin-bottom:15px; background: var(--slate-dark); padding: 12px; border-radius: 8px; border: 1px solid #334155;">
+                    <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 8px;">
+                        <strong style="color:var(--gold);">${escapeHtml(team)}</strong>
+                        <button onclick="deleteTeam('${safeTeam}')" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;">Delete Team</button>
+                    </div>
+                    <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom: 6px;">${players.length} Players:</div>
+                    <ul style="padding-left:20px; font-size:0.85rem; color:#cbd5e1;">
+                        ${players.map((p, idx) => `
+                            <li style="margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; max-width: 250px;">
+                                <span>${escapeHtml(p)}</span>
+                                <button onclick="deletePlayer('${safeTeam}', ${idx})" style="background:none; border:none; color:var(--visit); cursor:pointer; font-weight:bold; padding: 0 4px;">✕</button>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>`;
+            });
+            container.innerHTML = html;
         }
-        container.innerHTML = html || "<p style='color:var(--text-muted);'>No rosters configured yet.</p>";
         
         // Update schedule dropdowns
         const homeSel = document.getElementById('sched-home-team');
         const visitSel = document.getElementById('sched-visit-team');
-        const options = '<option value="">Select Team</option>' + Object.keys(DB.rosters).map(t => `<option value="${t}">${t}</option>`).join('');
-        homeSel.innerHTML = options; visitSel.innerHTML = options;
-    }
-        container.innerHTML = html || "<p style='color:var(--text-muted);'>No rosters configured yet.</p>";
-        
-        // Update schedule dropdowns
-        const homeSel = document.getElementById('sched-home-team');
-        const visitSel = document.getElementById('sched-visit-team');
-        const options = '<option value="">Select Team</option>' + Object.keys(DB.rosters).map(t => `<option value="${t}">${t}</option>`).join('');
-        homeSel.innerHTML = options; visitSel.innerHTML = options;
+        if (homeSel && visitSel) {
+            const options = '<option value="">Select Team</option>' + teams.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+            homeSel.innerHTML = options;
+            visitSel.innerHTML = options;
+        }
     }
 
     // --- SCHEDULE MANAGEMENT ---
@@ -270,38 +275,45 @@ function doPost(e) {
         saveDB();
     }
 
-    function renderSchedule() {
-        const tbody = document.querySelector('#schedule-table tbody');
-        tbody.innerHTML = DB.schedule.map((s, idx) => `
-            <tr>
-                <td>${s.date}</td>
-                <td><span class="badge badge-home">${s.home}</span></td>
-                <td><span class="badge badge-visit">${s.visit}</span></td>
-                <td><button onclick="removeSchedule(${idx})" style="background:none; border:none; color:var(--visit); cursor:pointer;">❌</button></td>
-            </tr>
-        `).join('');
-    }
-
     function removeSchedule(idx) {
         DB.schedule.splice(idx, 1);
         saveDB();
     }
 
+    function renderSchedule() {
+        const tbody = document.querySelector('#schedule-table tbody');
+        tbody.innerHTML = DB.schedule.map((s, idx) => `
+            <tr>
+                <td>${escapeHtml(s.date)}</td>
+                <td><span class="badge badge-home">${escapeHtml(s.home)}</span></td>
+                <td><span class="badge badge-visit">${escapeHtml(s.visit)}</span></td>
+                <td><button onclick="removeSchedule(${idx})" style="background:none; border:none; color:var(--visit); cursor:pointer;">❌</button></td>
+            </tr>
+        `).join('');
+    }
+
     // --- MATCH REVIEW & STANDINGS ---
+    function deleteMatch(idx) {
+        if (confirm("Delete this match submission?")) {
+            DB.matches.splice(idx, 1);
+            saveDB();
+        }
+    }
+
     function renderMatches() {
         const container = document.getElementById('matches-list');
         if(DB.matches.length === 0) {
-            container.innerHTML = `<p style="color:var(--text-muted);">No submitted matches pending. Add sample matches via code or hook up API endpoint.</p>`;
+            container.innerHTML = `<p style="color:var(--text-muted);">No submitted matches recorded.</p>`;
             return;
         }
 
-        let html = `<table><thead><tr><th>Date</th><th>Matchup</th><th>Score</th><th>Status</th></tr></thead><tbody>`;
-        DB.matches.forEach((m) => {
+        let html = `<table><thead><tr><th>Date</th><th>Matchup</th><th>Score</th><th>Action</th></tr></thead><tbody>`;
+        DB.matches.forEach((m, idx) => {
             html += `<tr>
-                <td>${m.date}</td>
-                <td>${m.homeTeam} vs ${m.visitTeam}</td>
+                <td>${escapeHtml(m.date)}</td>
+                <td>${escapeHtml(m.homeTeam)} vs ${escapeHtml(m.visitTeam)}</td>
                 <td><strong>${m.homeScore} - ${m.visitScore}</strong></td>
-                <td><span style="color:var(--success)">Approved</span></td>
+                <td><button onclick="deleteMatch(${idx})" style="background:none; border:none; color:var(--visit); cursor:pointer;">❌ Delete</button></td>
             </tr>`;
         });
         html += `</tbody></table>`;
@@ -312,10 +324,8 @@ function doPost(e) {
         const teamStats = {};
         const playerStats = {};
 
-        // Initialize teams
         Object.keys(DB.rosters).forEach(t => teamStats[t] = { w: 0, l: 0 });
 
-        // Aggregate match data
         DB.matches.forEach(m => {
             const hWin = parseInt(m.homeScore) || 0;
             const vWin = parseInt(m.visitScore) || 0;
@@ -323,37 +333,36 @@ function doPost(e) {
             if(teamStats[m.homeTeam]) { teamStats[m.homeTeam].w += hWin; teamStats[m.homeTeam].l += vWin; }
             if(teamStats[m.visitTeam]) { teamStats[m.visitTeam].w += vWin; teamStats[m.visitTeam].l += hWin; }
 
-            // Aggregate Player Stats
-            m.games.forEach(g => {
-                if(g.winner === 'h' && g.homePlayer) {
-                    playerStats[g.homePlayer] = playerStats[g.homePlayer] || { team: m.homeTeam, wins: 0, tr: 0, b8: 0 };
-                    playerStats[g.homePlayer].wins++;
-                    if(g.homeTR) playerStats[g.homePlayer].tr++;
-                    if(g.home8B) playerStats[g.homePlayer].b8++;
-                } else if(g.winner === 'v' && g.visitPlayer) {
-                    playerStats[g.visitPlayer] = playerStats[g.visitPlayer] || { team: m.visitTeam, wins: 0, tr: 0, b8: 0 };
-                    playerStats[g.visitPlayer].wins++;
-                    if(g.visitTR) playerStats[g.visitPlayer].tr++;
-                    if(g.visit8B) playerStats[g.visitPlayer].b8++;
-                }
-            });
+            if (m.games) {
+                m.games.forEach(g => {
+                    if(g.winner === 'h' && g.homePlayer) {
+                        playerStats[g.homePlayer] = playerStats[g.homePlayer] || { team: m.homeTeam, wins: 0, tr: 0, b8: 0 };
+                        playerStats[g.homePlayer].wins++;
+                        if(g.homeTR) playerStats[g.homePlayer].tr++;
+                        if(g.home8B) playerStats[g.homePlayer].b8++;
+                    } else if(g.winner === 'v' && g.visitPlayer) {
+                        playerStats[g.visitPlayer] = playerStats[g.visitPlayer] || { team: m.visitTeam, wins: 0, tr: 0, b8: 0 };
+                        playerStats[g.visitPlayer].wins++;
+                        if(g.visitTR) playerStats[g.visitPlayer].tr++;
+                        if(g.visit8B) playerStats[g.visitPlayer].b8++;
+                    }
+                });
+            }
         });
 
-        // Render Teams
         const tBody = document.querySelector('#team-standings-table tbody');
         tBody.innerHTML = Object.keys(teamStats).map(t => {
             const total = teamStats[t].w + teamStats[t].l;
             const pct = total > 0 ? ((teamStats[t].w / total) * 100).toFixed(1) : "0.0";
-            return `<tr><td><strong>${t}</strong></td><td>${teamStats[t].w}</td><td>${teamStats[t].l}</td><td>${pct}%</td></tr>`;
+            return `<tr><td><strong>${escapeHtml(t)}</strong></td><td>${teamStats[t].w}</td><td>${teamStats[t].l}</td><td>${pct}%</td></tr>`;
         }).join('');
 
-        // Render Players
         const pBody = document.querySelector('#player-stats-table tbody');
         const sortedPlayers = Object.keys(playerStats).sort((a,b) => playerStats[b].wins - playerStats[a].wins);
         pBody.innerHTML = sortedPlayers.map(p => `
             <tr>
-                <td><strong>${p}</strong></td>
-                <td><small>${playerStats[p].team}</small></td>
+                <td><strong>${escapeHtml(p)}</strong></td>
+                <td><small>${escapeHtml(playerStats[p].team)}</small></td>
                 <td>${playerStats[p].wins}</td>
                 <td>${playerStats[p].tr}</td>
                 <td>${playerStats[p].b8}</td>
@@ -361,23 +370,28 @@ function doPost(e) {
         `).join('');
     }
 
-    // --- CSV GENERATOR (For Player Scorekeeper App Sync) ---
+    // --- CSV GENERATOR ---
     function generateCSV() {
         let csv = "Type,Field1,Field2,Field3\n";
         
-        // Export Rosters
         for (let team in DB.rosters) {
             DB.rosters[team].forEach(player => {
                 csv += `ROSTER,"${team}","${player}",\n`;
             });
         }
         
-        // Export Schedule
         DB.schedule.forEach(s => {
             csv += `SCHEDULE,"${s.home}","${s.visit}","${s.date}"\n`;
         });
 
         document.getElementById('csv-output').value = csv;
+    }
+
+    function clearAllData() {
+        if (confirm("Reset all local Admin Portal data to default settings?")) {
+            localStorage.clear();
+            location.reload();
+        }
     }
 
     function refreshAllViews() {
