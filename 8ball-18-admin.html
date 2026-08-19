@@ -112,7 +112,7 @@
             width: 35px;
             user-select: none;
         }
-        .sheet-table input {
+        .sheet-table input, .sheet-table select {
             width: 100%;
             height: 100%;
             background: transparent;
@@ -124,12 +124,28 @@
             border-radius: 0;
             margin: 0;
         }
-        .sheet-table input:focus {
+        .sheet-table input:focus, .sheet-table select:focus {
             background: #0f172a;
             box-shadow: inset 0 0 0 2px #38bdf8;
             color: #ffffff;
             outline: none;
         }
+
+        /* Modal Popup for Individual Game Breakdown */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); z-index: 1000;
+            justify-content: center; align-items: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-body {
+            background: var(--slate); border: 2px solid var(--gold); border-radius: 12px;
+            width: 95%; max-width: 900px; max-height: 90vh; overflow-y: auto; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+        .game-edit-table th { background: #0f172a; color: var(--gold); text-align: center; }
+        .game-edit-table td { padding: 4px; vertical-align: middle; text-align: center; }
+        .game-edit-table input[type="text"] { margin: 0; background: #090d16; text-align: left; }
+        .game-edit-table input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--gold); }
 
         button.btn {
             background: var(--gold); color: black; border: none; padding: 10px 16px;
@@ -200,10 +216,10 @@
                             <th class="col-header">A<br><span style="font-size:0.65rem; color:#94a3b8;">DATE</span></th>
                             <th class="col-header">B<br><span style="font-size:0.65rem; color:#94a3b8;">HOME TEAM</span></th>
                             <th class="col-header">C<br><span style="font-size:0.65rem; color:#94a3b8;">VISIT TEAM</span></th>
-                            <th class="col-header" style="width: 90px;">D<br><span style="font-size:0.65rem; color:#94a3b8;">HOME PTS</span></th>
-                            <th class="col-header" style="width: 90px;">E<br><span style="font-size:0.65rem; color:#94a3b8;">VISIT PTS</span></th>
-                            <th class="col-header">F<br><span style="font-size:0.65rem; color:#94a3b8;">GAME DATA (JSON)</span></th>
-                            <th class="col-header" style="width: 90px;">ACTIONS</th>
+                            <th class="col-header" style="width: 80px;">D<br><span style="font-size:0.65rem; color:#94a3b8;">HOME PTS</span></th>
+                            <th class="col-header" style="width: 80px;">E<br><span style="font-size:0.65rem; color:#94a3b8;">VISIT PTS</span></th>
+                            <th class="col-header">F<br><span style="font-size:0.65rem; color:#94a3b8;">GAME BREAKDOWN (REVIEW)</span></th>
+                            <th class="col-header" style="width: 110px;">ACTIONS</th>
                         </tr>
                     </thead>
                     <tbody id="tsv-edit-tbody"></tbody>
@@ -224,7 +240,7 @@
             <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:10px;">
                 Click below to copy all approved match data for this week. Then open your Google Sheet and press <strong>Ctrl+V</strong> (Cmd+V on Mac) in cell A1.
             </p>
-            <textarea id="sheet-copy-box" class="tsv-monospaced" rows="5" readonly onclick="this.select()"></textarea>
+            <textarea id="sheet-copy-box" class="tsv-monospaced" rows="6" readonly onclick="this.select()"></textarea>
             <button class="btn" onclick="copySheetData()">📋 Copy Data to Clipboard</button>
         </div>
 
@@ -384,6 +400,44 @@
     </div>
 </main>
 
+<!-- GAME BREAKDOWN EDIT MODAL -->
+<div id="game-modal" class="modal-overlay">
+    <div class="modal-body">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #334155; padding-bottom:10px; margin-bottom:15px;">
+            <h2 style="color:var(--gold); font-size:1.1rem; margin:0;" id="modal-match-title">Edit Game Breakdown</h2>
+            <button class="btn btn-secondary" style="padding:4px 8px; font-size:0.8rem;" onclick="closeGameModal()">✕ Close</button>
+        </div>
+        
+        <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:12px;">
+            Review each individual rack/game. Fix misspelled player names, select who won ('Home' vs 'Visitor'), and check if there was an 8-Ball Break (8BB) or Table Run (TR). Scores will update automatically.
+        </p>
+
+        <table class="game-edit-table" style="width:100%; border-collapse:collapse; margin-bottom:15px;">
+            <thead>
+                <tr>
+                    <th style="width:30px;">#</th>
+                    <th>Home Player</th>
+                    <th>Visit Player</th>
+                    <th style="width:110px;">Winner</th>
+                    <th style="width:50px;">H 8BB</th>
+                    <th style="width:50px;">H TR</th>
+                    <th style="width:50px;">V 8BB</th>
+                    <th style="width:50px;">V TR</th>
+                    <th style="width:40px;">Action</th>
+                </tr>
+            </thead>
+            <tbody id="modal-games-tbody"></tbody>
+        </table>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; border-top:1px solid #334155; padding-top:12px;">
+            <button class="btn btn-secondary" style="font-size:0.8rem;" onclick="addModalGameRow()">+ Add Frame/Game</button>
+            <button class="btn" style="background:var(--success); color:white; font-size:0.85rem;" onclick="saveModalGames()">
+                💾 Save Game Details & Recalculate Scores
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
     // --- APP DATA STORAGE STRUCTURES ---
     let DB = {
@@ -423,6 +477,7 @@
 
     // --- TSV IMPORT, REVIEW & EXPORT FUNCTIONS ---
     let pendingBatch = [];
+    let currentEditingMatchIndex = null;
 
     function handleFileUpload(event) {
         const file = event.target.files[0];
@@ -478,7 +533,9 @@
         reviewCard.style.display = 'block';
         document.getElementById('export-card').style.display = 'none';
 
-        tbody.innerHTML = pendingBatch.map((m, idx) => `
+        tbody.innerHTML = pendingBatch.map((m, idx) => {
+            const gameCount = (m.games && Array.isArray(m.games)) ? m.games.length : 0;
+            return `
             <tr>
                 <td class="row-num">${idx + 1}</td>
                 <td><input type="text" value="${escapeHtml(m.date)}" onchange="updatePendingRow(${idx}, 'date', this.value)"></td>
@@ -486,27 +543,126 @@
                 <td><input type="text" value="${escapeHtml(m.visitTeam)}" onchange="updatePendingRow(${idx}, 'visitTeam', this.value)"></td>
                 <td><input type="number" value="${m.homeScore}" onchange="updatePendingRow(${idx}, 'homeScore', parseInt(this.value)||0)" style="text-align:center;"></td>
                 <td><input type="number" value="${m.visitScore}" onchange="updatePendingRow(${idx}, 'visitScore', parseInt(this.value)||0)" style="text-align:center;"></td>
-                <td><input type="text" value="${escapeHtml(JSON.stringify(m.games || []))}" onchange="updatePendingGamesJson(${idx}, this.value)"></td>
+                <td style="padding: 4px 8px;">
+                    <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 4px 10px; width:100%; justify-content:space-between;" onclick="openGameModal(${idx})">
+                        <span>🎮 Review Games (${gameCount})</span>
+                        <span style="color:var(--gold);">Edit Players/8BB/TR ✏️</span>
+                    </button>
+                </td>
                 <td style="text-align:center; display:flex; gap:4px; justify-content:center; align-items:center; padding: 4px;">
                     <button class="btn" style="padding: 2px 6px; font-size: 0.7rem; background: var(--success); color: white;" onclick="approveSingleMatch(${idx})" title="Approve Row Only">✓ Approve</button>
                     <button onclick="deletePendingRow(${idx})" style="background:none; border:none; color:var(--visit); cursor:pointer; font-weight:bold;" title="Delete Row">✕</button>
                 </td>
             </tr>
-        `).join('');
+            `;
+        }).join('');
     }
 
     function updatePendingRow(index, field, value) {
         if (pendingBatch[index]) pendingBatch[index][field] = value;
     }
 
-    function updatePendingGamesJson(index, jsonStr) {
-        if (pendingBatch[index]) {
-            try {
-                pendingBatch[index].games = JSON.parse(jsonStr);
-            } catch(e) {
-                // Retain existing array if invalid JSON edited manually
-            }
+    // --- INDIVIDUAL GAME BREAKDOWN MODAL LOGIC ---
+    function openGameModal(matchIdx) {
+        currentEditingMatchIndex = matchIdx;
+        const match = pendingBatch[matchIdx];
+        if (!match) return;
+
+        document.getElementById('modal-match-title').innerText = `Games: ${match.homeTeam || 'HOME'} vs ${match.visitTeam || 'VISITOR'} (${match.date})`;
+        
+        if (!match.games || !Array.isArray(match.games)) {
+            match.games = [];
         }
+
+        renderModalGames();
+        document.getElementById('game-modal').classList.add('active');
+    }
+
+    function closeGameModal() {
+        document.getElementById('game-modal').classList.remove('active');
+        currentEditingMatchIndex = null;
+    }
+
+    function renderModalGames() {
+        if (currentEditingMatchIndex === null || !pendingBatch[currentEditingMatchIndex]) return;
+        const games = pendingBatch[currentEditingMatchIndex].games;
+        const tbody = document.getElementById('modal-games-tbody');
+
+        if (games.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--text-muted); padding:15px;">No games added yet. Click "+ Add Frame/Game" below to start.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = games.map((g, idx) => `
+            <tr>
+                <td style="font-weight:bold; color:var(--gold);">${idx + 1}</td>
+                <td><input type="text" value="${escapeHtml(g.homePlayer || '')}" id="g-hp-${idx}" placeholder="Home Player"></td>
+                <td><input type="text" value="${escapeHtml(g.visitPlayer || '')}" id="g-vp-${idx}" placeholder="Visit Player"></td>
+                <td>
+                    <select id="g-win-${idx}" style="margin:0;">
+                        <option value="h" ${g.winner === 'h' ? 'selected' : ''}>Home Win</option>
+                        <option value="v" ${g.winner === 'v' ? 'selected' : ''}>Visit Win</option>
+                    </select>
+                </td>
+                <td><input type="checkbox" id="g-h8b-${idx}" ${g.home8B ? 'checked' : ''}></td>
+                <td><input type="checkbox" id="g-htr-${idx}" ${g.homeTR ? 'checked' : ''}></td>
+                <td><input type="checkbox" id="g-v8b-${idx}" ${g.visit8B ? 'checked' : ''}></td>
+                <td><input type="checkbox" id="g-vtr-${idx}" ${g.visitTR ? 'checked' : ''}></td>
+                <td>
+                    <button onclick="deleteModalGameRow(${idx})" style="background:none; border:none; color:var(--visit); cursor:pointer; font-weight:bold;">✕</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function addModalGameRow() {
+        if (currentEditingMatchIndex === null || !pendingBatch[currentEditingMatchIndex]) return;
+        pendingBatch[currentEditingMatchIndex].games.push({
+            homePlayer: "", visitPlayer: "", winner: "h", home8B: false, homeTR: false, visit8B: false, visitTR: false
+        });
+        renderModalGames();
+    }
+
+    function deleteModalGameRow(gameIdx) {
+        if (currentEditingMatchIndex === null || !pendingBatch[currentEditingMatchIndex]) return;
+        pendingBatch[currentEditingMatchIndex].games.splice(gameIdx, 1);
+        renderModalGames();
+    }
+
+    function saveModalGames() {
+        if (currentEditingMatchIndex === null || !pendingBatch[currentEditingMatchIndex]) return;
+        const match = pendingBatch[currentEditingMatchIndex];
+        const games = match.games;
+
+        let homeScoreCalc = 0;
+        let visitScoreCalc = 0;
+
+        games.forEach((g, idx) => {
+            const hp = document.getElementById(`g-hp-${idx}`);
+            const vp = document.getElementById(`g-vp-${idx}`);
+            const win = document.getElementById(`g-win-${idx}`);
+            const h8b = document.getElementById(`g-h8b-${idx}`);
+            const htr = document.getElementById(`g-htr-${idx}`);
+            const v8b = document.getElementById(`g-v8b-${idx}`);
+            const vtr = document.getElementById(`g-vtr-${idx}`);
+
+            if (hp) g.homePlayer = hp.value.trim();
+            if (vp) g.visitPlayer = vp.value.trim();
+            if (win) g.winner = win.value;
+            if (h8b) g.home8B = h8b.checked;
+            if (htr) g.homeTR = htr.checked;
+            if (v8b) g.visit8B = v8b.checked;
+            if (vtr) g.visitTR = vtr.checked;
+
+            if (g.winner === 'h') homeScoreCalc++;
+            if (g.winner === 'v') visitScoreCalc++;
+        });
+
+        match.homeScore = homeScoreCalc;
+        match.visitScore = visitScoreCalc;
+
+        closeGameModal();
+        renderWeeklyReviewTable();
     }
 
     function deletePendingRow(index) {
