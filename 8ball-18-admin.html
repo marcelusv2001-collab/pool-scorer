@@ -10,6 +10,7 @@
             --gold: #fbbf24; --wood: #451a03; --felt: #000080;
             --text: #f8fafc; --text-muted: #94a3b8;
             --home: #3b82f6; --visit: #ef4444; --success: #22c55e;
+            --sheet-grid: #334155; --sheet-header: #1e293b; --sheet-cell-bg: #090d16;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
@@ -67,6 +68,69 @@
             color: #38bdf8;
         }
 
+        /* Interactive Spreadsheet Container Styling */
+        .sheet-container {
+            border: 1px solid var(--sheet-grid);
+            border-radius: 6px;
+            overflow-x: auto;
+            background: #000;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            margin-bottom: 15px;
+        }
+        .sheet-table {
+            border-collapse: collapse;
+            width: 100%;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-size: 0.8rem;
+        }
+        .sheet-table th {
+            background: var(--sheet-header);
+            color: #94a3b8;
+            font-weight: 600;
+            text-align: center;
+            border: 1px solid var(--sheet-grid);
+            padding: 6px 10px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+        .sheet-table th.col-header {
+            background: #0f172a;
+            color: var(--gold);
+        }
+        .sheet-table td {
+            border: 1px solid var(--sheet-grid);
+            padding: 0;
+            background: var(--sheet-cell-bg);
+            position: relative;
+        }
+        .sheet-table td.row-num {
+            background: #0f172a;
+            color: #64748b;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.7rem;
+            width: 35px;
+            user-select: none;
+        }
+        .sheet-table input {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            color: #38bdf8;
+            padding: 8px 10px;
+            font-family: ui-monospace, 'Cascadia Code', monospace;
+            font-size: 0.8rem;
+            border-radius: 0;
+            margin: 0;
+        }
+        .sheet-table input:focus {
+            background: #0f172a;
+            box-shadow: inset 0 0 0 2px #38bdf8;
+            color: #ffffff;
+            outline: none;
+        }
+
         button.btn {
             background: var(--gold); color: black; border: none; padding: 10px 16px;
             border-radius: 6px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
@@ -119,25 +183,27 @@
             </div>
         </div>
 
-        <!-- WEEKLY REVIEW & EDIT QUEUE -->
+        <!-- WEEKLY REVIEW & EDIT QUEUE (SPREADSHEET GRID VIEW) -->
         <div class="card" id="review-card" style="display:none;">
             <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom:10px;">
-                <h2 style="border:none; margin:0;">2. Review & Edit Weekly Matches</h2>
+                <h2 style="border:none; margin:0;">2. Review & Edit Weekly Matches (Spreadsheet View)</h2>
                 <div style="display:flex; gap: 8px;">
                     <button class="btn btn-secondary" style="font-size:0.75rem; padding:4px 8px;" onclick="addBlankMatchRow()">+ Add Row</button>
                 </div>
             </div>
             
-            <div style="overflow-x:auto;">
-                <table id="tsv-edit-table">
+            <div class="sheet-container">
+                <table id="tsv-edit-table" class="sheet-table">
                     <thead>
                         <tr>
-                            <th style="width: 130px;">Date</th>
-                            <th>Home Team</th>
-                            <th>Visit Team</th>
-                            <th style="width: 80px;">Home PTS</th>
-                            <th style="width: 80px;">Visit PTS</th>
-                            <th style="width: 120px; text-align:center;">Actions</th>
+                            <th class="row-num">#</th>
+                            <th class="col-header">A<br><span style="font-size:0.65rem; color:#94a3b8;">DATE</span></th>
+                            <th class="col-header">B<br><span style="font-size:0.65rem; color:#94a3b8;">HOME TEAM</span></th>
+                            <th class="col-header">C<br><span style="font-size:0.65rem; color:#94a3b8;">VISIT TEAM</span></th>
+                            <th class="col-header" style="width: 90px;">D<br><span style="font-size:0.65rem; color:#94a3b8;">HOME PTS</span></th>
+                            <th class="col-header" style="width: 90px;">E<br><span style="font-size:0.65rem; color:#94a3b8;">VISIT PTS</span></th>
+                            <th class="col-header">F<br><span style="font-size:0.65rem; color:#94a3b8;">GAME DATA (JSON)</span></th>
+                            <th class="col-header" style="width: 90px;">ACTIONS</th>
                         </tr>
                     </thead>
                     <tbody id="tsv-edit-tbody"></tbody>
@@ -385,13 +451,17 @@
             if (idx === 0 && (line.toLowerCase().includes('home') || line.toLowerCase().includes('date'))) return;
             const cols = line.split('\t').map(c => c.trim());
             if (cols.length >= 4) {
+                let parsedGames = [];
+                if (cols[5]) {
+                    try { parsedGames = JSON.parse(cols[5]); } catch(e) { parsedGames = []; }
+                }
                 pendingBatch.push({
                     date: cols[0] || new Date().toISOString().slice(0, 10),
                     homeTeam: cols[1] || "",
                     visitTeam: cols[2] || "",
                     homeScore: parseInt(cols[3]) || 0,
                     visitScore: parseInt(cols[4]) || 0,
-                    games: cols[5] ? JSON.parse(cols[5]) : []
+                    games: parsedGames
                 });
             }
         });
@@ -410,12 +480,14 @@
 
         tbody.innerHTML = pendingBatch.map((m, idx) => `
             <tr>
-                <td><input type="text" value="${escapeHtml(m.date)}" onchange="updatePendingRow(${idx}, 'date', this.value)" style="margin:0; padding:4px;"></td>
-                <td><input type="text" value="${escapeHtml(m.homeTeam)}" onchange="updatePendingRow(${idx}, 'homeTeam', this.value)" style="margin:0; padding:4px;"></td>
-                <td><input type="text" value="${escapeHtml(m.visitTeam)}" onchange="updatePendingRow(${idx}, 'visitTeam', this.value)" style="margin:0; padding:4px;"></td>
-                <td><input type="number" value="${m.homeScore}" onchange="updatePendingRow(${idx}, 'homeScore', parseInt(this.value)||0)" style="margin:0; padding:4px; text-align:center;"></td>
-                <td><input type="number" value="${m.visitScore}" onchange="updatePendingRow(${idx}, 'visitScore', parseInt(this.value)||0)" style="margin:0; padding:4px; text-align:center;"></td>
-                <td style="text-align:center; display:flex; gap:4px; justify-content:center; align-items:center;">
+                <td class="row-num">${idx + 1}</td>
+                <td><input type="text" value="${escapeHtml(m.date)}" onchange="updatePendingRow(${idx}, 'date', this.value)"></td>
+                <td><input type="text" value="${escapeHtml(m.homeTeam)}" onchange="updatePendingRow(${idx}, 'homeTeam', this.value)"></td>
+                <td><input type="text" value="${escapeHtml(m.visitTeam)}" onchange="updatePendingRow(${idx}, 'visitTeam', this.value)"></td>
+                <td><input type="number" value="${m.homeScore}" onchange="updatePendingRow(${idx}, 'homeScore', parseInt(this.value)||0)" style="text-align:center;"></td>
+                <td><input type="number" value="${m.visitScore}" onchange="updatePendingRow(${idx}, 'visitScore', parseInt(this.value)||0)" style="text-align:center;"></td>
+                <td><input type="text" value="${escapeHtml(JSON.stringify(m.games || []))}" onchange="updatePendingGamesJson(${idx}, this.value)"></td>
+                <td style="text-align:center; display:flex; gap:4px; justify-content:center; align-items:center; padding: 4px;">
                     <button class="btn" style="padding: 2px 6px; font-size: 0.7rem; background: var(--success); color: white;" onclick="approveSingleMatch(${idx})" title="Approve Row Only">✓ Approve</button>
                     <button onclick="deletePendingRow(${idx})" style="background:none; border:none; color:var(--visit); cursor:pointer; font-weight:bold;" title="Delete Row">✕</button>
                 </td>
@@ -427,6 +499,16 @@
         if (pendingBatch[index]) pendingBatch[index][field] = value;
     }
 
+    function updatePendingGamesJson(index, jsonStr) {
+        if (pendingBatch[index]) {
+            try {
+                pendingBatch[index].games = JSON.parse(jsonStr);
+            } catch(e) {
+                // Retain existing array if invalid JSON edited manually
+            }
+        }
+    }
+
     function deletePendingRow(index) {
         pendingBatch.splice(index, 1);
         renderWeeklyReviewTable();
@@ -436,9 +518,16 @@
         if (!pendingBatch[index]) return;
         const match = pendingBatch[index];
         DB.matches.push(match);
+
+        let exportTSV = "Date\tHome Team\tVisit Team\tHome Score\tVisit Score\tGames\n";
+        exportTSV += `${match.date}\t${match.homeTeam}\t${match.visitTeam}\t${match.homeScore}\t${match.visitScore}\t${JSON.stringify(match.games || [])}\n`;
+
         pendingBatch.splice(index, 1);
         saveDB();
         renderWeeklyReviewTable();
+
+        document.getElementById('sheet-copy-box').value = exportTSV;
+        document.getElementById('export-card').style.display = 'block';
     }
 
     function addBlankMatchRow() {
@@ -464,16 +553,17 @@
     function approveWeeklyMatches() {
         if (pendingBatch.length === 0) return alert("No matches to approve.");
         pendingBatch.forEach(m => DB.matches.push(m));
-        saveDB();
 
-        let exportTSV = "Date\tHome Team\tVisit Team\tHome Score\tVisit Score\n";
+        let exportTSV = "Date\tHome Team\tVisit Team\tHome Score\tVisit Score\tGames\n";
         pendingBatch.forEach(m => {
-            exportTSV += `${m.date}\t${m.homeTeam}\t${m.visitTeam}\t${m.homeScore}\t${m.visitScore}\n`;
+            exportTSV += `${m.date}\t${m.homeTeam}\t${m.visitTeam}\t${m.homeScore}\t${m.visitScore}\t${JSON.stringify(m.games || [])}\n`;
         });
+
+        saveDB();
 
         document.getElementById('sheet-copy-box').value = exportTSV;
         document.getElementById('export-card').style.display = 'block';
-        alert(`Approved ${pendingBatch.length} matches! Standings updated.`);
+        alert(`Approved ${pendingBatch.length} matches! Standings updated and TSV output ready for Google Sheets.`);
     }
 
     function copySheetData() {
