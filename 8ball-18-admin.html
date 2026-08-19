@@ -54,7 +54,6 @@
         }
         input:focus, select:focus, textarea:focus { border-color: var(--gold); outline: none; }
 
-        /* Formatted TSV Textarea Styling */
         textarea.tsv-monospaced {
             font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'Courier New', monospace;
             white-space: pre;
@@ -68,7 +67,6 @@
             color: #38bdf8;
         }
 
-        /* Interactive Spreadsheet Container Styling */
         .sheet-container {
             border: 1px solid var(--sheet-grid);
             border-radius: 6px;
@@ -131,7 +129,6 @@
             outline: none;
         }
 
-        /* Modal Popup for Individual Game Breakdown */
         .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); z-index: 1000;
@@ -199,7 +196,7 @@
             </div>
         </div>
 
-        <!-- WEEKLY REVIEW & EDIT QUEUE (SPREADSHEET GRID VIEW) -->
+        <!-- WEEKLY REVIEW & EDIT QUEUE -->
         <div class="card" id="review-card" style="display:none;">
             <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom:10px;">
                 <h2 style="border:none; margin:0;">2. Review & Edit Weekly Matches (Spreadsheet View)</h2>
@@ -390,12 +387,17 @@
     <!-- EXPORT & API SETUP TAB -->
     <div id="tab-export" class="tab-content">
         <div class="card">
-            <h2>CSV Export (For Scoring App Sync)</h2>
+            <h2>CSV Data Management</h2>
             <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;">
-                Copy and paste this CSV text directly into your Google Sheets to publish updates to player scorekeeper apps.
+                Export matches into CSV format or upload an existing CSV file to sync database records directly.
             </p>
-            <textarea id="csv-output" class="tsv-monospaced" rows="10" readonly onclick="this.select()"></textarea>
-            <button class="btn" onclick="generateCSV()">Generate Fresh CSV</button>
+            <textarea id="csv-output" class="tsv-monospaced" rows="10" placeholder="CSV output will generate here or paste raw CSV text to import..."></textarea>
+            
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button class="btn" onclick="generateCSV()">🔄 Generate Fresh CSV</button>
+                <button class="btn btn-secondary" onclick="document.getElementById('csv-file-input').click()">📂 Import CSV File</button>
+                <input type="file" id="csv-file-input" accept=".csv,.txt" style="display:none;" onchange="handleCSVFileUpload(event)">
+            </div>
         </div>
     </div>
 </main>
@@ -467,7 +469,6 @@
         return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
-    // Helper for formatting Date to YYYY-MM-DD locally safely
     function formatDateLocal(date) {
         const y = date.getFullYear();
         const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -562,17 +563,63 @@
         if (pendingBatch[index]) pendingBatch[index][field] = value;
     }
 
-    // --- INDIVIDUAL GAME BREAKDOWN MODAL LOGIC ---
+    function addBlankMatchRow() {
+        pendingBatch.push({
+            date: new Date().toISOString().slice(0, 10),
+            homeTeam: "", visitTeam: "", homeScore: 0, visitScore: 0, games: []
+        });
+        renderWeeklyReviewTable();
+    }
+
+    function deletePendingRow(index) {
+        pendingBatch.splice(index, 1);
+        renderWeeklyReviewTable();
+    }
+
+    function resetWeeklyImport() {
+        pendingBatch = [];
+        document.getElementById('tsv-raw-input').value = '';
+        renderWeeklyReviewTable();
+    }
+
+    function approveSingleMatch(index) {
+        const item = pendingBatch.splice(index, 1)[0];
+        if (item) {
+            DB.matches.push(item);
+            saveDB();
+        }
+        renderWeeklyReviewTable();
+    }
+
+    function approveWeeklyMatches() {
+        if (pendingBatch.length === 0) return;
+        let tsvOutput = [];
+        pendingBatch.forEach(m => {
+            DB.matches.push(m);
+            tsvOutput.push(`${m.date}\t${m.homeTeam}\t${m.visitTeam}\t${m.homeScore}\t${m.visitScore}\t${JSON.stringify(m.games || [])}`);
+        });
+        saveDB();
+        document.getElementById('sheet-copy-box').value = tsvOutput.join('\n');
+        document.getElementById('export-card').style.display = 'block';
+        pendingBatch = [];
+        renderWeeklyReviewTable();
+    }
+
+    function copySheetData() {
+        const box = document.getElementById('sheet-copy-box');
+        box.select();
+        navigator.clipboard.writeText(box.value);
+        alert('Copied to clipboard! Paste directly into Google Sheets using Ctrl+V.');
+    }
+
+    // --- GAME BREAKDOWN MODAL LOGIC ---
     function openGameModal(matchIdx) {
         currentEditingMatchIndex = matchIdx;
         const match = pendingBatch[matchIdx];
         if (!match) return;
 
         document.getElementById('modal-match-title').innerText = `Games: ${match.homeTeam || 'HOME'} vs ${match.visitTeam || 'VISITOR'} (${match.date})`;
-        
-        if (!match.games || !Array.isArray(match.games)) {
-            match.games = [];
-        }
+        if (!match.games || !Array.isArray(match.games)) match.games = [];
 
         renderModalGames();
         document.getElementById('game-modal').classList.add('active');
@@ -665,426 +712,323 @@
         renderWeeklyReviewTable();
     }
 
-    function deletePendingRow(index) {
-        pendingBatch.splice(index, 1);
-        renderWeeklyReviewTable();
+    // --- REFRESH & STANDINGS VIEW UPDATES ---
+    function refreshAllViews() {
+        renderMatchesList();
+        renderStandingsAndStats();
+        renderRosters();
+        renderScheduleTable();
+        populateTeamSelects();
     }
 
-    function approveSingleMatch(index) {
-        if (!pendingBatch[index]) return;
-        const match = pendingBatch[index];
-        DB.matches.push(match);
+    function renderMatchesList() {
+        const container = document.getElementById('matches-list');
+        if (DB.matches.length === 0) {
+            container.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem;">No historical matches recorded yet.</p>`;
+            return;
+        }
 
-        let exportTSV = "Date\tHome Team\tVisit Team\tHome Score\tVisit Score\tGames\n";
-        exportTSV += `${match.date}\t${match.homeTeam}\t${match.visitTeam}\t${match.homeScore}\t${match.visitScore}\t${JSON.stringify(match.games || [])}\n`;
-
-        pendingBatch.splice(index, 1);
-        saveDB();
-        renderWeeklyReviewTable();
-
-        document.getElementById('sheet-copy-box').value = exportTSV;
-        document.getElementById('export-card').style.display = 'block';
+        container.innerHTML = `
+        <table>
+            <thead>
+                <tr><th>Date</th><th>Home Team</th><th>Visit Team</th><th>Score</th><th>Games</th><th>Action</th></tr>
+            </thead>
+            <tbody>
+                ${DB.matches.map((m, idx) => `
+                    <tr>
+                        <td>${escapeHtml(m.date)}</td>
+                        <td><strong>${escapeHtml(m.homeTeam)}</strong></td>
+                        <td>${escapeHtml(m.visitTeam)}</td>
+                        <td><span class="badge badge-home">${m.homeScore}</span> - <span class="badge badge-visit">${m.visitScore}</span></td>
+                        <td>${(m.games && m.games.length) ? m.games.length : 0} Racks</td>
+                        <td><button class="btn btn-danger" style="padding:2px 6px; font-size:0.7rem;" onclick="deleteHistoricalMatch(${idx})">Delete</button></td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>`;
     }
 
-    function addBlankMatchRow() {
-        pendingBatch.push({
-            date: new Date().toISOString().slice(0, 10),
-            homeTeam: "HOME TEAM",
-            visitTeam: "VISIT TEAM",
-            homeScore: 0,
-            visitScore: 0,
-            games: []
+    function deleteHistoricalMatch(index) {
+        if (confirm('Delete this match record? Standings will update automatically.')) {
+            DB.matches.splice(index, 1);
+            saveDB();
+        }
+    }
+
+    function renderStandingsAndStats() {
+        let teamStats = {};
+        let playerStats = {};
+
+        Object.keys(DB.rosters).forEach(t => teamStats[t] = { wins: 0, losses: 0 });
+
+        DB.matches.forEach(m => {
+            if (!teamStats[m.homeTeam]) teamStats[m.homeTeam] = { wins: 0, losses: 0 };
+            if (!teamStats[m.visitTeam]) teamStats[m.visitTeam] = { wins: 0, losses: 0 };
+
+            teamStats[m.homeTeam].wins += m.homeScore;
+            teamStats[m.homeTeam].losses += m.visitScore;
+            teamStats[m.visitTeam].wins += m.visitScore;
+            teamStats[m.visitTeam].losses += m.homeScore;
+
+            if (m.games && Array.isArray(m.games)) {
+                m.games.forEach(g => {
+                    if (g.homePlayer) {
+                        if (!playerStats[g.homePlayer]) playerStats[g.homePlayer] = { team: m.homeTeam, wins: 0, tr: 0, eb: 0 };
+                        if (g.winner === 'h') playerStats[g.homePlayer].wins++;
+                        if (g.homeTR) playerStats[g.homePlayer].tr++;
+                        if (g.home8B) playerStats[g.homePlayer].eb++;
+                    }
+                    if (g.visitPlayer) {
+                        if (!playerStats[g.visitPlayer]) playerStats[g.visitPlayer] = { team: m.visitTeam, wins: 0, tr: 0, eb: 0 };
+                        if (g.winner === 'v') playerStats[g.visitPlayer].wins++;
+                        if (g.visitTR) playerStats[g.visitPlayer].tr++;
+                        if (g.visit8B) playerStats[g.visitPlayer].eb++;
+                    }
+                });
+            }
         });
-        renderWeeklyReviewTable();
-    }
 
-    function resetWeeklyImport() {
-        pendingBatch = [];
-        document.getElementById('tsv-file-input').value = "";
-        document.getElementById('tsv-raw-input').value = "";
-        document.getElementById('review-card').style.display = 'none';
-        document.getElementById('export-card').style.display = 'none';
-    }
-
-    function approveWeeklyMatches() {
-        if (pendingBatch.length === 0) return alert("No matches to approve.");
-        pendingBatch.forEach(m => DB.matches.push(m));
-
-        let exportTSV = "Date\tHome Team\tVisit Team\tHome Score\tVisit Score\tGames\n";
-        pendingBatch.forEach(m => {
-            exportTSV += `${m.date}\t${m.homeTeam}\t${m.visitTeam}\t${m.homeScore}\t${m.visitScore}\t${JSON.stringify(m.games || [])}\n`;
+        const standingsTbody = document.querySelector('#team-standings-table tbody');
+        const sortedTeams = Object.keys(teamStats).sort((a,b) => {
+            const pctA = (teamStats[a].wins + teamStats[a].losses) ? teamStats[a].wins / (teamStats[a].wins + teamStats[a].losses) : 0;
+            const pctB = (teamStats[b].wins + teamStats[b].losses) ? teamStats[b].wins / (teamStats[b].wins + teamStats[b].losses) : 0;
+            return pctB - pctA;
         });
 
-        saveDB();
+        standingsTbody.innerHTML = sortedTeams.map(t => {
+            const w = teamStats[t].wins;
+            const l = teamStats[t].losses;
+            const pct = (w + l > 0) ? ((w / (w + l)) * 100).toFixed(1) + '%' : '.000';
+            return `<tr><td><strong>${escapeHtml(t)}</strong></td><td>${w}</td><td>${l}</td><td>${pct}</td></tr>`;
+        }).join('');
 
-        document.getElementById('sheet-copy-box').value = exportTSV;
-        document.getElementById('export-card').style.display = 'block';
-        alert(`Approved ${pendingBatch.length} matches! Standings updated and TSV output ready for Google Sheets.`);
-    }
+        const playerTbody = document.querySelector('#player-stats-table tbody');
+        const sortedPlayers = Object.keys(playerStats).sort((a,b) => playerStats[b].wins - playerStats[a].wins);
 
-    function copySheetData() {
-        const copyText = document.getElementById('sheet-copy-box');
-        copyText.select();
-        navigator.clipboard.writeText(copyText.value);
-        alert("Copied to clipboard! Ready to paste into Google Sheets.");
+        playerTbody.innerHTML = sortedPlayers.map(p => `
+            <tr>
+                <td><strong>${escapeHtml(p)}</strong></td>
+                <td><span style="font-size:0.75rem; color:var(--text-muted);">${escapeHtml(playerStats[p].team)}</span></td>
+                <td>${playerStats[p].wins}</td>
+                <td>${playerStats[p].tr}</td>
+                <td>${playerStats[p].eb}</td>
+            </tr>
+        `).join('');
     }
 
     // --- ROSTER MANAGEMENT ---
     function saveRoster() {
         const team = document.getElementById('roster-team-name').value.trim().toUpperCase();
-        const players = document.getElementById('roster-player-names').value.split('\n').map(p => p.trim()).filter(p => p.length > 0);
-        if(!team || players.length === 0) return alert("Enter team name and at least one player.");
-        
+        const playersText = document.getElementById('roster-player-names').value.trim();
+        if (!team || !playersText) { alert('Enter team name and players.'); return; }
+
+        const players = playersText.split('\n').map(p => p.trim()).filter(p => p.length > 0);
         DB.rosters[team] = players;
         saveDB();
-        document.getElementById('roster-team-name').value = "";
-        document.getElementById('roster-player-names').value = "";
-    }
-
-    function deleteTeam(teamName) {
-        if (confirm(`Are you sure you want to delete "${teamName}" and all its players?`)) {
-            delete DB.rosters[teamName];
-            saveDB();
-        }
-    }
-
-    function deletePlayer(teamName, pIdx) {
-        if (DB.rosters[teamName]) {
-            DB.rosters[teamName].splice(pIdx, 1);
-            saveDB();
-        }
+        document.getElementById('roster-team-name').value = '';
+        document.getElementById('roster-player-names').value = '';
     }
 
     function renderRosters() {
         const container = document.getElementById('roster-display');
-        let html = "";
-        const teams = Object.keys(DB.rosters);
+        container.innerHTML = Object.keys(DB.rosters).map(t => `
+            <div style="margin-bottom:12px; border-bottom:1px solid #334155; padding-bottom:8px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <strong style="color:var(--gold);">${escapeHtml(t)}</strong>
+                    <button onclick="deleteRoster('${escapeHtml(t)}')" style="background:none; border:none; color:var(--visit); cursor:pointer;">🗑️ Delete</button>
+                </div>
+                <p style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;">
+                    ${DB.rosters[t].map(p => escapeHtml(p)).join(', ')}
+                </p>
+            </div>
+        `).join('');
+    }
 
-        if (teams.length === 0) {
-            container.innerHTML = "<p style='color:var(--text-muted);'>No rosters configured yet.</p>";
-        } else {
-            teams.forEach(team => {
-                const players = DB.rosters[team] || [];
-                const safeTeam = team.replace(/'/g, "\\'");
-                html += `<div style="margin-bottom:15px; background: var(--slate-dark); padding: 12px; border-radius: 8px; border: 1px solid #334155;">
-                    <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 8px;">
-                        <strong style="color:var(--gold);">${escapeHtml(team)}</strong>
-                        <button onclick="deleteTeam('${safeTeam}')" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;">Delete Team</button>
-                    </div>
-                    <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom: 6px;">${players.length} Players:</div>
-                    <ul style="padding-left:20px; font-size:0.85rem; color:#cbd5e1;">
-                        ${players.map((p, idx) => `
-                            <li style="margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; max-width: 250px;">
-                                <span>${escapeHtml(p)}</span>
-                                <button onclick="deletePlayer('${safeTeam}', ${idx})" style="background:none; border:none; color:var(--visit); cursor:pointer; font-weight:bold; padding: 0 4px;">✕</button>
-                            </li>
-                        `).join('')}
-                    </ul>
-                </div>`;
-            });
-            container.innerHTML = html;
+    function deleteRoster(team) {
+        if (confirm(`Remove team roster for ${team}?`)) {
+            delete DB.rosters[team];
+            saveDB();
         }
-        
-        // Update schedule dropdowns
+    }
+
+    function populateTeamSelects() {
+        const teams = Object.keys(DB.rosters);
         const homeSel = document.getElementById('sched-home-team');
         const visitSel = document.getElementById('sched-visit-team');
-        if (homeSel && visitSel) {
-            const options = '<option value="">Select Team</option>' + teams.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
-            homeSel.innerHTML = options;
-            visitSel.innerHTML = options;
+
+        const opts = `<option value="">Select Team</option>` + teams.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+        homeSel.innerHTML = opts;
+        visitSel.innerHTML = opts;
+    }
+
+    // --- SCHEDULE GENERATOR ---
+    function generateAutoSchedule() {
+        const teams = Object.keys(DB.rosters);
+        if (teams.length < 2) { alert('Add at least 2 teams under Roster Management first.'); return; }
+
+        const startDateInput = document.getElementById('sched-start-date').value;
+        const dow = parseInt(document.getElementById('sched-dow').value);
+        const timeVal = document.getElementById('sched-time').value;
+        const rounds = parseInt(document.getElementById('sched-rounds').value);
+        const holidays = document.getElementById('sched-holidays').value.split(',').map(h => h.trim());
+
+        let list = [...teams];
+        if (list.length % 2 !== 0) list.push('BYE');
+
+        let roundsData = [];
+        const numTeams = list.length;
+        const numRounds = numTeams - 1;
+
+        for (let r = 0; r < numRounds; r++) {
+            let roundMatchups = [];
+            for (let i = 0; i < numTeams / 2; i++) {
+                let home = list[i];
+                let visit = list[numTeams - 1 - i];
+                if (home !== 'BYE' && visit !== 'BYE') {
+                    roundMatchups.push({ home, visit });
+                }
+            }
+            roundsData.push(roundMatchups);
+            list.splice(1, 0, list.pop());
         }
+
+        let fullSeason = [];
+        for (let r = 0; r < rounds; r++) {
+            roundsData.forEach((rm, idx) => {
+                let flipped = rm.map(m => (r % 2 === 1) ? { home: m.visit, visit: m.home } : m);
+                fullSeason.push(flipped);
+            });
+        }
+
+        let currentDate = new Date(startDateInput + 'T00:00:00');
+        while (currentDate.getDay() !== dow) {
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        let generatedSchedule = [];
+        fullSeason.forEach(weekMatches => {
+            let dateStr = formatDateLocal(currentDate);
+            while (holidays.includes(dateStr)) {
+                currentDate.setDate(currentDate.getDate() + 7);
+                dateStr = formatDateLocal(currentDate);
+            }
+
+            weekMatches.forEach(m => {
+                generatedSchedule.push({
+                    date: `${dateStr} ${timeVal}`,
+                    home: m.home,
+                    visit: m.visit
+                });
+            });
+
+            currentDate.setDate(currentDate.getDate() + 7);
+        });
+
+        DB.schedule = generatedSchedule;
+        saveDB();
     }
 
-    // --- SCHEDULE MANAGEMENT ---
     function addScheduleEntry() {
-        const date = document.getElementById('sched-date').value;
-        const time = document.getElementById('sched-time').value || "19:00";
-        const home = document.getElementById('sched-home-team').value;
-        const visit = document.getElementById('sched-visit-team').value;
-        if(!date || !home || !visit || home === visit) return alert("Select a valid date and two different teams.");
+        const d = document.getElementById('sched-date').value;
+        const h = document.getElementById('sched-home-team').value;
+        const v = document.getElementById('sched-visit-team').value;
 
-        DB.schedule.push({ date: `${date} ${time}`, home, visit });
+        if (!d || !h || !v || h === v) { alert('Valid date and 2 different teams required.'); return; }
+
+        DB.schedule.push({ date: d, home: h, visit: v });
         saveDB();
     }
 
-    function removeSchedule(idx) {
-        DB.schedule.splice(idx, 1);
-        saveDB();
+    function renderScheduleTable() {
+        const tbody = document.querySelector('#schedule-table tbody');
+        document.getElementById('sched-count-badge').innerText = `${DB.schedule.length} Matches`;
+
+        tbody.innerHTML = DB.schedule.map((s, idx) => `
+            <tr>
+                <td>${escapeHtml(s.date)}</td>
+                <td><strong>${escapeHtml(s.home)}</strong></td>
+                <td>${escapeHtml(s.visit)}</td>
+                <td><button class="btn btn-danger" style="padding:2px 6px; font-size:0.7rem;" onclick="deleteSchedEntry(${idx})">✕</button></td>
+            </tr>
+        `).join('');
     }
 
-    function editSchedule(idx) {
-        const item = DB.schedule[idx];
-        const newHome = prompt("Enter Home Team:", item.home);
-        if (newHome === null) return;
-        const newVisit = prompt("Enter Visiting Team (or BYE):", item.visit);
-        if (newVisit === null) return;
-        const newDate = prompt("Enter Date & Time (YYYY-MM-DD HH:MM):", item.date);
-        if (newDate === null) return;
-
-        DB.schedule[idx] = { date: newDate, home: newHome.trim().toUpperCase(), visit: newVisit.trim().toUpperCase() };
+    function deleteSchedEntry(index) {
+        DB.schedule.splice(index, 1);
         saveDB();
     }
 
     function clearSchedule() {
-        if (confirm("Are you sure you want to delete the ENTIRE schedule?")) {
+        if (confirm('Clear the entire season schedule?')) {
             DB.schedule = [];
             saveDB();
         }
     }
 
-    function generateAutoSchedule() {
-        try {
-            const startDateStr = document.getElementById('sched-start-date').value;
-            const endDateStr = document.getElementById('sched-end-date').value;
-            const matchDow = parseInt(document.getElementById('sched-dow').value);
-            const matchTime = document.getElementById('sched-time').value || "19:00";
-            const frequencyWeeks = parseInt(document.getElementById('sched-freq').value) || 1;
-            const totalRounds = parseInt(document.getElementById('sched-rounds').value) || 2;
-            const holidayInput = document.getElementById('sched-holidays') ? document.getElementById('sched-holidays').value : "";
-
-            if (!startDateStr) {
-                alert("Please select a Start Date.");
-                return;
-            }
-
-            const teams = Object.keys(DB.rosters);
-            if (teams.length < 2) {
-                alert("You need at least 2 teams created in Roster Management to generate a schedule.");
-                return;
-            }
-
-            if (DB.schedule.length > 0 && !confirm("Generating a new schedule will replace your existing schedule. Proceed?")) {
-                return;
-            }
-
-            // Parse Blackout Dates
-            const holidays = holidayInput.split(',')
-                .map(s => s.trim())
-                .filter(s => s.length > 0);
-
-            // Berger Round-Robin Pairing Algorithm
-            let pool = [...teams];
-            if (pool.length % 2 !== 0) {
-                pool.push("BYE");
-            }
-
-            const numTeams = pool.length;
-            const roundsPerCycle = numTeams - 1;
-            const matchesPerRound = numTeams / 2;
-
-            let baseRounds = [];
-
-            for (let r = 0; r < roundsPerCycle; r++) {
-                let roundMatches = [];
-                for (let m = 0; m < matchesPerRound; m++) {
-                    let home = pool[m];
-                    let visit = pool[numTeams - 1 - m];
-                    
-                    if (r % 2 === 1) {
-                        let temp = home; home = visit; visit = temp;
-                    }
-
-                    if (home !== "BYE" || visit !== "BYE") {
-                        roundMatches.push({ home, visit });
-                    }
-                }
-                baseRounds.push(roundMatches);
-                pool.splice(1, 0, pool.pop());
-            }
-
-            // Multiply rounds (Home & Away)
-            let fullRoundRobin = [];
-            for (let cycle = 0; cycle < totalRounds; cycle++) {
-                baseRounds.forEach(round => {
-                    let roundCopy = round.map(m => {
-                        return cycle % 2 === 1 ? { home: m.visit, visit: m.home } : { home: m.home, visit: m.visit };
-                    });
-                    fullRoundRobin.push(roundCopy);
-                });
-            }
-
-            // Map to calendar dates cleanly using local time
-            let newSchedule = [];
-            let [sY, sM, sD] = startDateStr.split('-').map(Number);
-            let currDate = new Date(sY, sM - 1, sD);
-            let endDate = null;
-            
-            if (endDateStr) {
-                let [eY, eM, eD] = endDateStr.split('-').map(Number);
-                endDate = new Date(eY, eM - 1, eD, 23, 59, 59);
-            }
-
-            // Advance to target day of week
-            while (currDate.getDay() !== matchDow) {
-                currDate.setDate(currDate.getDate() + 1);
-            }
-
-            for (let r = 0; r < fullRoundRobin.length; r++) {
-                let formattedDateStr = formatDateLocal(currDate);
-
-                while (holidays.includes(formattedDateStr)) {
-                    currDate.setDate(currDate.getDate() + (7 * frequencyWeeks));
-                    formattedDateStr = formatDateLocal(currDate);
-                }
-
-                if (endDate && currDate > endDate) {
-                    break;
-                }
-
-                const dateTimeLabel = `${formattedDateStr} ${matchTime}`;
-                fullRoundRobin[r].forEach(m => {
-                    newSchedule.push({
-                        date: dateTimeLabel,
-                        home: m.home,
-                        visit: m.visit
-                    });
-                });
-
-                currDate.setDate(currDate.getDate() + (7 * frequencyWeeks));
-            }
-
-            DB.schedule = newSchedule;
-            saveDB();
-            alert(`Success! Generated ${newSchedule.length} total matches for ${teams.length} teams.`);
-        } catch (err) {
-            alert("Error generating schedule: " + err.message);
-        }
-    }
-
-    function renderSchedule() {
-        const tbody = document.querySelector('#schedule-table tbody');
-        const countBadge = document.getElementById('sched-count-badge');
-        if (countBadge) countBadge.innerText = `${DB.schedule.length} Matches`;
-
-        if (DB.schedule.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No matches scheduled. Generate a schedule above.</td></tr>`;
-            return;
-        }
-
-        tbody.innerHTML = DB.schedule.map((s, idx) => `
-            <tr>
-                <td style="font-size:0.8rem;">${escapeHtml(s.date)}</td>
-                <td><span class="badge badge-home">${escapeHtml(s.home)}</span></td>
-                <td><span class="badge ${s.visit === 'BYE' ? 'badge-secondary' : 'badge-visit'}">${escapeHtml(s.visit)}</span></td>
-                <td>
-                    <button onclick="editSchedule(${idx})" style="background:none; border:none; color:var(--gold); cursor:pointer; margin-right:6px;" title="Modify Match">✏️</button>
-                    <button onclick="removeSchedule(${idx})" style="background:none; border:none; color:var(--visit); cursor:pointer;" title="Delete Match">❌</button>
-                </td>
-            </tr>
-        `).join('');
-    }
-
-    // --- MATCH REVIEW & STANDINGS ---
-    function deleteMatch(idx) {
-        if (confirm("Delete this match submission?")) {
-            DB.matches.splice(idx, 1);
-            saveDB();
-        }
-    }
-
-    function renderMatches() {
-        const container = document.getElementById('matches-list');
-        if(DB.matches.length === 0) {
-            container.innerHTML = `<p style="color:var(--text-muted);">No submitted matches recorded.</p>`;
-            return;
-        }
-
-        let html = `<table><thead><tr><th>Date</th><th>Matchup</th><th>Score</th><th>Action</th></tr></thead><tbody>`;
-        DB.matches.forEach((m, idx) => {
-            html += `<tr>
-                <td>${escapeHtml(m.date)}</td>
-                <td>${escapeHtml(m.homeTeam)} vs ${escapeHtml(m.visitTeam)}</td>
-                <td><strong>${m.homeScore} - ${m.visitScore}</strong></td>
-                <td><button onclick="deleteMatch(${idx})" style="background:none; border:none; color:var(--visit); cursor:pointer;">❌ Delete</button></td>
-            </tr>`;
-        });
-        html += `</tbody></table>`;
-        container.innerHTML = html;
-    }
-
-    function renderStandings() {
-        const teamStats = {};
-        const playerStats = {};
-
-        Object.keys(DB.rosters).forEach(t => teamStats[t] = { w: 0, l: 0 });
-
-        DB.matches.forEach(m => {
-            const hWin = parseInt(m.homeScore) || 0;
-            const vWin = parseInt(m.visitScore) || 0;
-            
-            if(teamStats[m.homeTeam]) { teamStats[m.homeTeam].w += hWin; teamStats[m.homeTeam].l += vWin; }
-            if(teamStats[m.visitTeam]) { teamStats[m.visitTeam].w += vWin; teamStats[m.visitTeam].l += hWin; }
-
-            if (m.games) {
-                m.games.forEach(g => {
-                    if(g.winner === 'h' && g.homePlayer) {
-                        playerStats[g.homePlayer] = playerStats[g.homePlayer] || { team: m.homeTeam, wins: 0, tr: 0, b8: 0 };
-                        playerStats[g.homePlayer].wins++;
-                        if(g.homeTR) playerStats[g.homePlayer].tr++;
-                        if(g.home8B) playerStats[g.homePlayer].b8++;
-                    } else if(g.winner === 'v' && g.visitPlayer) {
-                        playerStats[g.visitPlayer] = playerStats[g.visitPlayer] || { team: m.visitTeam, wins: 0, tr: 0, b8: 0 };
-                        playerStats[g.visitPlayer].wins++;
-                        if(g.visitTR) playerStats[g.visitPlayer].tr++;
-                        if(g.visit8B) playerStats[g.visitPlayer].b8++;
-                    }
-                });
-            }
-        });
-
-        const tBody = document.querySelector('#team-standings-table tbody');
-        tBody.innerHTML = Object.keys(teamStats).map(t => {
-            const total = teamStats[t].w + teamStats[t].l;
-            const pct = total > 0 ? ((teamStats[t].w / total) * 100).toFixed(1) : "0.0";
-            return `<tr><td><strong>${escapeHtml(t)}</strong></td><td>${teamStats[t].w}</td><td>${teamStats[t].l}</td><td>${pct}%</td></tr>`;
-        }).join('');
-
-        const pBody = document.querySelector('#player-stats-table tbody');
-        const sortedPlayers = Object.keys(playerStats).sort((a,b) => playerStats[b].wins - playerStats[a].wins);
-        pBody.innerHTML = sortedPlayers.map(p => `
-            <tr>
-                <td><strong>${escapeHtml(p)}</strong></td>
-                <td><small>${escapeHtml(playerStats[p].team)}</small></td>
-                <td>${playerStats[p].wins}</td>
-                <td>${playerStats[p].tr}</td>
-                <td>${playerStats[p].b8}</td>
-            </tr>
-        `).join('');
-    }
-
-    // --- CSV GENERATOR ---
+    // --- CSV EXPORT, IMPORT AND SYSTEM RESET ---
     function generateCSV() {
-        let csv = "Type,Field1,Field2,Field3\n";
-        
-        for (let team in DB.rosters) {
-            DB.rosters[team].forEach(player => {
-                csv += `ROSTER,"${team}","${player}",\n`;
-            });
-        }
-        
-        DB.schedule.forEach(s => {
-            csv += `SCHEDULE,"${s.home}","${s.visit}","${s.date}"\n`;
+        let lines = ['Date,HomeTeam,VisitTeam,HomeScore,VisitScore'];
+        DB.matches.forEach(m => {
+            lines.push(`${m.date},"${m.homeTeam}","${m.visitTeam}",${m.homeScore},${m.visitScore}`);
+        });
+        document.getElementById('csv-output').value = lines.join('\n');
+    }
+
+    function handleCSVFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('csv-output').value = e.target.result;
+            parseAndImportCSV(e.target.result);
+        };
+        reader.readAsText(file);
+    }
+
+    function parseAndImportCSV(csvText) {
+        if (!csvText.trim()) return;
+        const lines = csvText.trim().split(/\r?\n/);
+        let importedCount = 0;
+
+        lines.forEach((line, idx) => {
+            if (idx === 0 && line.toLowerCase().includes('hometeam')) return; // skip header
+            
+            // Regex to handle quoted CSV entries like "5TH WARD SHARKS"
+            const cols = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(',');
+            if (cols && cols.length >= 5) {
+                const clean = cols.map(c => c.replace(/^"|"$/g, '').trim());
+                const matchRecord = {
+                    date: clean[0] || new Date().toISOString().slice(0, 10),
+                    homeTeam: clean[1] || "",
+                    visitTeam: clean[2] || "",
+                    homeScore: parseInt(clean[3]) || 0,
+                    visitScore: parseInt(clean[4]) || 0,
+                    games: []
+                };
+                if (matchRecord.homeTeam && matchRecord.visitTeam) {
+                    DB.matches.push(matchRecord);
+                    importedCount++;
+                }
+            }
         });
 
-        document.getElementById('csv-output').value = csv;
+        if (importedCount > 0) {
+            saveDB();
+            alert(`Successfully imported ${importedCount} match records from CSV.`);
+        } else {
+            alert('No valid match records found in CSV file.');
+        }
     }
 
     function clearAllData() {
-        if (confirm("Reset all local Admin Portal data to default settings?")) {
+        if (confirm('RESET ALL DATA? This deletes stored rosters, schedule, and recorded matches.')) {
             localStorage.clear();
-            location.reload();
+            DB = { rosters: {}, schedule: [], matches: [] };
+            saveDB();
         }
     }
 
-    function refreshAllViews() {
-        renderRosters();
-        renderSchedule();
-        renderMatches();
-        renderStandings();
-        generateCSV();
-    }
-
-    // Initial load
+    // --- INITIALIZATION ---
     refreshAllViews();
 </script>
 </body>
