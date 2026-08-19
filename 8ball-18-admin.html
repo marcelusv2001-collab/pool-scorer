@@ -178,7 +178,7 @@
         <div class="card">
             <h2>1. Import Weekly TSV File</h2>
             <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">
-                Upload the <code>.tsv</code> file emailed by the scoring app, or paste the raw TSV content directly.
+                Upload the <code>.tsv</code> file emailed by the scoring app, or paste the raw TSV content directly. Each line represents 1 whole match.
             </p>
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; align-items: start;">
@@ -198,10 +198,10 @@
 
         <!-- WEEKLY REVIEW & EDIT QUEUE -->
         <div class="card" id="review-card" style="display:none;">
-            <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom:10px;">
-                <h2 style="border:none; margin:0;">2. Review & Edit Weekly Matches (Spreadsheet View)</h2>
+            <div style="display:flex; justify- space-between; align-items:center; margin-bottom:10px;">
+                <h2 style="border:none; margin:0;">2. Review & Approve Matches</h2>
                 <div style="display:flex; gap: 8px;">
-                    <button class="btn btn-secondary" style="font-size:0.75rem; padding:4px 8px;" onclick="addBlankMatchRow()">+ Add Row</button>
+                    <button class="btn btn-secondary" style="font-size:0.75rem; padding:4px 8px;" onclick="addBlankMatchRow()">+ Add Match Row</button>
                 </div>
             </div>
             
@@ -215,8 +215,8 @@
                             <th class="col-header">C<br><span style="font-size:0.65rem; color:#94a3b8;">VISIT TEAM</span></th>
                             <th class="col-header" style="width: 80px;">D<br><span style="font-size:0.65rem; color:#94a3b8;">HOME PTS</span></th>
                             <th class="col-header" style="width: 80px;">E<br><span style="font-size:0.65rem; color:#94a3b8;">VISIT PTS</span></th>
-                            <th class="col-header">F<br><span style="font-size:0.65rem; color:#94a3b8;">GAME BREAKDOWN (REVIEW)</span></th>
-                            <th class="col-header" style="width: 110px;">ACTIONS</th>
+                            <th class="col-header">F<br><span style="font-size:0.65rem; color:#94a3b8;">MATCH DETAILS</span></th>
+                            <th class="col-header" style="width: 140px;">ACTIONS</th>
                         </tr>
                     </thead>
                     <tbody id="tsv-edit-tbody"></tbody>
@@ -227,7 +227,7 @@
                 <button class="btn" style="background:var(--success); color:white;" onclick="approveWeeklyMatches()">
                     ✅ Approve & Finalize All Matches
                 </button>
-                <button class="btn btn-secondary" onclick="resetWeeklyImport()">Cancel</button>
+                <button class="btn btn-secondary" onclick="resetWeeklyImport()">Cancel / Clear Queue</button>
             </div>
         </div>
 
@@ -402,16 +402,31 @@
     </div>
 </main>
 
-<!-- GAME BREAKDOWN EDIT MODAL -->
+<!-- MATCH DETAILS & GAME BREAKDOWN MODAL -->
 <div id="game-modal" class="modal-overlay">
     <div class="modal-body">
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #334155; padding-bottom:10px; margin-bottom:15px;">
-            <h2 style="color:var(--gold); font-size:1.1rem; margin:0;" id="modal-match-title">Edit Game Breakdown</h2>
+            <h2 style="color:var(--gold); font-size:1.1rem; margin:0;" id="modal-match-title">Edit Whole Match Details</h2>
             <button class="btn btn-secondary" style="padding:4px 8px; font-size:0.8rem;" onclick="closeGameModal()">✕ Close</button>
         </div>
         
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:15px; background:var(--slate-dark); padding:10px; border-radius:6px; border:1px solid #334155;">
+            <div>
+                <label style="font-size:0.75rem; color:var(--gold); font-weight:bold;">Date</label>
+                <input type="text" id="modal-match-date" style="margin:0;">
+            </div>
+            <div>
+                <label style="font-size:0.75rem; color:var(--gold); font-weight:bold;">Home Team Name</label>
+                <input type="text" id="modal-match-home" style="margin:0;">
+            </div>
+            <div>
+                <label style="font-size:0.75rem; color:var(--gold); font-weight:bold;">Visiting Team Name</label>
+                <input type="text" id="modal-match-visit" style="margin:0;">
+            </div>
+        </div>
+
         <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:12px;">
-            Review each individual rack/game. Fix misspelled player names, select who won ('Home' vs 'Visitor'), and check if there was an 8-Ball Break (8BB) or Table Run (TR). Scores will update automatically.
+            Review each individual game/rack in this match. Modify player names, winner, or special stats (8BB/TR).
         </p>
 
         <table class="game-edit-table" style="width:100%; border-collapse:collapse; margin-bottom:15px;">
@@ -432,9 +447,12 @@
         </table>
 
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; border-top:1px solid #334155; padding-top:12px;">
-            <button class="btn btn-secondary" style="font-size:0.8rem;" onclick="addModalGameRow()">+ Add Frame/Game</button>
+            <div>
+                <button class="btn btn-secondary" style="font-size:0.8rem;" onclick="addModalGameRow()">+ Add Rack/Game</button>
+                <button class="btn btn-danger" style="font-size:0.8rem; margin-left:8px;" onclick="deleteMatchFromModal()">🗑️ Delete Entire Match</button>
+            </div>
             <button class="btn" style="background:var(--success); color:white; font-size:0.85rem;" onclick="saveModalGames()">
-                💾 Save Game Details & Recalculate Scores
+                💾 Save Match Details & Recalculate
             </button>
         </div>
     </div>
@@ -546,13 +564,15 @@
                 <td><input type="number" value="${m.visitScore}" onchange="updatePendingRow(${idx}, 'visitScore', parseInt(this.value)||0)" style="text-align:center;"></td>
                 <td style="padding: 4px 8px;">
                     <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 4px 10px; width:100%; justify-content:space-between;" onclick="openGameModal(${idx})">
-                        <span>🎮 Review Games (${gameCount})</span>
-                        <span style="color:var(--gold);">Edit Players/8BB/TR ✏️</span>
+                        <span>📋 Review Match Details (${gameCount} Racks)</span>
+                        <span style="color:var(--gold);">Edit Details ✏️</span>
                     </button>
                 </td>
-                <td style="text-align:center; display:flex; gap:4px; justify-content:center; align-items:center; padding: 4px;">
-                    <button class="btn" style="padding: 2px 6px; font-size: 0.7rem; background: var(--success); color: white;" onclick="approveSingleMatch(${idx})" title="Approve Row Only">✓ Approve</button>
-                    <button onclick="deletePendingRow(${idx})" style="background:none; border:none; color:var(--visit); cursor:pointer; font-weight:bold;" title="Delete Row">✕</button>
+                <td style="text-align:center; padding: 4px;">
+                    <div style="display:flex; gap:4px; justify-content:center; align-items:center;">
+                        <button class="btn" style="padding: 4px 8px; font-size: 0.75rem; background: var(--success); color: white;" onclick="approveSingleMatch(${idx})" title="Approve Match">✓ Approve</button>
+                        <button onclick="deletePendingRow(${idx})" style="background:none; border:none; color:var(--visit); cursor:pointer; font-weight:bold; padding:4px;" title="Delete Match">✕ Delete</button>
+                    </div>
                 </td>
             </tr>
             `;
@@ -618,7 +638,11 @@
         const match = pendingBatch[matchIdx];
         if (!match) return;
 
-        document.getElementById('modal-match-title').innerText = `Games: ${match.homeTeam || 'HOME'} vs ${match.visitTeam || 'VISITOR'} (${match.date})`;
+        document.getElementById('modal-match-title').innerText = `Match Details: ${match.homeTeam || 'HOME'} vs ${match.visitTeam || 'VISITOR'}`;
+        document.getElementById('modal-match-date').value = match.date || '';
+        document.getElementById('modal-match-home').value = match.homeTeam || '';
+        document.getElementById('modal-match-visit').value = match.visitTeam || '';
+
         if (!match.games || !Array.isArray(match.games)) match.games = [];
 
         renderModalGames();
@@ -636,7 +660,7 @@
         const tbody = document.getElementById('modal-games-tbody');
 
         if (games.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--text-muted); padding:15px;">No games added yet. Click "+ Add Frame/Game" below to start.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--text-muted); padding:15px;">No rack details added yet. Click "+ Add Rack/Game" below to populate individual games.</td></tr>`;
             return;
         }
 
@@ -676,11 +700,23 @@
         renderModalGames();
     }
 
+    function deleteMatchFromModal() {
+        if (currentEditingMatchIndex === null) return;
+        if (confirm('Delete this whole match from the review queue?')) {
+            deletePendingRow(currentEditingMatchIndex);
+            closeGameModal();
+        }
+    }
+
     function saveModalGames() {
         if (currentEditingMatchIndex === null || !pendingBatch[currentEditingMatchIndex]) return;
         const match = pendingBatch[currentEditingMatchIndex];
-        const games = match.games;
+        
+        match.date = document.getElementById('modal-match-date').value.trim();
+        match.homeTeam = document.getElementById('modal-match-home').value.trim();
+        match.visitTeam = document.getElementById('modal-match-visit').value.trim();
 
+        const games = match.games;
         let homeScoreCalc = 0;
         let visitScoreCalc = 0;
 
@@ -705,8 +741,10 @@
             if (g.winner === 'v') visitScoreCalc++;
         });
 
-        match.homeScore = homeScoreCalc;
-        match.visitScore = visitScoreCalc;
+        if (games.length > 0) {
+            match.homeScore = homeScoreCalc;
+            match.visitScore = visitScoreCalc;
+        }
 
         closeGameModal();
         renderWeeklyReviewTable();
@@ -969,14 +1007,12 @@
     function generateCSV() {
         let lines = ['Type,Field1,Field2,Field3'];
         
-        // Output ROSTER entries
         Object.keys(DB.rosters).forEach(team => {
             DB.rosters[team].forEach(player => {
                 lines.push(`ROSTER,"${team}","${player}",`);
             });
         });
 
-        // Output SCHEDULE entries
         DB.schedule.forEach(s => {
             lines.push(`SCHEDULE,"${s.home}","${s.visit}","${s.date}"`);
         });
@@ -1037,7 +1073,6 @@
 
             const recordType = cols[0] ? cols[0].toUpperCase() : '';
 
-            // Parse ROSTER rows: Type, Team, Player
             if (recordType === 'ROSTER' && cols.length >= 3) {
                 const team = cols[1];
                 const player = cols[2];
@@ -1047,7 +1082,6 @@
                     rosterCount++;
                 }
             } 
-            // Parse SCHEDULE rows: Type, HomeTeam, VisitTeam, Date
             else if (recordType === 'SCHEDULE' && cols.length >= 4) {
                 const home = cols[1];
                 const visit = cols[2];
