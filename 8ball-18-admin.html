@@ -3,636 +3,332 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lebanon 8-Ball - Admin Dashboard</title>
+    <title>League Admin Portal</title>
     <style>
         :root {
-            --bg: #020617; --slate: #1e293b; --slate-dark: #0f172a;
-            --gold: #fbbf24; --wood: #451a03; --felt: #000080;
-            --text: #f8fafc; --text-muted: #94a3b8;
-            --home: #3b82f6; --visit: #ef4444; --success: #22c55e;
+            --bg-dark: #121212;
+            --card-bg: #1e1e1e;
+            --text-light: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --gold: #d4af37;
+            --success: #2e7d32;
+            --visit: #c62828;
+            --border: #333333;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
-        body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
-
-        header {
-            background: linear-gradient(to right, var(--wood), var(--felt));
-            padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 2px solid var(--gold);
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            margin: 0;
+            padding: 20px;
         }
-        header h1 { font-size: 1.2rem; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; }
 
-        nav { background: var(--slate-dark); display: flex; border-bottom: 1px solid #334155; overflow-x: auto; }
-        nav button {
-            background: none; border: none; color: var(--text-muted); padding: 12px 20px;
-            font-size: 0.85rem; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent;
-            white-space: nowrap;
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
         }
-        nav button.active { color: var(--gold); border-bottom-color: var(--gold); background: rgba(251, 191, 36, 0.05); }
-
-        main { flex: 1; padding: 20px; max-width: 1200px; width: 100%; margin: 0 auto; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
 
         .card {
-            background: var(--slate); border: 1px solid #334155; border-radius: 10px;
-            padding: 20px; margin-bottom: 20px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
         }
-        .card h2 { color: var(--gold); font-size: 1.1rem; margin-bottom: 15px; border-bottom: 1px solid #334155; padding-bottom: 8px; }
 
-        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #334155; }
-        th { background: var(--slate-dark); color: var(--gold); text-transform: uppercase; font-size: 0.75rem; }
-        tr:hover { background: rgba(255, 255, 255, 0.02); }
-
-        input, select, textarea {
-            width: 100%; padding: 10px; background: var(--slate-dark); border: 1px solid #334155;
-            color: white; border-radius: 6px; margin-bottom: 10px; font-size: 0.85rem;
+        h2 {
+            margin-top: 0;
+            color: var(--gold);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
         }
-        input:focus, select:focus, textarea:focus { border-color: var(--gold); outline: none; }
 
-        button.btn {
-            background: var(--gold); color: black; border: none; padding: 10px 16px;
-            border-radius: 6px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        .btn {
+            background-color: var(--gold);
+            color: #000;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
         }
-        button.btn-danger { background: var(--visit); color: white; }
-        button.btn-secondary { background: #475569; color: white; }
 
-        .badge { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
-        .badge-home { background: var(--home); color: white; }
-        .badge-visit { background: var(--visit); color: white; }
-        .badge-secondary { background: #64748b; color: white; }
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-secondary {
+            background-color: #444;
+            color: var(--text-light);
+        }
+
+        .btn-danger {
+            background-color: var(--visit);
+            color: white;
+        }
+
+        input[type="text"], input[type="number"], textarea {
+            width: 100%;
+            background-color: #2a2a2a;
+            border: 1px solid var(--border);
+            color: var(--text-light);
+            padding: 8px;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid var(--border);
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #2a2a2a;
+            color: var(--gold);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
 
-<header>
-    <h1>🎱 Lebanon 8-Ball Admin Portal</h1>
-    <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 6px 10px;" onclick="clearAllData()">⚠️ Reset Admin Data</button>
-</header>
-
-<nav>
-    <button class="active" onclick="switchTab('matches', this)">📊 Match Submissions</button>
-    <button onclick="switchTab('standings', this)">🏆 Standings & Player Stats</button>
-    <button onclick="switchTab('rosters', this)">👥 Roster Management</button>
-    <button onclick="switchTab('schedule', this)">📅 Schedule Setup</button>
-    <button onclick="switchTab('export', this)">⚙️ Export & API Setup</button>
-</nav>
-
-<main>
+<div class="container">
     <!-- MATCH SUBMISSIONS TAB -->
     <div id="tab-matches" class="tab-content active">
         <div class="card">
-            <h2>Received Match Scoresheets</h2>
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">
-                Review submitted match results from team captains. Approved matches update official standings automatically.
+            <h2>1. Import Weekly TSV File</h2>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">
+                Upload the <code>.tsv</code> file emailed by the scoring app, or paste the raw TSV content directly.
             </p>
-            <div id="matches-list"></div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; align-items: start;">
+                <div>
+                    <label style="font-size:0.75rem; color:var(--gold); font-weight:bold;">Upload File:</label>
+                    <input type="file" id="tsv-file-input" accept=".tsv,.txt" onchange="handleFileUpload(event)">
+                </div>
+                <div>
+                    <label style="font-size:0.75rem; color:var(--gold); font-weight:bold;">Or Paste Raw TSV Text:</label>
+                    <textarea id="tsv-raw-input" rows="3" placeholder="Paste raw tab-separated lines here..." oninput="parseRawTSVInput()"></textarea>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <!-- STANDINGS & PLAYER STATS TAB -->
-    <div id="tab-standings" class="tab-content">
-        <div class="grid-2">
-            <div class="card">
-                <h2>Team Standings</h2>
-                <table id="team-standings-table">
+        <!-- WEEKLY REVIEW & EDIT QUEUE -->
+        <div class="card" id="review-card" style="display:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h2 style="border:none; margin:0;">2. Review & Edit Weekly Matches</h2>
+                <button class="btn btn-secondary" style="font-size:0.75rem; padding:4px 8px;" onclick="addBlankMatchRow()">+ Add Row</button>
+            </div>
+            
+            <div style="overflow-x:auto;">
+                <table id="tsv-edit-table">
                     <thead>
-                        <tr><th>Team</th><th>W</th><th>L</th><th>Win %</th></tr>
+                        <tr>
+                            <th style="width: 130px;">Date</th>
+                            <th>Home Team</th>
+                            <th>Visit Team</th>
+                            <th style="width: 80px;">Home PTS</th>
+                            <th style="width: 80px;">Visit PTS</th>
+                            <th style="width: 60px;">Action</th>
+                        </tr>
                     </thead>
-                    <tbody></tbody>
+                    <tbody id="tsv-edit-tbody"></tbody>
                 </table>
             </div>
-            <div class="card">
-                <h2>Player Leaderboards</h2>
-                <table id="player-stats-table">
-                    <thead>
-                        <tr><th>Player</th><th>Team</th><th>Wins</th><th>TR</th><th>8B</th></tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+
+            <div style="margin-top: 15px; display:flex; gap: 10px;">
+                <button class="btn" style="background:var(--success); color:white;" onclick="approveWeeklyMatches()">
+                    ✅ Approve & Finalize Week
+                </button>
+                <button class="btn btn-secondary" onclick="resetWeeklyImport()">Cancel</button>
             </div>
         </div>
-    </div>
 
-    <!-- ROSTER MANAGEMENT TAB -->
-    <div id="tab-rosters" class="tab-content">
-        <div class="grid-2">
-            <div class="card">
-                <h2>Add / Edit Team Roster</h2>
-                <input type="text" id="roster-team-name" placeholder="Team Name (e.g. 5TH WARD SHARKS)">
-                <textarea id="roster-player-names" rows="6" placeholder="Paste players (One per line)&#10;John Doe&#10;Jane Smith&#10;Mike Johnson"></textarea>
-                <button class="btn" onclick="saveRoster()">Save Team Roster</button>
-            </div>
-            <div class="card">
-                <h2>Current League Rosters</h2>
-                <div id="roster-display"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- SCHEDULE SETUP TAB -->
-    <div id="tab-schedule" class="tab-content">
-        <div class="grid-2">
-            <div class="card">
-                <h2>League Schedule Generator</h2>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div>
-                        <label style="font-size:0.75rem; color:var(--text-muted);">Start Date</label>
-                        <input type="date" id="sched-start-date" value="2026-09-01">
-                    </div>
-                    <div>
-                        <label style="font-size:0.75rem; color:var(--text-muted);">End / Target Date</label>
-                        <input type="date" id="sched-end-date" value="2027-04-01">
-                    </div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div>
-                        <label style="font-size:0.75rem; color:var(--text-muted);">Match Day of Week</label>
-                        <select id="sched-dow">
-                            <option value="1">Monday</option>
-                            <option value="2">Tuesday</option>
-                            <option value="3">Wednesday</option>
-                            <option value="4" selected>Thursday</option>
-                            <option value="5">Friday</option>
-                            <option value="6">Saturday</option>
-                            <option value="0">Sunday</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label style="font-size:0.75rem; color:var(--text-muted);">Default Start Time</label>
-                        <input type="time" id="sched-time" value="19:00">
-                    </div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div>
-                        <label style="font-size:0.75rem; color:var(--text-muted);">Frequency</label>
-                        <select id="sched-freq">
-                            <option value="1">Weekly</option>
-                            <option value="2">Bi-Weekly (Every 2 Weeks)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label style="font-size:0.75rem; color:var(--text-muted);">Rounds (Round-Robin Multiplier)</label>
-                        <select id="sched-rounds">
-                            <option value="1">1 Round (Single Round-Robin)</option>
-                            <option value="2" selected>2 Rounds (Home & Away)</option>
-                            <option value="3">3 Rounds</option>
-                            <option value="4">4 Rounds</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div style="margin-bottom: 10px;">
-                    <label style="font-size:0.75rem; color:var(--text-muted);">Blackout / Holiday Dates (Comma Separated YYYY-MM-DD)</label>
-                    <input type="text" id="sched-holidays" placeholder="2026-11-26, 2026-12-24, 2026-12-31">
-                </div>
-
-                <div style="display: flex; gap: 8px; margin-top: 10px;">
-                    <button class="btn" onclick="generateAutoSchedule()" style="flex:1;">⚡ Generate New Schedule</button>
-                    <button class="btn btn-danger" onclick="clearSchedule()">🗑️ Delete All</button>
-                </div>
-
-                <hr style="border-color:#334155; margin: 15px 0;">
-
-                <h2 style="font-size: 0.95rem;">Add Single Match / Override</h2>
-                <input type="date" id="sched-date">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <select id="sched-home-team"><option value="">Select Home Team</option></select>
-                    <select id="sched-visit-team"><option value="">Select Visiting Team</option></select>
-                </div>
-                <button class="btn btn-secondary" onclick="addScheduleEntry()" style="width:100%;">Add Manual Matchup</button>
-            </div>
-
-            <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 8px; margin-bottom: 15px;">
-                    <h2 style="border:none; margin:0; padding:0;">Season Schedule</h2>
-                    <span id="sched-count-badge" class="badge badge-home" style="font-size:0.75rem;">0 Matches</span>
-                </div>
-                <div style="max-height: 500px; overflow-y: auto;">
-                    <table id="schedule-table">
-                        <thead>
-                            <tr><th>Date & Time</th><th>Home</th><th>Visitor</th><th>Action</th></tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- EXPORT & API SETUP TAB -->
-    <div id="tab-export" class="tab-content">
-        <div class="card">
-            <h2>CSV Export (For Scoring App Sync)</h2>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;">
-                Copy and paste this CSV text directly into your Google Sheets to publish updates to player scorekeeper apps.
+        <!-- EXPORT / COPY TO GOOGLE SHEETS -->
+        <div class="card" id="export-card" style="display:none;">
+            <h2 style="color:var(--success);">3. Week Finalized - Ready for Google Sheets</h2>
+            <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:10px;">
+                Click below to copy all approved match data for this week. Then open your Google Sheet and press <strong>Ctrl+V</strong> (Cmd+V on Mac) in cell A1.
             </p>
-            <textarea id="csv-output" rows="10" readonly onclick="this.select()"></textarea>
-            <button class="btn" onclick="generateCSV()">Generate Fresh CSV</button>
+            <textarea id="sheet-copy-box" rows="5" readonly onclick="this.select()"></textarea>
+            <button class="btn" onclick="copySheetData()">📋 Copy Data to Clipboard</button>
         </div>
     </div>
-</main>
+</div>
 
 <script>
-    // --- APP DATA STORAGE STRUCTURES ---
+    // System Local Data State
     let DB = {
-        rosters: JSON.parse(localStorage.getItem('admin_rosters')) || {
-            "5TH WARD SHARKS": ["John Doe", "Mike Smith", "Dave Miller"],
-            "CORNER POCKET": ["Sarah Connor", "Kyle Reese", "T-800"]
-        },
-        schedule: JSON.parse(localStorage.getItem('admin_schedule')) || [],
         matches: JSON.parse(localStorage.getItem('admin_matches')) || []
     };
 
     function saveDB() {
-        localStorage.setItem('admin_rosters', JSON.stringify(DB.rosters));
-        localStorage.setItem('admin_schedule', JSON.stringify(DB.schedule));
         localStorage.setItem('admin_matches', JSON.stringify(DB.matches));
-        refreshAllViews();
     }
 
-    function switchTab(tabId, btn) {
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('nav button').forEach(el => el.classList.remove('active'));
-        document.getElementById(`tab-${tabId}`).classList.add('active');
-        if (btn) btn.classList.add('active');
+    function formatDateLocal(d) {
+        return d.toISOString().slice(0, 10);
     }
 
     function escapeHtml(str) {
-        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     }
 
-    // Helper for formatting Date to YYYY-MM-DD locally safely
-    function formatDateLocal(date) {
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, '0');
-        const d = String(date.getDate()).padStart(2, '0');
-        return `${y}-${m}-${d}`;
+    // Temporal storage for the currently imported weekly batch
+    let pendingBatch = [];
+
+    // 1. File Upload Handler
+    function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('tsv-raw-input').value = e.target.result;
+            processTSVText(e.target.result);
+        };
+        reader.readAsText(file);
     }
 
-    // --- ROSTER MANAGEMENT ---
-    function saveRoster() {
-        const team = document.getElementById('roster-team-name').value.trim().toUpperCase();
-        const players = document.getElementById('roster-player-names').value.split('\n').map(p => p.trim()).filter(p => p.length > 0);
-        if(!team || players.length === 0) return alert("Enter team name and at least one player.");
-        
-        DB.rosters[team] = players;
-        saveDB();
-        document.getElementById('roster-team-name').value = "";
-        document.getElementById('roster-player-names').value = "";
+    // 2. Direct Paste Input Handler
+    function parseRawTSVInput() {
+        const rawText = document.getElementById('tsv-raw-input').value;
+        processTSVText(rawText);
     }
 
-    function deleteTeam(teamName) {
-        if (confirm(`Are you sure you want to delete "${teamName}" and all its players?`)) {
-            delete DB.rosters[teamName];
-            saveDB();
-        }
-    }
-
-    function deletePlayer(teamName, pIdx) {
-        if (DB.rosters[teamName]) {
-            DB.rosters[teamName].splice(pIdx, 1);
-            saveDB();
-        }
-    }
-
-    function renderRosters() {
-        const container = document.getElementById('roster-display');
-        let html = "";
-        const teams = Object.keys(DB.rosters);
-
-        if (teams.length === 0) {
-            container.innerHTML = "<p style='color:var(--text-muted);'>No rosters configured yet.</p>";
-        } else {
-            teams.forEach(team => {
-                const players = DB.rosters[team] || [];
-                const safeTeam = team.replace(/'/g, "\\'");
-                html += `<div style="margin-bottom:15px; background: var(--slate-dark); padding: 12px; border-radius: 8px; border: 1px solid #334155;">
-                    <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 8px;">
-                        <strong style="color:var(--gold);">${escapeHtml(team)}</strong>
-                        <button onclick="deleteTeam('${safeTeam}')" class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;">Delete Team</button>
-                    </div>
-                    <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom: 6px;">${players.length} Players:</div>
-                    <ul style="padding-left:20px; font-size:0.85rem; color:#cbd5e1;">
-                        ${players.map((p, idx) => `
-                            <li style="margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; max-width: 250px;">
-                                <span>${escapeHtml(p)}</span>
-                                <button onclick="deletePlayer('${safeTeam}', ${idx})" style="background:none; border:none; color:var(--visit); cursor:pointer; font-weight:bold; padding: 0 4px;">✕</button>
-                            </li>
-                        `).join('')}
-                    </ul>
-                </div>`;
-            });
-            container.innerHTML = html;
-        }
-        
-        // Update schedule dropdowns
-        const homeSel = document.getElementById('sched-home-team');
-        const visitSel = document.getElementById('sched-visit-team');
-        if (homeSel && visitSel) {
-            const options = '<option value="">Select Team</option>' + teams.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
-            homeSel.innerHTML = options;
-            visitSel.innerHTML = options;
-        }
-    }
-
-    // --- SCHEDULE MANAGEMENT ---
-    function addScheduleEntry() {
-        const date = document.getElementById('sched-date').value;
-        const time = document.getElementById('sched-time').value || "19:00";
-        const home = document.getElementById('sched-home-team').value;
-        const visit = document.getElementById('sched-visit-team').value;
-        if(!date || !home || !visit || home === visit) return alert("Select a valid date and two different teams.");
-
-        DB.schedule.push({ date: `${date} ${time}`, home, visit });
-        saveDB();
-    }
-
-    function removeSchedule(idx) {
-        DB.schedule.splice(idx, 1);
-        saveDB();
-    }
-
-    function editSchedule(idx) {
-        const item = DB.schedule[idx];
-        const newHome = prompt("Enter Home Team:", item.home);
-        if (newHome === null) return;
-        const newVisit = prompt("Enter Visiting Team (or BYE):", item.visit);
-        if (newVisit === null) return;
-        const newDate = prompt("Enter Date & Time (YYYY-MM-DD HH:MM):", item.date);
-        if (newDate === null) return;
-
-        DB.schedule[idx] = { date: newDate, home: newHome.trim().toUpperCase(), visit: newVisit.trim().toUpperCase() };
-        saveDB();
-    }
-
-    function clearSchedule() {
-        if (confirm("Are you sure you want to delete the ENTIRE schedule?")) {
-            DB.schedule = [];
-            saveDB();
-        }
-    }
-
-    function generateAutoSchedule() {
-        try {
-            const startDateStr = document.getElementById('sched-start-date').value;
-            const endDateStr = document.getElementById('sched-end-date').value;
-            const matchDow = parseInt(document.getElementById('sched-dow').value);
-            const matchTime = document.getElementById('sched-time').value || "19:00";
-            const frequencyWeeks = parseInt(document.getElementById('sched-freq').value) || 1;
-            const totalRounds = parseInt(document.getElementById('sched-rounds').value) || 2;
-            const holidayInput = document.getElementById('sched-holidays') ? document.getElementById('sched-holidays').value : "";
-
-            if (!startDateStr) {
-                alert("Please select a Start Date.");
-                return;
-            }
-
-            const teams = Object.keys(DB.rosters);
-            if (teams.length < 2) {
-                alert("You need at least 2 teams created in Roster Management to generate a schedule.");
-                return;
-            }
-
-            if (DB.schedule.length > 0 && !confirm("Generating a new schedule will replace your existing schedule. Proceed?")) {
-                return;
-            }
-
-            // Parse Blackout Dates
-            const holidays = holidayInput.split(',')
-                .map(s => s.trim())
-                .filter(s => s.length > 0);
-
-            // Berger Round-Robin Pairing Algorithm
-            let pool = [...teams];
-            if (pool.length % 2 !== 0) {
-                pool.push("BYE");
-            }
-
-            const numTeams = pool.length;
-            const roundsPerCycle = numTeams - 1;
-            const matchesPerRound = numTeams / 2;
-
-            let baseRounds = [];
-
-            for (let r = 0; r < roundsPerCycle; r++) {
-                let roundMatches = [];
-                for (let m = 0; m < matchesPerRound; m++) {
-                    let home = pool[m];
-                    let visit = pool[numTeams - 1 - m];
-                    
-                    if (r % 2 === 1) {
-                        let temp = home; home = visit; visit = temp;
-                    }
-
-                    if (home !== "BYE" || visit !== "BYE") {
-                        roundMatches.push({ home, visit });
-                    }
-                }
-                baseRounds.push(roundMatches);
-                pool.splice(1, 0, pool.pop());
-            }
-
-            // Multiply rounds (Home & Away)
-            let fullRoundRobin = [];
-            for (let cycle = 0; cycle < totalRounds; cycle++) {
-                baseRounds.forEach(round => {
-                    let roundCopy = round.map(m => {
-                        return cycle % 2 === 1 ? { home: m.visit, visit: m.home } : { home: m.home, visit: m.visit };
-                    });
-                    fullRoundRobin.push(roundCopy);
-                });
-            }
-
-            // Map to calendar dates cleanly using local time
-            let newSchedule = [];
-            let [sY, sM, sD] = startDateStr.split('-').map(Number);
-            let currDate = new Date(sY, sM - 1, sD);
-            let endDate = null;
-            
-            if (endDateStr) {
-                let [eY, eM, eD] = endDateStr.split('-').map(Number);
-                endDate = new Date(eY, eM - 1, eD, 23, 59, 59);
-            }
-
-            // Advance to target day of week
-            while (currDate.getDay() !== matchDow) {
-                currDate.setDate(currDate.getDate() + 1);
-            }
-
-            for (let r = 0; r < fullRoundRobin.length; r++) {
-                let formattedDateStr = formatDateLocal(currDate);
-
-                while (holidays.includes(formattedDateStr)) {
-                    currDate.setDate(currDate.getDate() + (7 * frequencyWeeks));
-                    formattedDateStr = formatDateLocal(currDate);
-                }
-
-                if (endDate && currDate > endDate) {
-                    break;
-                }
-
-                const dateTimeLabel = `${formattedDateStr} ${matchTime}`;
-                fullRoundRobin[r].forEach(m => {
-                    newSchedule.push({
-                        date: dateTimeLabel,
-                        home: m.home,
-                        visit: m.visit
-                    });
-                });
-
-                currDate.setDate(currDate.getDate() + (7 * frequencyWeeks));
-            }
-
-            DB.schedule = newSchedule;
-            saveDB();
-            alert(`Success! Generated ${newSchedule.length} total matches for ${teams.length} teams.`);
-        } catch (err) {
-            alert("Error generating schedule: " + err.message);
-        }
-    }
-
-    function renderSchedule() {
-        const tbody = document.querySelector('#schedule-table tbody');
-        const countBadge = document.getElementById('sched-count-badge');
-        if (countBadge) countBadge.innerText = `${DB.schedule.length} Matches`;
-
-        if (DB.schedule.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No matches scheduled. Generate a schedule above.</td></tr>`;
+    // 3. Core TSV Parsing Logic
+    function processTSVText(text) {
+        if (!text.trim()) {
+            document.getElementById('review-card').style.display = 'none';
+            pendingBatch = [];
             return;
         }
 
-        tbody.innerHTML = DB.schedule.map((s, idx) => `
+        const lines = text.trim().split(/\r?\n/);
+        pendingBatch = [];
+
+        lines.forEach((line, idx) => {
+            // Skip header line if present
+            if (idx === 0 && (line.toLowerCase().includes('home') || line.toLowerCase().includes('date'))) return;
+
+            const cols = line.split('\t').map(c => c.trim());
+            if (cols.length >= 4) {
+                // Expected TSV Structure: Date | Home Team | Visit Team | Home Score | Visit Score
+                pendingBatch.push({
+                    date: cols[0] || formatDateLocal(new Date()),
+                    homeTeam: cols[1] || "",
+                    visitTeam: cols[2] || "",
+                    homeScore: parseInt(cols[3]) || 0,
+                    visitScore: parseInt(cols[4]) || 0,
+                    games: cols[5] ? JSON.parse(cols[5]) : [] // Optional game details payload
+                });
+            }
+        });
+
+        renderWeeklyReviewTable();
+    }
+
+    // 4. Render Editable Form Controls inside Table
+    function renderWeeklyReviewTable() {
+        const tbody = document.getElementById('tsv-edit-tbody');
+        const reviewCard = document.getElementById('review-card');
+
+        if (pendingBatch.length === 0) {
+            reviewCard.style.display = 'none';
+            return;
+        }
+
+        reviewCard.style.display = 'block';
+        document.getElementById('export-card').style.display = 'none';
+
+        tbody.innerHTML = pendingBatch.map((m, idx) => `
             <tr>
-                <td style="font-size:0.8rem;">${escapeHtml(s.date)}</td>
-                <td><span class="badge badge-home">${escapeHtml(s.home)}</span></td>
-                <td><span class="badge ${s.visit === 'BYE' ? 'badge-secondary' : 'badge-visit'}">${escapeHtml(s.visit)}</span></td>
-                <td>
-                    <button onclick="editSchedule(${idx})" style="background:none; border:none; color:var(--gold); cursor:pointer; margin-right:6px;" title="Modify Match">✏️</button>
-                    <button onclick="removeSchedule(${idx})" style="background:none; border:none; color:var(--visit); cursor:pointer;" title="Delete Match">❌</button>
+                <td><input type="text" value="${escapeHtml(m.date)}" onchange="updatePendingRow(${idx}, 'date', this.value)" style="margin:0; padding:4px;"></td>
+                <td><input type="text" value="${escapeHtml(m.homeTeam)}" onchange="updatePendingRow(${idx}, 'homeTeam', this.value)" style="margin:0; padding:4px;"></td>
+                <td><input type="text" value="${escapeHtml(m.visitTeam)}" onchange="updatePendingRow(${idx}, 'visitTeam', this.value)" style="margin:0; padding:4px;"></td>
+                <td><input type="number" value="${m.homeScore}" onchange="updatePendingRow(${idx}, 'homeScore', parseInt(this.value)||0)" style="margin:0; padding:4px; text-align:center;"></td>
+                <td><input type="number" value="${m.visitScore}" onchange="updatePendingRow(${idx}, 'visitScore', parseInt(this.value)||0)" style="margin:0; padding:4px; text-align:center;"></td>
+                <td style="text-align:center;">
+                    <button onclick="deletePendingRow(${idx})" style="background:none; border:none; color:var(--visit); cursor:pointer; font-weight:bold;">✕</button>
                 </td>
             </tr>
         `).join('');
     }
 
-    // --- MATCH REVIEW & STANDINGS ---
-    function deleteMatch(idx) {
-        if (confirm("Delete this match submission?")) {
-            DB.matches.splice(idx, 1);
-            saveDB();
+    // Inline Row Modifications
+    function updatePendingRow(index, field, value) {
+        if (pendingBatch[index]) {
+            pendingBatch[index][field] = value;
         }
     }
 
-    function renderMatches() {
-        const container = document.getElementById('matches-list');
-        if(DB.matches.length === 0) {
-            container.innerHTML = `<p style="color:var(--text-muted);">No submitted matches recorded.</p>`;
-            return;
-        }
-
-        let html = `<table><thead><tr><th>Date</th><th>Matchup</th><th>Score</th><th>Action</th></tr></thead><tbody>`;
-        DB.matches.forEach((m, idx) => {
-            html += `<tr>
-                <td>${escapeHtml(m.date)}</td>
-                <td>${escapeHtml(m.homeTeam)} vs ${escapeHtml(m.visitTeam)}</td>
-                <td><strong>${m.homeScore} - ${m.visitScore}</strong></td>
-                <td><button onclick="deleteMatch(${idx})" style="background:none; border:none; color:var(--visit); cursor:pointer;">❌ Delete</button></td>
-            </tr>`;
-        });
-        html += `</tbody></table>`;
-        container.innerHTML = html;
+    function deletePendingRow(index) {
+        pendingBatch.splice(index, 1);
+        renderWeeklyReviewTable();
     }
 
-    function renderStandings() {
-        const teamStats = {};
-        const playerStats = {};
-
-        Object.keys(DB.rosters).forEach(t => teamStats[t] = { w: 0, l: 0 });
-
-        DB.matches.forEach(m => {
-            const hWin = parseInt(m.homeScore) || 0;
-            const vWin = parseInt(m.visitScore) || 0;
-            
-            if(teamStats[m.homeTeam]) { teamStats[m.homeTeam].w += hWin; teamStats[m.homeTeam].l += vWin; }
-            if(teamStats[m.visitTeam]) { teamStats[m.visitTeam].w += vWin; teamStats[m.visitTeam].l += hWin; }
-
-            if (m.games) {
-                m.games.forEach(g => {
-                    if(g.winner === 'h' && g.homePlayer) {
-                        playerStats[g.homePlayer] = playerStats[g.homePlayer] || { team: m.homeTeam, wins: 0, tr: 0, b8: 0 };
-                        playerStats[g.homePlayer].wins++;
-                        if(g.homeTR) playerStats[g.homePlayer].tr++;
-                        if(g.home8B) playerStats[g.homePlayer].b8++;
-                    } else if(g.winner === 'v' && g.visitPlayer) {
-                        playerStats[g.visitPlayer] = playerStats[g.visitPlayer] || { team: m.visitTeam, wins: 0, tr: 0, b8: 0 };
-                        playerStats[g.visitPlayer].wins++;
-                        if(g.visitTR) playerStats[g.visitPlayer].tr++;
-                        if(g.visit8B) playerStats[g.visitPlayer].b8++;
-                    }
-                });
-            }
+    function addBlankMatchRow() {
+        pendingBatch.push({
+            date: formatDateLocal(new Date()),
+            homeTeam: "HOME TEAM",
+            visitTeam: "VISIT TEAM",
+            homeScore: 0,
+            visitScore: 0,
+            games: []
         });
-
-        const tBody = document.querySelector('#team-standings-table tbody');
-        tBody.innerHTML = Object.keys(teamStats).map(t => {
-            const total = teamStats[t].w + teamStats[t].l;
-            const pct = total > 0 ? ((teamStats[t].w / total) * 100).toFixed(1) : "0.0";
-            return `<tr><td><strong>${escapeHtml(t)}</strong></td><td>${teamStats[t].w}</td><td>${teamStats[t].l}</td><td>${pct}%</td></tr>`;
-        }).join('');
-
-        const pBody = document.querySelector('#player-stats-table tbody');
-        const sortedPlayers = Object.keys(playerStats).sort((a,b) => playerStats[b].wins - playerStats[a].wins);
-        pBody.innerHTML = sortedPlayers.map(p => `
-            <tr>
-                <td><strong>${escapeHtml(p)}</strong></td>
-                <td><small>${escapeHtml(playerStats[p].team)}</small></td>
-                <td>${playerStats[p].wins}</td>
-                <td>${playerStats[p].tr}</td>
-                <td>${playerStats[p].b8}</td>
-            </tr>
-        `).join('');
+        renderWeeklyReviewTable();
     }
 
-    // --- CSV GENERATOR ---
-    function generateCSV() {
-        let csv = "Type,Field1,Field2,Field3\n";
+    function resetWeeklyImport() {
+        pendingBatch = [];
+        document.getElementById('tsv-file-input').value = "";
+        document.getElementById('tsv-raw-input').value = "";
+        document.getElementById('review-card').style.display = 'none';
+        document.getElementById('export-card').style.display = 'none';
+    }
+
+    // 5. Approve Batch & Push to Local DB & Sheet Generator
+    function approveWeeklyMatches() {
+        if (pendingBatch.length === 0) return alert("No matches to approve.");
+
+        // Merge weekly batch into official DB.matches
+        pendingBatch.forEach(m => DB.matches.push(m));
+        saveDB(); // Recalculates standings and updates local storage automatically
+
+        // Build finalized TSV text block for copy/pasting into Google Sheets
+        let exportTSV = "Date\tHome Team\tVisit Team\tHome Score\tVisit Score\n";
+        pendingBatch.forEach(m => {
+            exportTSV += `${m.date}\t${m.homeTeam}\t${m.visitTeam}\t${m.homeScore}\t${m.visitScore}\n`;
+        });
+
+        document.getElementById('sheet-copy-box').value = exportTSV;
+        document.getElementById('export-card').style.display = 'block';
         
-        for (let team in DB.rosters) {
-            DB.rosters[team].forEach(player => {
-                csv += `ROSTER,"${team}","${player}",\n`;
-            });
-        }
-        
-        DB.schedule.forEach(s => {
-            csv += `SCHEDULE,"${s.home}","${s.visit}","${s.date}"\n`;
-        });
-
-        document.getElementById('csv-output').value = csv;
+        alert(`Successfully approved ${pendingBatch.length} matches! Standings updated.`);
     }
 
-    function clearAllData() {
-        if (confirm("Reset all local Admin Portal data to default settings?")) {
-            localStorage.clear();
-            location.reload();
-        }
+    // 6. Copy to Clipboard Utility
+    function copySheetData() {
+        const copyText = document.getElementById('sheet-copy-box');
+        copyText.select();
+        copyText.setSelectionRange(0, 99999); // Mobile support
+        navigator.clipboard.writeText(copyText.value);
+        alert("Copied to clipboard! You can now paste directly into Google Sheets.");
     }
-
-    function refreshAllViews() {
-        renderRosters();
-        renderSchedule();
-        renderMatches();
-        renderStandings();
-        generateCSV();
-    }
-
-    // Initial load
-    refreshAllViews();
 </script>
 </body>
 </html>
