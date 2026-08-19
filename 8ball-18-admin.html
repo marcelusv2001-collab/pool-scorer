@@ -55,7 +55,7 @@
 
         button.btn {
             background: var(--gold); color: black; border: none; padding: 10px 16px;
-            border-radius: 6px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+            border-radius: 6px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
         }
         button.btn-danger { background: var(--visit); color: white; }
         button.btn-secondary { background: #475569; color: white; }
@@ -63,6 +63,7 @@
         .badge { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
         .badge-home { background: var(--home); color: white; }
         .badge-visit { background: var(--visit); color: white; }
+        .badge-secondary { background: #64748b; color: white; }
     </style>
 </head>
 <body>
@@ -141,11 +142,11 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                     <div>
                         <label style="font-size:0.75rem; color:var(--text-muted);">Start Date</label>
-                        <input type="date" id="sched-start-date">
+                        <input type="date" id="sched-start-date" value="2026-09-01">
                     </div>
                     <div>
                         <label style="font-size:0.75rem; color:var(--text-muted);">End / Target Date</label>
-                        <input type="date" id="sched-end-date">
+                        <input type="date" id="sched-end-date" value="2027-04-01">
                     </div>
                 </div>
 
@@ -245,9 +246,7 @@
             "5TH WARD SHARKS": ["John Doe", "Mike Smith", "Dave Miller"],
             "CORNER POCKET": ["Sarah Connor", "Kyle Reese", "T-800"]
         },
-        schedule: JSON.parse(localStorage.getItem('admin_schedule')) || [
-            { date: new Date().toISOString().split('T')[0], home: "5TH WARD SHARKS", visit: "CORNER POCKET" }
-        ],
+        schedule: JSON.parse(localStorage.getItem('admin_schedule')) || [],
         matches: JSON.parse(localStorage.getItem('admin_matches')) || []
     };
 
@@ -267,6 +266,14 @@
 
     function escapeHtml(str) {
         return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    // Helper for formatting Date to YYYY-MM-DD locally safely
+    function formatDateLocal(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
     }
 
     // --- ROSTER MANAGEMENT ---
@@ -338,11 +345,12 @@
     // --- SCHEDULE MANAGEMENT ---
     function addScheduleEntry() {
         const date = document.getElementById('sched-date').value;
+        const time = document.getElementById('sched-time').value || "19:00";
         const home = document.getElementById('sched-home-team').value;
         const visit = document.getElementById('sched-visit-team').value;
         if(!date || !home || !visit || home === visit) return alert("Select a valid date and two different teams.");
 
-        DB.schedule.push({ date, home, visit });
+        DB.schedule.push({ date: `${date} ${time}`, home, visit });
         saveDB();
     }
 
@@ -351,14 +359,164 @@
         saveDB();
     }
 
+    function editSchedule(idx) {
+        const item = DB.schedule[idx];
+        const newHome = prompt("Enter Home Team:", item.home);
+        if (newHome === null) return;
+        const newVisit = prompt("Enter Visiting Team (or BYE):", item.visit);
+        if (newVisit === null) return;
+        const newDate = prompt("Enter Date & Time (YYYY-MM-DD HH:MM):", item.date);
+        if (newDate === null) return;
+
+        DB.schedule[idx] = { date: newDate, home: newHome.trim().toUpperCase(), visit: newVisit.trim().toUpperCase() };
+        saveDB();
+    }
+
+    function clearSchedule() {
+        if (confirm("Are you sure you want to delete the ENTIRE schedule?")) {
+            DB.schedule = [];
+            saveDB();
+        }
+    }
+
+    function generateAutoSchedule() {
+        try {
+            const startDateStr = document.getElementById('sched-start-date').value;
+            const endDateStr = document.getElementById('sched-end-date').value;
+            const matchDow = parseInt(document.getElementById('sched-dow').value);
+            const matchTime = document.getElementById('sched-time').value || "19:00";
+            const frequencyWeeks = parseInt(document.getElementById('sched-freq').value) || 1;
+            const totalRounds = parseInt(document.getElementById('sched-rounds').value) || 2;
+            const holidayInput = document.getElementById('sched-holidays') ? document.getElementById('sched-holidays').value : "";
+
+            if (!startDateStr) {
+                alert("Please select a Start Date.");
+                return;
+            }
+
+            const teams = Object.keys(DB.rosters);
+            if (teams.length < 2) {
+                alert("You need at least 2 teams created in Roster Management to generate a schedule.");
+                return;
+            }
+
+            if (DB.schedule.length > 0 && !confirm("Generating a new schedule will replace your existing schedule. Proceed?")) {
+                return;
+            }
+
+            // Parse Blackout Dates
+            const holidays = holidayInput.split(',')
+                .map(s => s.trim())
+                .filter(s => s.length > 0);
+
+            // Berger Round-Robin Pairing Algorithm
+            let pool = [...teams];
+            if (pool.length % 2 !== 0) {
+                pool.push("BYE");
+            }
+
+            const numTeams = pool.length;
+            const roundsPerCycle = numTeams - 1;
+            const matchesPerRound = numTeams / 2;
+
+            let baseRounds = [];
+
+            for (let r = 0; r < roundsPerCycle; r++) {
+                let roundMatches = [];
+                for (let m = 0; m < matchesPerRound; m++) {
+                    let home = pool[m];
+                    let visit = pool[numTeams - 1 - m];
+                    
+                    if (r % 2 === 1) {
+                        let temp = home; home = visit; visit = temp;
+                    }
+
+                    if (home !== "BYE" || visit !== "BYE") {
+                        roundMatches.push({ home, visit });
+                    }
+                }
+                baseRounds.push(roundMatches);
+                pool.splice(1, 0, pool.pop());
+            }
+
+            // Multiply rounds (Home & Away)
+            let fullRoundRobin = [];
+            for (let cycle = 0; cycle < totalRounds; cycle++) {
+                baseRounds.forEach(round => {
+                    let roundCopy = round.map(m => {
+                        return cycle % 2 === 1 ? { home: m.visit, visit: m.home } : { home: m.home, visit: m.visit };
+                    });
+                    fullRoundRobin.push(roundCopy);
+                });
+            }
+
+            // Map to calendar dates cleanly using local time
+            let newSchedule = [];
+            let [sY, sM, sD] = startDateStr.split('-').map(Number);
+            let currDate = new Date(sY, sM - 1, sD);
+            let endDate = null;
+            
+            if (endDateStr) {
+                let [eY, eM, eD] = endDateStr.split('-').map(Number);
+                endDate = new Date(eY, eM - 1, eD, 23, 59, 59);
+            }
+
+            // Advance to target day of week
+            while (currDate.getDay() !== matchDow) {
+                currDate.setDate(currDate.getDate() + 1);
+            }
+
+            for (let r = 0; r < fullRoundRobin.length; r++) {
+                let formattedDateStr = formatDateLocal(currDate);
+
+                while (holidays.includes(formattedDateStr)) {
+                    currDate.setDate(currDate.getDate() + (7 * frequencyWeeks));
+                    formattedDateStr = formatDateLocal(currDate);
+                }
+
+                if (endDate && currDate > endDate) {
+                    break;
+                }
+
+                const dateTimeLabel = `${formattedDateStr} ${matchTime}`;
+                fullRoundRobin[r].forEach(m => {
+                    newSchedule.push({
+                        date: dateTimeLabel,
+                        home: m.home,
+                        visit: m.visit
+                    });
+                });
+
+                currDate.setDate(currDate.getDate() + (7 * frequencyWeeks));
+            }
+
+            DB.schedule = newSchedule;
+            saveDB();
+            alert(`Success! Generated ${newSchedule.length} total matches for ${teams.length} teams.`);
+        } catch (err) {
+            alert("Error generating schedule: " + err.message);
+        }
+    }
+
     function renderSchedule() {
         const tbody = document.querySelector('#schedule-table tbody');
+        const countBadge = document.getElementById('sched-count-badge');
+        if (countBadge) countBadge.innerText = `${DB.schedule.length} Matches`;
+
+        if (DB.schedule.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No matches scheduled. Generate a schedule above.</td></tr>`;
+            return;
+        }
+
         tbody.innerHTML = DB.schedule.map((s, idx) => `
             <tr>
-                <td>${escapeHtml(s.date)}</td>
+                <td style="font-size:0.8rem;">${escapeHtml(s.date)}</td>
                 <td><span class="badge badge-home">${escapeHtml(s.home)}</span></td>
-                <td><span class="badge badge-visit">${escapeHtml(s.visit)}</span></td>
-                <td><button onclick="removeSchedule(${idx})" style="background:none; border:none; color:var(--visit); cursor:pointer;">❌</button></td>
+                <td><span class="badge ${s.visit === 'BYE' ? 'badge-secondary' : 'badge-visit'}">${escapeHtml(s.visit)}</span></td>
+                <td>
+                    <button onclick="editSchedule(${idx})" style="background:none; border:none; color:var(--gold); cursor:pointer; margin-right:6px;" title="Modify Match">✏️</button>
+                    <button onclick="removeSchedule(${idx})" style="background:none; border:none; color:var(--visit); cursor:pointer;" title="Delete Match">❌</button>
+                </td>
             </tr>
         `).join('');
     }
