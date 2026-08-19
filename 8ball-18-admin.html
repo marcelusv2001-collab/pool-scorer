@@ -559,49 +559,66 @@
     }
 
     function processTSVText(text) {
-        if (!text.trim()) {
-            document.getElementById('review-card').style.display = 'none';
-            pendingBatch = [];
-            return;
-        }
-        const lines = text.trim().split(/\r?\n/);
+    if (!text.trim()) {
+        document.getElementById('review-card').style.display = 'none';
         pendingBatch = [];
-        lines.forEach((line, idx) => {
-            if (idx === 0 && (line.toLowerCase().includes('home') || line.toLowerCase().includes('date'))) return;
-            const cols = line.split('\t').map(c => c.trim());
-            if (cols.length >= 4) {
-                let parsedGames = [];
-                if (cols[5]) {
-                    try { parsedGames = JSON.parse(cols[5]); } catch(e) { parsedGames = []; }
-                }
-                
-                let hScore = parseInt(cols[3]) || 0;
-                let vScore = parseInt(cols[4]) || 0;
-
-                // Auto-calculate score from parsed rack/game array if populated
-                if (parsedGames && parsedGames.length > 0) {
-                    let calculatedHome = 0;
-                    let calculatedVisit = 0;
-                    parsedGames.forEach(g => {
-                        if (g.winner === 'h') calculatedHome++;
-                        if (g.winner === 'v') calculatedVisit++;
-                    });
-                    hScore = calculatedHome;
-                    vScore = calculatedVisit;
-                }
-
-                pendingBatch.push({
-                    date: cols[0] || new Date().toISOString().slice(0, 10),
-                    homeTeam: cols[1] || "",
-                    visitTeam: cols[2] || "",
-                    homeScore: hScore,
-                    visitScore: vScore,
-                    games: parsedGames
-                });
-            }
-        });
-        renderWeeklyReviewTable();
+        return;
     }
+    
+    // Split lines
+    const lines = text.trim().split(/\r?\n/);
+    pendingBatch = [];
+
+    lines.forEach((line, idx) => {
+        if (idx === 0 && (line.toLowerCase().includes('home') || line.toLowerCase().includes('date'))) return;
+        
+        // Auto-detect delimiter: try tabs first, fallback to comma if no tabs found
+        let cols = line.includes('\t') ? line.split('\t') : line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+        cols = cols.map(c => c.trim().replace(/^"|"$/g, ''));
+
+        if (cols.length >= 4) {
+            let parsedGames = [];
+            
+            // Search all columns to locate the JSON array for games
+            for (let i = 3; i < cols.length; i++) {
+                if (cols[i].startsWith('[')) {
+                    try { 
+                        parsedGames = JSON.parse(cols[i]); 
+                        break;
+                    } catch(e) { 
+                        parsedGames = []; 
+                    }
+                }
+            }
+
+            let hScore = parseInt(cols[3]) || 0;
+            let vScore = parseInt(cols[4]) || 0;
+
+            if (parsedGames && parsedGames.length > 0) {
+                let calculatedHome = 0;
+                let calculatedVisit = 0;
+                parsedGames.forEach(g => {
+                    if (g.winner === 'h') calculatedHome++;
+                    if (g.winner === 'v') calculatedVisit++;
+                });
+                hScore = calculatedHome;
+                vScore = calculatedVisit;
+            }
+
+            pendingBatch.push({
+                date: cols[0] || new Date().toISOString().slice(0, 10),
+                homeTeam: cols[1] || "",
+                visitTeam: cols[2] || "",
+                homeScore: hScore,
+                visitScore: vScore,
+                games: parsedGames
+            });
+        }
+    });
+
+    renderWeeklyReviewTable();
+}
+
 
     function renderWeeklyReviewTable() {
         const tbody = document.getElementById('tsv-edit-tbody');
