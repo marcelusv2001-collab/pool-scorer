@@ -574,127 +574,119 @@
     }
 
     function processTSVText(text) {
-        if (!text || !text.trim()) {
-            document.getElementById('review-card').style.display = 'none';
-            pendingBatch = [];
-            return;
-        }
-        
-        const lines = text.trim().split(/\r?\n/).filter(l => l.trim().length > 0);
+    function processTSVText(text) {
+    if (!text || !text.trim()) {
+        document.getElementById('review-card').style.display = 'none';
         pendingBatch = [];
+        return;
+    }
+    
+    const lines = text.trim().split(/\r?\n/).filter(l => l.trim().length > 0);
+    pendingBatch = [];
 
-        if (lines.length === 0) return;
+    if (lines.length === 0) return;
 
-        const headerLine = lines[0].toLowerCase();
+    const headerLine = lines[0].toLowerCase();
 
-        // MODE 1: Game-by-Game format (GameID, WinnerName, WinnerTeam, LoserName, LoserTeam, TableRun, EightBallBreak)
-        if (headerLine.includes('winnername') || headerLine.includes('losername') || headerLine.includes('winnerteam')) {
+    // MODE 1: Game-by-Game format
+    if (headerLine.includes('winnername') || headerLine.includes('losername') || headerLine.includes('winnerteam')) {
+        let parsedGames = [];
+        let homeTeam = "";
+        let visitTeam = "";
+
+        for (let i = 1; i < lines.length; i++) {
+            const cols = tokenizeLine(lines[i]);
+            if (cols.length >= 5) {
+                const winnerName = cols[1];
+                const winnerTeam = cols[2];
+                const loserName = cols[3];
+                const loserTeam = cols[4];
+                const tableRun = (cols[5] || '').toLowerCase() === 'true';
+                const eightBallBreak = (cols[6] || '').toLowerCase() === 'true';
+
+                if (!homeTeam && winnerTeam) homeTeam = winnerTeam;
+                if (winnerTeam && winnerTeam !== homeTeam && !visitTeam) visitTeam = winnerTeam;
+                if (loserTeam && loserTeam !== homeTeam && !visitTeam) visitTeam = loserTeam;
+
+                const isHomeWinner = (winnerTeam === homeTeam);
+
+                parsedGames.push({
+                    homePlayer: isHomeWinner ? winnerName : loserName,
+                    visitPlayer: isHomeWinner ? loserName : winnerName,
+                    winner: isHomeWinner ? 'h' : 'v',
+                    home8B: isHomeWinner ? eightBallBreak : false,
+                    homeTR: isHomeWinner ? tableRun : false,
+                    visit8B: !isHomeWinner ? eightBallBreak : false,
+                    visitTR: !isHomeWinner ? tableRun : false
+                });
+            }
+        }
+
+        let hScore = 0, vScore = 0;
+        parsedGames.forEach(g => {
+            if (g.winner === 'h') hScore++;
+            if (g.winner === 'v') vScore++;
+        });
+
+        pendingBatch.push({
+            date: new Date().toISOString().slice(0, 10),
+            homeTeam: homeTeam || "Home Team",
+            visitTeam: visitTeam || "Visiting Team",
+            homeScore: hScore,
+            visitScore: vScore,
+            games: parsedGames
+        });
+    } 
+    // MODE 2: Match-level rows (Date, Home, Visit, HomeScore, VisitScore, JSON)
+    else {
+        lines.forEach((line) => {
+            if (line.toLowerCase().startsWith('date') || line.toLowerCase().startsWith('home')) return;
+
+            // Direct regex extraction of the raw JSON array string prior to column splitting
             let parsedGames = [];
-            let homeTeam = "";
-            let visitTeam = "";
-
-            for (let i = 1; i < lines.length; i++) {
-                const cols = tokenizeLine(lines[i]);
-                if (cols.length >= 5) {
-                    const winnerName = cols[1];
-                    const winnerTeam = cols[2];
-                    const loserName = cols[3];
-                    const loserTeam = cols[4];
-                    const tableRun = (cols[5] || '').toLowerCase() === 'true';
-                    const eightBallBreak = (cols[6] || '').toLowerCase() === 'true';
-
-                    if (!homeTeam && winnerTeam) homeTeam = winnerTeam;
-                    if (winnerTeam && winnerTeam !== homeTeam && !visitTeam) visitTeam = winnerTeam;
-                    if (loserTeam && loserTeam !== homeTeam && !visitTeam) visitTeam = loserTeam;
-
-                    const isHomeWinner = (winnerTeam === homeTeam);
-
-                    parsedGames.push({
-                        homePlayer: isHomeWinner ? winnerName : loserName,
-                        visitPlayer: isHomeWinner ? loserName : winnerName,
-                        winner: isHomeWinner ? 'h' : 'v',
-                        home8B: isHomeWinner ? eightBallBreak : false,
-                        homeTR: isHomeWinner ? tableRun : false,
-                        visit8B: !isHomeWinner ? eightBallBreak : false,
-                        visitTR: !isHomeWinner ? tableRun : false
-                    });
+            let jsonMatch = line.match(/\[\s*\{.*\}\s*\]/);
+            
+            if (jsonMatch) {
+                try {
+                    parsedGames = JSON.parse(jsonMatch[0]);
+                } catch(e) {
+                    parsedGames = [];
                 }
             }
 
-            let hScore = 0, vScore = 0;
-            parsedGames.forEach(g => {
-                if (g.winner === 'h') hScore++;
-                if (g.winner === 'v') vScore++;
-            });
+            const cols = tokenizeLine(line);
 
-            pendingBatch.push({
-                date: new Date().toISOString().slice(0, 10),
-                homeTeam: homeTeam || "Home Team",
-                visitTeam: visitTeam || "Visiting Team",
-                homeScore: hScore,
-                visitScore: vScore,
-                games: parsedGames
-            });
-        } 
-        // MODE 2: Match-level rows (Date, Home, Visit, HomeScore, VisitScore, JSON)
-        else {
-            lines.forEach((line) => {
-                if (line.toLowerCase().startsWith('date') || line.toLowerCase().startsWith('home')) return;
+            if (cols.length >= 3) {
+                let hScore = parseInt(cols[3]) || 0;
+                let vScore = parseInt(cols[4]) || 0;
 
-                const cols = tokenizeLine(line);
-
-                if (cols.length >= 3) {
-                    let parsedGames = [];
-                    let gamesJsonIndex = -1;
-
-                    for (let i = 0; i < cols.length; i++) {
-                        if (cols[i].startsWith('[')) {
-                            gamesJsonIndex = i;
-                            try {
-                                parsedGames = JSON.parse(cols[i]);
-                            } catch(e) {
-                                parsedGames = [];
-                            }
-                            break;
-                        }
-                    }
-
-                    let hScore = 0;
-                    let vScore = 0;
-
-                    if (gamesJsonIndex >= 3) {
-                        hScore = parseInt(cols[gamesJsonIndex - 2]) || 0;
-                        vScore = parseInt(cols[gamesJsonIndex - 1]) || 0;
-                    } else if (cols.length >= 5) {
-                        hScore = parseInt(cols[3]) || 0;
-                        vScore = parseInt(cols[4]) || 0;
-                    }
-
-                    if (parsedGames && parsedGames.length > 0) {
-                        let calculatedHome = 0;
-                        let calculatedVisit = 0;
-                        parsedGames.forEach(g => {
-                            if (g.winner === 'h') calculatedHome++;
-                            if (g.winner === 'v') calculatedVisit++;
-                        });
-                        hScore = calculatedHome;
-                        vScore = calculatedVisit;
-                    }
-
-                    pendingBatch.push({
-                        date: cols[0] || new Date().toISOString().slice(0, 10),
-                        homeTeam: cols[1] || "",
-                        visitTeam: cols[2] || "",
-                        homeScore: hScore,
-                        visitScore: vScore,
-                        games: parsedGames
+                // Auto-calculate score directly from rack count if racks are present
+                if (parsedGames && parsedGames.length > 0) {
+                    let calculatedHome = 0;
+                    let calculatedVisit = 0;
+                    parsedGames.forEach(g => {
+                        if (g.winner === 'h') calculatedHome++;
+                        if (g.winner === 'v') calculatedVisit++;
                     });
+                    hScore = calculatedHome;
+                    vScore = calculatedVisit;
                 }
-            });
-        }
 
-        renderWeeklyReviewTable();
+                pendingBatch.push({
+                    date: cols[0] || new Date().toISOString().slice(0, 10),
+                    homeTeam: cols[1] || "",
+                    visitTeam: cols[2] || "",
+                    homeScore: hScore,
+                    visitScore: vScore,
+                    games: parsedGames
+                });
+            }
+        });
     }
+
+    renderWeeklyReviewTable();
+}
+
 
     function renderWeeklyReviewTable() {
         const tbody = document.getElementById('tsv-edit-tbody');
