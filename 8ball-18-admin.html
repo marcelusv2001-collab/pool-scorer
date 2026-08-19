@@ -53,6 +53,20 @@
         }
         input:focus, select:focus, textarea:focus { border-color: var(--gold); outline: none; }
 
+        /* Formatted TSV Textarea Styling */
+        textarea.tsv-monospaced {
+            font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'Courier New', monospace;
+            white-space: pre;
+            overflow-x: auto;
+            tab-size: 16;
+            -moz-tab-size: 16;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            letter-spacing: 0.5px;
+            background: #090d16;
+            color: #38bdf8;
+        }
+
         button.btn {
             background: var(--gold); color: black; border: none; padding: 10px 16px;
             border-radius: 6px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
@@ -97,16 +111,21 @@
                 </div>
                 <div>
                     <label style="font-size:0.75rem; color:var(--gold); font-weight:bold;">Or Paste Raw TSV Text:</label>
-                    <textarea id="tsv-raw-input" rows="3" placeholder="Paste raw tab-separated lines here..." oninput="parseRawTSVInput()"></textarea>
+                    <textarea id="tsv-raw-input" class="tsv-monospaced" rows="5" placeholder="Paste raw tab-separated lines here..." oninput="parseRawTSVInput()"></textarea>
+                    <button class="btn" style="width: 100%; margin-top: 4px; font-size: 0.8rem; padding: 8px;" onclick="parseRawTSVInput()">
+                        📥 Load TSV into Review Queue
+                    </button>
                 </div>
             </div>
         </div>
 
         <!-- WEEKLY REVIEW & EDIT QUEUE -->
         <div class="card" id="review-card" style="display:none;">
-            <div style="display:flex; justify-space-between; align-items:center; margin-bottom:10px;">
+            <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom:10px;">
                 <h2 style="border:none; margin:0;">2. Review & Edit Weekly Matches</h2>
-                <button class="btn btn-secondary" style="font-size:0.75rem; padding:4px 8px;" onclick="addBlankMatchRow()">+ Add Row</button>
+                <div style="display:flex; gap: 8px;">
+                    <button class="btn btn-secondary" style="font-size:0.75rem; padding:4px 8px;" onclick="addBlankMatchRow()">+ Add Row</button>
+                </div>
             </div>
             
             <div style="overflow-x:auto;">
@@ -118,7 +137,7 @@
                             <th>Visit Team</th>
                             <th style="width: 80px;">Home PTS</th>
                             <th style="width: 80px;">Visit PTS</th>
-                            <th style="width: 60px;">Action</th>
+                            <th style="width: 120px; text-align:center;">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="tsv-edit-tbody"></tbody>
@@ -127,7 +146,7 @@
 
             <div style="margin-top: 15px; display:flex; gap: 10px;">
                 <button class="btn" style="background:var(--success); color:white;" onclick="approveWeeklyMatches()">
-                    ✅ Approve & Finalize Week
+                    ✅ Approve & Finalize All Matches
                 </button>
                 <button class="btn btn-secondary" onclick="resetWeeklyImport()">Cancel</button>
             </div>
@@ -139,7 +158,7 @@
             <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:10px;">
                 Click below to copy all approved match data for this week. Then open your Google Sheet and press <strong>Ctrl+V</strong> (Cmd+V on Mac) in cell A1.
             </p>
-            <textarea id="sheet-copy-box" rows="5" readonly onclick="this.select()"></textarea>
+            <textarea id="sheet-copy-box" class="tsv-monospaced" rows="5" readonly onclick="this.select()"></textarea>
             <button class="btn" onclick="copySheetData()">📋 Copy Data to Clipboard</button>
         </div>
 
@@ -293,7 +312,7 @@
             <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;">
                 Copy and paste this CSV text directly into your Google Sheets to publish updates to player scorekeeper apps.
             </p>
-            <textarea id="csv-output" rows="10" readonly onclick="this.select()"></textarea>
+            <textarea id="csv-output" class="tsv-monospaced" rows="10" readonly onclick="this.select()"></textarea>
             <button class="btn" onclick="generateCSV()">Generate Fresh CSV</button>
         </div>
     </div>
@@ -396,8 +415,9 @@
                 <td><input type="text" value="${escapeHtml(m.visitTeam)}" onchange="updatePendingRow(${idx}, 'visitTeam', this.value)" style="margin:0; padding:4px;"></td>
                 <td><input type="number" value="${m.homeScore}" onchange="updatePendingRow(${idx}, 'homeScore', parseInt(this.value)||0)" style="margin:0; padding:4px; text-align:center;"></td>
                 <td><input type="number" value="${m.visitScore}" onchange="updatePendingRow(${idx}, 'visitScore', parseInt(this.value)||0)" style="margin:0; padding:4px; text-align:center;"></td>
-                <td style="text-align:center;">
-                    <button onclick="deletePendingRow(${idx})" style="background:none; border:none; color:var(--visit); cursor:pointer; font-weight:bold;">✕</button>
+                <td style="text-align:center; display:flex; gap:4px; justify-content:center; align-items:center;">
+                    <button class="btn" style="padding: 2px 6px; font-size: 0.7rem; background: var(--success); color: white;" onclick="approveSingleMatch(${idx})" title="Approve Row Only">✓ Approve</button>
+                    <button onclick="deletePendingRow(${idx})" style="background:none; border:none; color:var(--visit); cursor:pointer; font-weight:bold;" title="Delete Row">✕</button>
                 </td>
             </tr>
         `).join('');
@@ -409,6 +429,15 @@
 
     function deletePendingRow(index) {
         pendingBatch.splice(index, 1);
+        renderWeeklyReviewTable();
+    }
+
+    function approveSingleMatch(index) {
+        if (!pendingBatch[index]) return;
+        const match = pendingBatch[index];
+        DB.matches.push(match);
+        pendingBatch.splice(index, 1);
+        saveDB();
         renderWeeklyReviewTable();
     }
 
