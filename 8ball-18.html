@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Lebanon 8-Ball Pro</title>
+    <title>8-Ball Cash League Pro</title>
     <style>
         :root {
             --bg: #020617; --felt: #000080; --gold: #fbbf24;
@@ -168,7 +168,7 @@
 
 <div id="help-modal">
     <div class="help-content">
-        <h2>How to use Lebanon 8-Ball</h2>
+        <h2>How to use 8-Ball Cash League</h2>
         <p>1. <b>SETUP:</b> Connect your roster data.</p>
         <p>2. <b>SCORING:</b> Tap 'W' to cycle wins. Home = <b>White Border</b>, Visit = <b>Red Border</b>.</p>
         <p>3. <b>DATA:</b> Manual player entries are saved instantly.</p>
@@ -198,7 +198,7 @@
         <button class="reset-btn" onclick="resetBoard()">🗑️</button>
         <a id="view-stats" href="#" target="_blank" class="stats-link-btn">📊 STATS</a>
     </div>
-    <h1>Lebanon 18 Games</h1>
+    <h1>8-Ball Cash League</h1>
     <button class="help-trigger" onclick="toggleHelp()">❓</button>
 </header>
 
@@ -385,12 +385,10 @@
     function proceedToSendText() {
         const msg = buildMessage();
         
-        // Build files array if browser/device supports Web Share API level 2 file sharing (attaching images)
         let shareData = { text: msg };
         
         if (navigator.canShare && homeSignatureData && visitingSignatureData) {
             try {
-                // Convert Base64 data URLs to File objects for rich attachment sharing
                 const homeFile = dataURLtoFile(homeSignatureData, 'home_captain_signature.png');
                 const visitFile = dataURLtoFile(visitingSignatureData, 'visiting_captain_signature.png');
                 const testData = { files: [homeFile, visitFile], text: msg };
@@ -405,7 +403,6 @@
         if (navigator.share) {
             navigator.share(shareData).catch(() => {});
         } else {
-            // Standard fallback SMS link (text only if files aren't supported by legacy client)
             window.location.href = `sms:?body=${encodeURIComponent(msg)}`;
         }
     }
@@ -657,7 +654,7 @@
     function buildMessage() {
         const hT = (document.getElementById('h-team').value || "Home").toUpperCase();
         const vT = (document.getElementById('v-team').value || "Visit").toUpperCase();
-        let msg = `🎱 LEBANON 8-BALL\nHT ${hT} (${document.getElementById('h-score').innerText})\nVT ${vT} (${document.getElementById('v-score').innerText})\n\n`;
+        let msg = `8-BALL CASH LEAGUE\n[HT] ${hT} (${document.getElementById('h-score').innerText})\n[VT] ${vT} (${document.getElementById('v-score').innerText})\n\n`;
         state.forEach(g => {
             if (g.h || g.v || g.win) {
                 const hName = (g.h || "P") + (g.hManual ? ' (NP)' : '');
@@ -667,7 +664,7 @@
                 msg += `Gm${g.id} ${hName}${g.win === 'h' ? ' (W)' : ''}${hM} vs ${vName}${g.win === 'v' ? ' (W)' : ''}${vM}\n--\n--\n`;
             }
         });
-        return msg + `\nTr= (TR) 8bb= (8BB)\n✅ Verified & Signed by Both Captains`;
+        return msg;
     }
 
     function isMatchApproved() {
