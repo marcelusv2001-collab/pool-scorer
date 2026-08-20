@@ -85,7 +85,7 @@
         }
         .modal-content {
             background: var(--slate); border: 2px solid var(--gold); border-radius: 12px;
-            padding: 25px; width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto;
+            padding: 25px; width: 100%; max-width: 750px; max-height: 90vh; overflow-y: auto;
         }
 
         /* Export / TSV Output */
@@ -105,13 +105,19 @@
         .sig-preview-box { background: white; padding: 5px; border-radius: 6px; text-align: center; }
         .sig-preview-box img { max-width: 100%; height: 60px; object-fit: contain; }
         .sig-preview-box span { font-size: 0.7rem; color: black; font-weight: bold; display: block; }
+        
+        .help-section { margin-bottom: 20px; font-size: 0.9rem; line-height: 1.5; color: #cbd5e1; }
+        .help-section h3 { color: var(--gold); margin-bottom: 8px; font-size: 1rem; }
     </style>
 </head>
 <body>
 
 <header>
     <h1>8-Ball Cash League — Backend Hub</h1>
-    <span style="font-size: 0.8rem; color: #94a3b8;">Batch Processor & Sheet Sync</span>
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <button class="btn btn-secondary" style="padding: 8px 15px; font-size: 0.75rem;" onclick="openHelpModal()">❓ Help & Setup Guide</button>
+        <span style="font-size: 0.8rem; color: #94a3b8;">Batch Processor & Sheet Sync</span>
+    </div>
 </header>
 
 <div class="tabs">
@@ -123,7 +129,7 @@
 <div id="tab-submission" class="tab-content active">
     <div class="card">
         <h2>📥 Import Raw Match Payload</h2>
-        <p style="font-size: 0.85rem; color: #94a3b8;">Paste your complete match message payload below. Team names and scores will be parsed automatically from the text.</p>
+        <p style="font-size: 0.85rem; color: #94a3b8;">Paste your complete match message payload below. Team names and scores are parsed automatically from the text.</p>
         
         <label>Raw Match Text Payload</label>
         <textarea id="input-payload" rows="6" placeholder="8-BALL CASH LEAGUE&#10;[HT] TEAM ALPHA (12)&#10;[VT] TEAM BETA (6)&#10;&#10;Gm1 PlayerA (W) vs PlayerB..."></textarea>
@@ -219,6 +225,67 @@
     </div>
 </div>
 
+<!-- HELP & SETUP GUIDE MODAL -->
+<div id="help-modal" class="modal">
+    <div class="modal-content">
+        <h2>📖 Help & Complete Setup Guide</h2>
+        
+        <div class="help-section">
+            <h3>1. How to Process Matches</h3>
+            <ul>
+                <li><strong>Paste Payload:</strong> Paste your app's raw match score message in Tab 1. The app automatically scans for tags like <code>[HT] Team Name (Score)</code> and <code>[VT] Team Name (Score)</code>.</li>
+                <li><strong>Add Signatures:</strong> Paste the Base64/DataURL image string for the captain signatures into the signature fields.</li>
+                <li><strong>Review & Approve:</strong> Click <strong>Review / Edit</strong> on any staged match to verify the extracted details, view preview thumbnails of the signatures, and click <strong>Save & Approve</strong>.</li>
+                <li><strong>Lock Batch:</strong> Once all matches are approved, click <strong>Lock Batch for Export</strong> to generate your clean TSV data stream.</li>
+            </ul>
+        </div>
+
+        <div class="help-section">
+            <h3>2. Connecting Google Sheets (Google Apps Script)</h3>
+            <p>To let this web app write directly to your Google Sheet, follow these quick steps:</p>
+            <ol>
+                <li>Open your target Google Sheet. Set Row 1 headers as: <code>HomeTeam</code> | <code>VisitingTeam</code> | <code>Timestamp</code> | <code>MatchPayload</code> | <code>HomeSignature</code> | <code>VisitingSignature</code></li>
+                <li>In top menu, click <strong>Extensions</strong> &gt; <strong>Apps Script</strong>.</li>
+                <li>Paste the script code provided below, and save the project.</li>
+                <li>Click <strong>Deploy</strong> (top right) &gt; <strong>New deployment</strong>. Choose type: <strong>Web app</strong>. Set <em>Execute as: Me</em> and <em>Who has access: Anyone</em>.</li>
+                <li>Copy the generated <strong>Web app URL</strong> and paste it into Tab 2 of this hub!</li>
+            </ol>
+        </div>
+
+        <div class="help-section">
+            <h3>3. Google Apps Script Code (Copy & Paste)</h3>
+            <pre><code>function doPost(e) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var tsvData = e.postData.contents;
+    var rows = tsvData.split("\n");
+    
+    for (var i = 1; i < rows.length; i++) {
+      if (!rows[i].trim()) continue;
+      var columns = rows[i].split("\t");
+      sheet.appendRow(columns);
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({"status": "success", "rowsAdded": rows.length - 1}))
+                         .setMimeType(ContentService.MimeType.JSON);
+                         
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({"status": "error", "message": error.toString()}))
+                         .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet(e) {
+  return ContentService.createTextOutput("Backend Hub is connected and listening!");
+}</code></pre>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+            <button class="btn" onclick="closeHelpModal()">Got It, Close Help</button>
+        </div>
+    </div>
+</div>
+
 <script>
     let stagedMatches = [];
     let finalizedTSV = "";
@@ -228,6 +295,14 @@
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
         evt.currentTarget.classList.add('active');
+    }
+
+    // Help Modal Controls
+    function openHelpModal() {
+        document.getElementById('help-modal').style.display = 'flex';
+    }
+    function closeHelpModal() {
+        document.getElementById('help-modal').style.display = 'none';
     }
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -270,7 +345,6 @@
         txt.innerText = 'CONNECTION: ' + text;
     }
 
-    // Parse team and scores from the text payload automatically
     function parseMatchDetails(payload) {
         let homeTeam = "Unknown Home";
         let visitTeam = "Unknown Visit";
