@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>8-Ball Cash League - Backend & Export Hub</title>
+    <title>8-Ball Cash League - Backend Hub</title>
     <style>
         :root {
             --bg: #020617; --felt: #000080; --gold: #fbbf24;
@@ -66,7 +66,6 @@
         .btn-secondary { background: #475569; color: white; }
 
         /* Match Submission Tab */
-        .match-input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .match-list-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         .match-list-table th, .match-list-table td {
             padding: 12px; text-align: left; border-bottom: 1px solid #334155; font-size: 0.85rem;
@@ -101,6 +100,11 @@
         .led-light { width: 12px; height: 12px; border-radius: 50%; background: var(--status-off); }
         .led-light.active { background: var(--status-on); box-shadow: 0 0 10px var(--status-on); }
         .led-light.error { background: var(--status-err); box-shadow: 0 0 10px var(--status-err); }
+
+        .sig-preview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .sig-preview-box { background: white; padding: 5px; border-radius: 6px; text-align: center; }
+        .sig-preview-box img { max-width: 100%; height: 60px; object-fit: contain; }
+        .sig-preview-box span { font-size: 0.7rem; color: black; font-weight: bold; display: block; }
     </style>
 </head>
 <body>
@@ -118,24 +122,22 @@
 <!-- TAB 1: MATCH SUBMISSION & REVIEW -->
 <div id="tab-submission" class="tab-content active">
     <div class="card">
-        <h2>📥 Import / Add Parsed Match Data</h2>
-        <p style="font-size: 0.85rem; color: #94a3b8;">Paste your structured match payload or raw score data below, or build/import it from your frontend web app.</p>
+        <h2>📥 Import Raw Match Payload</h2>
+        <p style="font-size: 0.85rem; color: #94a3b8;">Paste your complete match message payload below. Team names and scores will be parsed automatically from the text.</p>
         
-        <div class="match-input-grid">
-            <div>
-                <label>Home Team Name</label>
-                <input type="text" id="input-home-team" placeholder="e.g. BREAK & RUN">
-            </div>
-            <div>
-                <label>Visiting Team Name</label>
-                <input type="text" id="input-visit-team" placeholder="e.g. CORNER POCKET">
-            </div>
+        <label>Raw Match Text Payload</label>
+        <textarea id="input-payload" rows="6" placeholder="8-BALL CASH LEAGUE&#10;[HT] TEAM ALPHA (12)&#10;[VT] TEAM BETA (6)&#10;&#10;Gm1 PlayerA (W) vs PlayerB..."></textarea>
+        
+        <div style="margin-top: 15px;">
+            <label style="font-size: 0.8rem; color: var(--gold);">Optional: Home Captain Signature (Base64 / DataURL)</label>
+            <input type="text" id="input-home-sig" placeholder="data:image/png;base64,...">
         </div>
-        
-        <label>Raw Game Payload / Notes (Parsed from App Text format)</label>
-        <textarea id="input-payload" rows="4" placeholder="Gm1 PlayerA (W) vs PlayerB&#10;Gm2 PlayerC vs PlayerD (W) (TR)..."></textarea>
-        
-        <button class="btn" onclick="stageMatch()">Add Match to Queue</button>
+        <div>
+            <label style="font-size: 0.8rem; color: var(--gold);">Optional: Visiting Captain Signature (Base64 / DataURL)</label>
+            <input type="text" id="input-visit-sig" placeholder="data:image/png;base64,...">
+        </div>
+
+        <button class="btn" onclick="stageMatch()" style="margin-top: 10px;">Add Match to Queue</button>
     </div>
 
     <div class="card">
@@ -143,8 +145,8 @@
         <table class="match-list-table">
             <thead>
                 <tr>
-                    <th>Matchup</th>
-                    <th>Score (H - V)</th>
+                    <th>Parsed Matchup</th>
+                    <th>Score</th>
                     <th>Status</th>
                     <th>Actions</th>
                 </tr>
@@ -177,7 +179,7 @@
 
     <div class="card">
         <h2>📤 Batch TSV Payload Generator</h2>
-        <p style="font-size: 0.85rem; color: #94a3b8;">Once your matches are reviewed, approved, and locked, they are serialized into a clean Tab-Separated Values (TSV) payload ready for sheet ingestion.</p>
+        <p style="font-size: 0.85rem; color: #94a3b8;">Approved matches are packaged with parsed team data, match payloads, and signature data URLs.</p>
         <label>Generated TSV Data Stream</label>
         <pre id="tsv-output-box"># Staged data will appear here after batch approval...</pre>
         <div style="display: flex; gap: 10px; margin-top: 15px;">
@@ -192,19 +194,21 @@
     <div class="modal-content">
         <h2>🔍 Review & Modify Match Data</h2>
         <input type="hidden" id="edit-match-index">
-        <div class="match-input-grid">
-            <div>
-                <label>Home Team</label>
-                <input type="text" id="edit-home-team">
-            </div>
-            <div>
-                <label>Visiting Team</label>
-                <input type="text" id="edit-visit-team">
-            </div>
-        </div>
-        <label>Match Summary / Game Results Data</label>
+        <label>Match Payload / Text Data</label>
         <textarea id="edit-match-payload" rows="8"></textarea>
         
+        <label style="margin-top: 10px; display: block; font-size: 0.85rem; color: var(--gold);">Signatures Attached:</label>
+        <div class="sig-preview-grid">
+            <div class="sig-preview-box">
+                <span>Home Captain</span>
+                <img id="edit-home-sig-preview" src="" alt="No Home Signature">
+            </div>
+            <div class="sig-preview-box">
+                <span>Visiting Captain</span>
+                <img id="edit-visit-sig-preview" src="" alt="No Visit Signature">
+            </div>
+        </div>
+
         <div style="display: flex; justify-content: space-between; margin-top: 20px;">
             <button class="btn btn-danger" onclick="deleteStagedMatch()">Delete Entry</button>
             <div style="display: flex; gap: 10px;">
@@ -219,7 +223,6 @@
     let stagedMatches = [];
     let finalizedTSV = "";
 
-    // Tab Navigation
     function switchTab(evt, tabId) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -227,7 +230,6 @@
         evt.currentTarget.classList.add('active');
     }
 
-    // Load saved Webhook URL on startup
     window.addEventListener('DOMContentLoaded', () => {
         const savedUrl = localStorage.getItem('league_webhook_url');
         if (savedUrl) {
@@ -249,8 +251,7 @@
         if (!url) { alert('Please enter an endpoint first.'); return; }
         updateSheetStatus('off', 'TESTING CONNECTION...');
         try {
-            // Simple ping check via GET/NO-CORS or standard fetch
-            const res = await fetch(url, { method: 'GET', mode: 'no-cors' });
+            await fetch(url, { method: 'GET', mode: 'no-cors' });
             updateSheetStatus('success', 'CONNECTION REACHABLE');
             alert('Endpoint reachable!');
         } catch (err) {
@@ -269,29 +270,53 @@
         txt.innerText = 'CONNECTION: ' + text;
     }
 
-    // Match Staging Logic
-    function stageMatch() {
-        const home = document.getElementById('input-home-team').value.trim();
-        const visit = document.getElementById('input-visit-team').value.trim();
-        const payload = document.getElementById('input-payload').value.trim();
+    // Parse team and scores from the text payload automatically
+    function parseMatchDetails(payload) {
+        let homeTeam = "Unknown Home";
+        let visitTeam = "Unknown Visit";
+        let scoreText = "N/A";
 
-        if (!home || !visit) {
-            alert('Please specify both Home and Visiting team names.');
+        const htMatch = payload.match(/\[HT\]\s+(.*?)(?:\s*\((\d+)\))?$/m);
+        const vtMatch = payload.match(/\[VT\]\s+(.*?)(?:\s*\((\d+)\))?$/m);
+
+        if (htMatch) homeTeam = htMatch[1].trim();
+        if (vtMatch) visitTeam = vtMatch[1].trim();
+
+        const hScoreMatch = payload.match(/\[HT\].*?\((\d+)\)/);
+        const vScoreMatch = payload.match(/\[VT\].*?\((\d+)\)/);
+        if (hScoreMatch && vScoreMatch) {
+            scoreText = `${hScoreMatch[1]} - ${vScoreMatch[1]}`;
+        }
+
+        return { homeTeam, visitTeam, scoreText };
+    }
+
+    function stageMatch() {
+        const payload = document.getElementById('input-payload').value.trim();
+        const homeSig = document.getElementById('input-home-sig').value.trim();
+        const visitSig = document.getElementById('input-visit-sig').value.trim();
+
+        if (!payload) {
+            alert('Please provide a raw text match payload.');
             return;
         }
 
+        const parsed = parseMatchDetails(payload);
+
         stagedMatches.push({
             id: Date.now(),
-            home,
-            visit,
-            payload: payload || 'No explicit game breakdown provided.',
+            payload,
+            homeTeam: parsed.homeTeam,
+            visitTeam: parsed.visitTeam,
+            scoreText: parsed.scoreText,
+            homeSig,
+            visitSig,
             approved: false
         });
 
-        // Clear inputs
-        document.getElementById('input-home-team').value = '';
-        document.getElementById('input-visit-team').value = '';
         document.getElementById('input-payload').value = '';
+        document.getElementById('input-home-sig').value = '';
+        document.getElementById('input-visit-sig').value = '';
 
         renderStagedQueue();
     }
@@ -307,8 +332,8 @@
 
         tbody.innerHTML = stagedMatches.map((m, idx) => `
             <tr>
-                <td><strong>${m.home}</strong> vs <strong>${m.visit}</strong></td>
-                <td>Parsed Data</td>
+                <td><strong>${m.homeTeam}</strong> vs <strong>${m.visitTeam}</strong></td>
+                <td>${m.scoreText}</td>
                 <td><span class="badge ${m.approved ? 'badge-approved' : 'badge-pending'}">${m.approved ? 'Approved' : 'Pending Review'}</span></td>
                 <td>
                     <button class="btn" style="padding: 6px 12px; font-size: 0.75rem;" onclick="openReviewModal(${idx})">Review / Edit</button>
@@ -320,13 +345,14 @@
         document.getElementById('batch-approve-btn').style.opacity = '1';
     }
 
-    // Review Modal Handlers
     function openReviewModal(idx) {
         const match = stagedMatches[idx];
         document.getElementById('edit-match-index').value = idx;
-        document.getElementById('edit-home-team').value = match.home;
-        document.getElementById('edit-visit-team').value = match.visit;
         document.getElementById('edit-match-payload').value = match.payload;
+        
+        document.getElementById('edit-home-sig-preview').src = match.homeSig || '';
+        document.getElementById('edit-visit-sig-preview').src = match.visitSig || '';
+
         document.getElementById('review-modal').style.display = 'flex';
     }
 
@@ -336,9 +362,13 @@
 
     function saveMatchEdits() {
         const idx = document.getElementById('edit-match-index').value;
-        stagedMatches[idx].home = document.getElementById('edit-home-team').value;
-        stagedMatches[idx].visit = document.getElementById('edit-visit-team').value;
-        stagedMatches[idx].payload = document.getElementById('edit-match-payload').value;
+        const newPayload = document.getElementById('edit-match-payload').value;
+        const parsed = parseMatchDetails(newPayload);
+
+        stagedMatches[idx].payload = newPayload;
+        stagedMatches[idx].homeTeam = parsed.homeTeam;
+        stagedMatches[idx].visitTeam = parsed.visitTeam;
+        stagedMatches[idx].scoreText = parsed.scoreText;
         stagedMatches[idx].approved = true;
 
         closeReviewModal();
@@ -352,28 +382,24 @@
         renderStagedQueue();
     }
 
-    // TSV Batch Generation
     function lockAndGenerateBatch() {
         const unapproved = stagedMatches.filter(m => !m.approved);
         if (unapproved.length > 0) {
             if (!confirm(`You have ${unapproved.length} unapproved match(es). Lock and generate batch anyway?`)) return;
         }
 
-        // Generate TSV format: HomeTeam \t VisitingTeam \t Timestamp \t PayloadData
-        let tsvRows = ["HomeTeam\tVisitingTeam\tTimestamp\tMatchPayload"];
+        let tsvRows = ["HomeTeam\tVisitingTeam\tTimestamp\tMatchPayload\tHomeSignature\tVisitingSignature"];
         stagedMatches.forEach(m => {
             const cleanPayload = m.payload.replace(/\r?\n/g, ' | ');
-            tsvRows.push(`${m.home}\t${m.visit}\t${new Date().toISOString()}\t${cleanPayload}`);
+            tsvRows.push(`${m.homeTeam}\t${m.visitTeam}\t${new Date().toISOString()}\t${cleanPayload}\t${m.homeSig}\t${m.visitSig}`);
         });
 
         finalizedTSV = tsvRows.join('\n');
         document.getElementById('tsv-output-box').innerText = finalizedTSV;
 
-        // Enable sheet send button if webhook exists
         document.getElementById('send-sheet-btn').disabled = false;
         document.getElementById('send-sheet-btn').style.opacity = '1';
 
-        // Switch to export tab automatically for convenience
         switchTab({ currentTarget: document.querySelectorAll('.tab-btn')[1] }, 'tab-sheets');
     }
 
@@ -391,7 +417,7 @@
 
         document.getElementById('send-sheet-btn').innerText = 'SENDING...';
         try {
-            const response = await fetch(url, {
+            await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: finalizedTSV
