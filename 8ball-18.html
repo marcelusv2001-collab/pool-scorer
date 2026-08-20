@@ -131,12 +131,13 @@
         .win-btn.h { background: var(--home); color: white; border-color: white; box-shadow: 0 0 10px var(--home); }
         .win-btn.v { background: var(--visit); color: white; border-color: white; box-shadow: 0 0 10px var(--visit); }
 
-        footer { background: #0f172a; padding: 16px; display: grid; grid-template-columns: 1fr 2.5fr 1fr; align-items: center; gap: 8px; flex-shrink: 0; border-top: 1px solid #1e293b; }
+        footer { background: #0f172a; padding: 16px; display: grid; grid-template-columns: 1fr 2fr 1fr; align-items: center; gap: 8px; flex-shrink: 0; border-top: 1px solid #1e293b; }
         .score-chip { text-align: center; }
         .score-chip span { font-size: 1.6rem; font-weight: 900; color: var(--gold); }
         .actions { display: flex; flex-direction: column; gap: 6px; }
         .btn-submit { background: var(--gold); color: black; border: none; padding: 12px; border-radius: 10px; font-weight: 900; text-transform: uppercase; cursor: pointer; }
-        .btn-copy { background: #334155; color: white; border: none; padding: 6px; border-radius: 6px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; cursor: pointer; }
+        .approval-container { display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 6px; font-size: 0.75rem; color: #94a3b8; }
+        .approval-container input { cursor: pointer; width: 14px; height: 14px; }
     </style>
 </head>
 <body onclick="closeAllDropdowns(event)">
@@ -182,14 +183,14 @@
 <main id="scoring-interface">
     <div class="team-banner">
         <div class="input-wrapper">
-            <input type="text" id="h-team" placeholder="Home Team" readonly onclick="showTeamDropdown(event, 'h-team')">
+            <input type="text" id="h-team" placeholder="Home Team" readonly onclick="if(!isMatchApproved()) showTeamDropdown(event, 'h-team')">
             <div id="h-team-menu" class="custom-dropdown"></div>
-            <button class="voice-btn" onclick="startVoice('h-team')">🎤</button>
+            <button class="voice-btn" onclick="if(!isMatchApproved()) startVoice('h-team')">🎤</button>
         </div>
         <div class="input-wrapper">
-            <input type="text" id="v-team" placeholder="Visiting Team" readonly onclick="showTeamDropdown(event, 'v-team')">
+            <input type="text" id="v-team" placeholder="Visiting Team" readonly onclick="if(!isMatchApproved()) showTeamDropdown(event, 'v-team')">
             <div id="v-team-menu" class="custom-dropdown"></div>
-            <button class="voice-btn" onclick="startVoice('v-team')">🎤</button>
+            <button class="voice-btn" onclick="if(!isMatchApproved()) startVoice('v-team')">🎤</button>
         </div>
     </div>
     <div class="game-grid" id="grid"></div>
@@ -198,8 +199,11 @@
 <footer>
     <div class="score-chip"><span><span id="h-score">0</span></span></div>
     <div class="actions">
-        <button class="btn-submit" onclick="handleSubmit()">Submit & Text</button>
-        <button class="btn-copy" onclick="copyResults()">📋 Copy Text</button>
+        <button class="btn-submit" onclick="handleSubmit()">Submit Match</button>
+        <div class="approval-container">
+            <input type="checkbox" id="captain-approval" onchange="toggleApproval(this)">
+            <label for="captain-approval">Captain Approve</label>
+        </div>
     </div>
     <div class="score-chip"><span><span id="v-score">0</span></span></div>
 </footer>
@@ -207,6 +211,7 @@
 <script>
     let MASTER_ROSTERS = {};
     let MASTER_SCHEDULE = [];
+    let isApproved = false;
     let state = Array.from({length: 18}, (_, i) => ({
         id: i + 1, h: "", v: "", hTR: false, h8B: false, vTR: false, v8B: false, win: null, hManual: false, vManual: false
     }));
@@ -302,6 +307,7 @@
     }
 
     function loadSelectedMatch() {
+        if (isMatchApproved()) return;
         const date = document.getElementById('week-selector').value;
         const matchIdx = document.getElementById('match-selector').value;
         if (date === "" || matchIdx === "") return;
@@ -314,6 +320,7 @@
     }
 
     function clearSelectedMatch() {
+        if (isMatchApproved()) return;
         document.getElementById('week-selector').value = "";
         document.getElementById('match-selector').value = "";
         document.getElementById('h-team').value = "";
@@ -323,6 +330,7 @@
     }
 
     function showTeamDropdown(e, id) {
+        if (isMatchApproved()) return;
         e.stopPropagation();
         closeAllDropdowns();
         const menu = document.getElementById(id + '-menu');
@@ -334,6 +342,7 @@
     }
 
     function showPlayerDropdown(e, side, gameIdx) {
+        if (isMatchApproved()) return;
         e.stopPropagation();
         closeAllDropdowns();
         const id = side + '-in-' + (gameIdx + 1);
@@ -347,6 +356,7 @@
     }
 
     function manualInput(id, idx = null, side = null) {
+        if (isMatchApproved()) return;
         const input = document.getElementById(id);
         input.readOnly = false;
         input.value = "";
@@ -363,6 +373,7 @@
 
     function selectValue(id, val) { document.getElementById(id).value = val; closeAllDropdowns(); }
     function selectPlayer(side, idx, val) { 
+        if (isMatchApproved()) return;
         state[idx][side] = val; 
         state[idx][side + 'Manual'] = false;
         draw(); 
@@ -404,6 +415,7 @@
     }
 
     function setExclusiveMarker(gameId, clickedKey) {
+        if (isMatchApproved()) return;
         const g = state[gameId - 1];
         const active = g[clickedKey];
         g.hTR = g.h8B = g.vTR = g.v8B = false;
@@ -412,12 +424,14 @@
     }
 
     function cycleWin(id) {
+        if (isMatchApproved()) return;
         const g = state[id-1];
         g.win = g.win === null ? 'h' : (g.win === 'h' ? 'v' : null);
         draw();
     }
 
     function resetBoard() {
+        if (isMatchApproved()) { alert("Match is approved and locked."); return; }
         if(confirm("Reset entire score sheet?")) {
             state.forEach(g => { g.h=""; g.v=""; g.hTR=g.h8B=g.vTR=g.v8B=false; g.win=null; g.hManual=false; g.vManual=false; });
             document.getElementById('h-team').value = ""; document.getElementById('v-team').value = "";
@@ -426,6 +440,7 @@
     }
 
     function startVoice(targetId, idx = null, side = null) {
+        if (isMatchApproved()) return;
         const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
         if(!Speech) return;
         const recognition = new Speech();
@@ -462,11 +477,21 @@
 
     function handleSubmit() {
         const msg = buildMessage();
-        if (navigator.share) navigator.share({ text: msg }).catch(() => {});
-        else window.location.href = `sms:?body=${encodeURIComponent(msg)}`;
+        if (navigator.share) {
+            navigator.share({ text: msg }).catch(() => {});
+        } else {
+            window.location.href = `sms:?body=${encodeURIComponent(msg)}`;
+        }
     }
 
-    function copyResults() { navigator.clipboard.writeText(buildMessage()).then(() => alert("Copied!")); }
+    function toggleApproval(checkbox) {
+        isApproved = checkbox.checked;
+    }
+
+    function isMatchApproved() {
+        return isApproved;
+    }
+
     function updateStatsButton(url) { const btn = document.getElementById('view-stats'); if (url) { btn.href = url; btn.style.display = 'block'; } }
     function clearSettings() { if(confirm("Clear settings?")) { localStorage.clear(); location.reload(); } }
 </script>
