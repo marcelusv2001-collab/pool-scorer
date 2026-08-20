@@ -146,9 +146,11 @@
         .sig-content {
             background: var(--slate); border: 2px solid var(--gold);
             border-radius: 12px; padding: 20px; width: 100%; max-width: 450px;
-            display: flex; flex-direction: column; gap: 15px;
+            display: flex; flex-direction: column; gap: 15px; position: relative;
         }
-        .sig-content h3 { color: var(--gold); margin: 0; font-size: 1.1rem; text-align: center; }
+        .sig-header-row { display: flex; justify-content: space-between; align-items: center; }
+        .sig-content h3 { color: var(--gold); margin: 0; font-size: 1.1rem; }
+        .sig-close-btn { background: none; border: none; color: #94a3b8; font-size: 1.2rem; cursor: pointer; padding: 0; }
         .sig-pad-wrapper {
             background: white; border-radius: 8px; overflow: hidden; border: 2px solid #334155;
             touch-action: none; position: relative;
@@ -177,7 +179,10 @@
 <!-- Signature Modal -->
 <div id="sig-modal">
     <div class="sig-content">
-        <h3 id="sig-title">Home Captain Signature</h3>
+        <div class="sig-header-row">
+            <h3 id="sig-title">Home Captain Signature</h3>
+            <button class="sig-close-btn" onclick="closeSignatureModal()">✕</button>
+        </div>
         <div class="sig-pad-wrapper">
             <canvas id="sig-canvas" class="sig-canvas"></canvas>
         </div>
@@ -267,7 +272,6 @@
         canvas = document.getElementById('sig-canvas');
         ctx = canvas.getContext('2d');
         
-        // Handle resizing internal resolution cleanly
         function resizeCanvas() {
             const rect = canvas.getBoundingClientRect();
             canvas.width = rect.width * window.devicePixelRatio;
@@ -278,20 +282,17 @@
             ctx.strokeStyle = '#000000';
         }
         
-        // Trigger resize once modal becomes visible or on load
         window.addEventListener('resize', () => {
             if(document.getElementById('sig-modal').style.display === 'flex') {
                 resizeCanvas();
             }
         });
 
-        // Mouse events
         canvas.addEventListener('mousedown', startDraw);
         canvas.addEventListener('mousemove', drawMove);
         canvas.addEventListener('mouseup', stopDraw);
         canvas.addEventListener('mouseleave', stopDraw);
 
-        // Touch events
         canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDraw(e.touches[0]); });
         canvas.addEventListener('touchmove', (e) => { e.preventDefault(); drawMove(e.touches[0]); });
         canvas.addEventListener('touchend', (e) => { e.preventDefault(); stopDraw(); });
@@ -337,7 +338,6 @@
             return;
         }
 
-        // Start workflow: Home Captain first
         currentSigningRole = 'home';
         const hTeamName = document.getElementById('h-team').value || "Home Team";
         document.getElementById('sig-title').innerText = `${hTeamName} (Home Captain) Signature`;
@@ -357,7 +357,6 @@
     }
 
     function confirmSignature() {
-        // Check if canvas has been drawn on (simple check: inspect image data or require interaction)
         const blank = document.createElement('canvas');
         blank.width = canvas.width;
         blank.height = canvas.height;
@@ -370,7 +369,6 @@
 
         if (currentSigningRole === 'home') {
             homeSignatureData = dataUrl;
-            // Move on to Visiting Captain
             currentSigningRole = 'visit';
             const vTeamName = document.getElementById('v-team').value || "Visiting Team";
             document.getElementById('sig-title').innerText = `${vTeamName} (Visiting Captain) Signature`;
@@ -386,11 +384,39 @@
 
     function proceedToSendText() {
         const msg = buildMessage();
+        
+        // Build files array if browser/device supports Web Share API level 2 file sharing (attaching images)
+        let shareData = { text: msg };
+        
+        if (navigator.canShare && homeSignatureData && visitingSignatureData) {
+            try {
+                // Convert Base64 data URLs to File objects for rich attachment sharing
+                const homeFile = dataURLtoFile(homeSignatureData, 'home_captain_signature.png');
+                const visitFile = dataURLtoFile(visitingSignatureData, 'visiting_captain_signature.png');
+                const testData = { files: [homeFile, visitFile], text: msg };
+                if (navigator.canShare(testData)) {
+                    shareData = testData;
+                }
+            } catch (err) {
+                console.log('File sharing fallback to text only:', err);
+            }
+        }
+
         if (navigator.share) {
-            navigator.share({ text: msg }).catch(() => {});
+            navigator.share(shareData).catch(() => {});
         } else {
+            // Standard fallback SMS link (text only if files aren't supported by legacy client)
             window.location.href = `sms:?body=${encodeURIComponent(msg)}`;
         }
+    }
+
+    function dataURLtoFile(dataurl, filename) {
+        let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+            bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+        while(n--){
+            u8arr[n] = bstr.charCodeAt(n);
+        }
+        return new File([u8arr], filename, {type:mime});
     }
 
     function toggleHelp() {
@@ -641,7 +667,7 @@
                 msg += `Gm${g.id} ${hName}${g.win === 'h' ? ' (W)' : ''}${hM} vs ${vName}${g.win === 'v' ? ' (W)' : ''}${vM}\n--\n--\n`;
             }
         });
-        return msg + `\nTr= (TR) 8bb= (8BB)\n✅ Verified & Signed by Captains`;
+        return msg + `\nTr= (TR) 8bb= (8BB)\n✅ Verified & Signed by Both Captains`;
     }
 
     function isMatchApproved() {
