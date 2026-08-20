@@ -135,9 +135,31 @@
         .score-chip { text-align: center; }
         .score-chip span { font-size: 1.6rem; font-weight: 900; color: var(--gold); }
         .actions { display: flex; flex-direction: column; gap: 6px; }
-        .btn-submit { background: var(--gold); color: black; border: none; padding: 12px; border-radius: 10px; font-weight: 900; text-transform: uppercase; cursor: pointer; }
-        .approval-container { display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 6px; font-size: 0.75rem; color: #94a3b8; }
-        .approval-container input { cursor: pointer; width: 14px; height: 14px; }
+        .btn-submit { background: var(--gold); color: black; border: none; padding: 12px; border-radius: 10px; font-weight: 900; text-transform: uppercase; cursor: pointer; width: 100%; }
+
+        /* Signature Modal Styles */
+        #sig-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 3000;
+            display: none; align-items: center; justify-content: center; padding: 15px;
+        }
+        .sig-content {
+            background: var(--slate); border: 2px solid var(--gold);
+            border-radius: 12px; padding: 20px; width: 100%; max-width: 450px;
+            display: flex; flex-direction: column; gap: 15px;
+        }
+        .sig-content h3 { color: var(--gold); margin: 0; font-size: 1.1rem; text-align: center; }
+        .sig-pad-wrapper {
+            background: white; border-radius: 8px; overflow: hidden; border: 2px solid #334155;
+            touch-action: none; position: relative;
+        }
+        canvas.sig-canvas {
+            width: 100%; height: 160px; display: block; cursor: crosshair;
+        }
+        .sig-btns { display: flex; gap: 10px; }
+        .btn-sig-action { flex: 1; padding: 10px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; font-size: 0.85rem; }
+        .btn-sig-clear { background: #475569; color: white; }
+        .btn-sig-confirm { background: var(--gold); color: black; }
     </style>
 </head>
 <body onclick="closeAllDropdowns(event)">
@@ -149,6 +171,20 @@
         <p>2. <b>SCORING:</b> Tap 'W' to cycle wins. Home = <b>White Border</b>, Visit = <b>Red Border</b>.</p>
         <p>3. <b>DATA:</b> Manual player entries are saved instantly.</p>
         <button class="help-close" onclick="toggleHelp()">GOT IT!</button>
+    </div>
+</div>
+
+<!-- Signature Modal -->
+<div id="sig-modal">
+    <div class="sig-content">
+        <h3 id="sig-title">Home Captain Signature</h3>
+        <div class="sig-pad-wrapper">
+            <canvas id="sig-canvas" class="sig-canvas"></canvas>
+        </div>
+        <div class="sig-btns">
+            <button class="btn-sig-action btn-sig-clear" onclick="clearSignature()">Clear</button>
+            <button class="btn-sig-action btn-sig-confirm" onclick="confirmSignature()">Accept & Continue</button>
+        </div>
     </div>
 </div>
 
@@ -199,11 +235,7 @@
 <footer>
     <div class="score-chip"><span><span id="h-score">0</span></span></div>
     <div class="actions">
-        <button class="btn-submit" onclick="handleSubmit()">Submit Match</button>
-        <div class="approval-container">
-            <input type="checkbox" id="captain-approval" onchange="toggleApproval(this)">
-            <label for="captain-approval">Captain Approve</label>
-        </div>
+        <button class="btn-submit" onclick="handleSubmitMatch()">Submit Match</button>
     </div>
     <div class="score-chip"><span><span id="v-score">0</span></span></div>
 </footer>
@@ -212,9 +244,15 @@
     let MASTER_ROSTERS = {};
     let MASTER_SCHEDULE = [];
     let isApproved = false;
+    let homeSignatureData = null;
+    let visitingSignatureData = null;
+    let currentSigningRole = 'home'; // 'home' or 'visit'
+
     let state = Array.from({length: 18}, (_, i) => ({
         id: i + 1, h: "", v: "", hTR: false, h8B: false, vTR: false, v8B: false, win: null, hManual: false, vManual: false
     }));
+
+    let canvas, ctx, drawing = false;
 
     window.addEventListener('DOMContentLoaded', () => {
         const savedRosterUrl = localStorage.getItem('user_sheet_url');
@@ -222,7 +260,138 @@
         if (savedRosterUrl) fetchRosters(savedRosterUrl);
         if (savedStatsUrl) updateStatsButton(savedStatsUrl);
         draw();
+        initSignaturePad();
     });
+
+    function initSignaturePad() {
+        canvas = document.getElementById('sig-canvas');
+        ctx = canvas.getContext('2d');
+        
+        // Handle resizing internal resolution cleanly
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#000000';
+        }
+        
+        // Trigger resize once modal becomes visible or on load
+        window.addEventListener('resize', () => {
+            if(document.getElementById('sig-modal').style.display === 'flex') {
+                resizeCanvas();
+            }
+        });
+
+        // Mouse events
+        canvas.addEventListener('mousedown', startDraw);
+        canvas.addEventListener('mousemove', drawMove);
+        canvas.addEventListener('mouseup', stopDraw);
+        canvas.addEventListener('mouseleave', stopDraw);
+
+        // Touch events
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDraw(e.touches[0]); });
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); drawMove(e.touches[0]); });
+        canvas.addEventListener('touchend', (e) => { e.preventDefault(); stopDraw(); });
+
+        window.resizeSigCanvas = resizeCanvas;
+    }
+
+    function getPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: (e.clientX - rect.left),
+            y: (e.clientY - rect.top)
+        };
+    }
+
+    function startDraw(e) {
+        drawing = true;
+        const pos = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+    }
+
+    function drawMove(e) {
+        if (!drawing) return;
+        const pos = getPos(e);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+    }
+
+    function stopDraw() {
+        if (!drawing) return;
+        drawing = false;
+        ctx.closePath();
+    }
+
+    function clearSignature() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function handleSubmitMatch() {
+        if (isApproved) {
+            proceedToSendText();
+            return;
+        }
+
+        // Start workflow: Home Captain first
+        currentSigningRole = 'home';
+        const hTeamName = document.getElementById('h-team').value || "Home Team";
+        document.getElementById('sig-title').innerText = `${hTeamName} (Home Captain) Signature`;
+        openSignatureModal();
+    }
+
+    function openSignatureModal() {
+        document.getElementById('sig-modal').style.display = 'flex';
+        setTimeout(() => {
+            if(window.resizeSigCanvas) window.resizeSigCanvas();
+            clearSignature();
+        }, 50);
+    }
+
+    function closeSignatureModal() {
+        document.getElementById('sig-modal').style.display = 'none';
+    }
+
+    function confirmSignature() {
+        // Check if canvas has been drawn on (simple check: inspect image data or require interaction)
+        const blank = document.createElement('canvas');
+        blank.width = canvas.width;
+        blank.height = canvas.height;
+        if (canvas.toDataURL() === blank.toDataURL()) {
+            alert("Please provide a signature before continuing.");
+            return;
+        }
+
+        const dataUrl = canvas.toDataURL();
+
+        if (currentSigningRole === 'home') {
+            homeSignatureData = dataUrl;
+            // Move on to Visiting Captain
+            currentSigningRole = 'visit';
+            const vTeamName = document.getElementById('v-team').value || "Visiting Team";
+            document.getElementById('sig-title').innerText = `${vTeamName} (Visiting Captain) Signature`;
+            clearSignature();
+            setTimeout(() => { if(window.resizeSigCanvas) window.resizeSigCanvas(); }, 50);
+        } else {
+            visitingSignatureData = dataUrl;
+            isApproved = true;
+            closeSignatureModal();
+            proceedToSendText();
+        }
+    }
+
+    function proceedToSendText() {
+        const msg = buildMessage();
+        if (navigator.share) {
+            navigator.share({ text: msg }).catch(() => {});
+        } else {
+            window.location.href = `sms:?body=${encodeURIComponent(msg)}`;
+        }
+    }
 
     function toggleHelp() {
         const modal = document.getElementById('help-modal');
@@ -431,7 +600,7 @@
     }
 
     function resetBoard() {
-        if (isMatchApproved()) { alert("Match is approved and locked."); return; }
+        if (isMatchApproved()) { alert("Match is approved, signed, and locked."); return; }
         if(confirm("Reset entire score sheet?")) {
             state.forEach(g => { g.h=""; g.v=""; g.hTR=g.h8B=g.vTR=g.v8B=false; g.win=null; g.hManual=false; g.vManual=false; });
             document.getElementById('h-team').value = ""; document.getElementById('v-team').value = "";
@@ -472,20 +641,7 @@
                 msg += `Gm${g.id} ${hName}${g.win === 'h' ? ' (W)' : ''}${hM} vs ${vName}${g.win === 'v' ? ' (W)' : ''}${vM}\n--\n--\n`;
             }
         });
-        return msg + `\nTr= (TR) 8bb= (8BB)`;
-    }
-
-    function handleSubmit() {
-        const msg = buildMessage();
-        if (navigator.share) {
-            navigator.share({ text: msg }).catch(() => {});
-        } else {
-            window.location.href = `sms:?body=${encodeURIComponent(msg)}`;
-        }
-    }
-
-    function toggleApproval(checkbox) {
-        isApproved = checkbox.checked;
+        return msg + `\nTr= (TR) 8bb= (8BB)\n✅ Verified & Signed by Captains`;
     }
 
     function isMatchApproved() {
