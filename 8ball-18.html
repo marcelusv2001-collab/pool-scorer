@@ -156,7 +156,7 @@
         <button class="reset-btn" onclick="resetBoard()">🗑️</button>
         <a id="view-stats" href="#" target="_blank" class="stats-link-btn">📊 STATS</a>
     </div>
-    <h1>8-Ball 18 Games</h1>
+    <h1>Lebanon 18 Games</h1>
     <button class="help-trigger" onclick="toggleHelp()">❓</button>
 </header>
 
@@ -208,7 +208,7 @@
     let MASTER_ROSTERS = {};
     let MASTER_SCHEDULE = [];
     let state = Array.from({length: 18}, (_, i) => ({
-        id: i + 1, h: "", v: "", hTR: false, h8B: false, vTR: false, v8B: false, win: null
+        id: i + 1, h: "", v: "", hTR: false, h8B: false, vTR: false, v8B: false, win: null, hManual: false, vManual: false
     }));
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -351,13 +351,22 @@
         input.readOnly = false;
         input.value = "";
         input.focus();
-        input.oninput = (e) => { if(idx !== null) state[idx][side] = e.target.value; };
+        input.oninput = (e) => { 
+            if(idx !== null) { 
+                state[idx][side] = e.target.value; 
+                state[idx][side + 'Manual'] = true; 
+            } 
+        };
         input.onblur = () => { input.readOnly = true; };
         closeAllDropdowns();
     }
 
     function selectValue(id, val) { document.getElementById(id).value = val; closeAllDropdowns(); }
-    function selectPlayer(side, idx, val) { state[idx][side] = val; draw(); }
+    function selectPlayer(side, idx, val) { 
+        state[idx][side] = val; 
+        state[idx][side + 'Manual'] = false;
+        draw(); 
+    }
     function closeAllDropdowns() { document.querySelectorAll('.custom-dropdown').forEach(d => d.style.display = 'none'); }
 
     function draw() {
@@ -410,7 +419,7 @@
 
     function resetBoard() {
         if(confirm("Reset entire score sheet?")) {
-            state.forEach(g => { g.h=""; g.v=""; g.hTR=g.h8B=g.vTR=g.v8B=false; g.win=null; });
+            state.forEach(g => { g.h=""; g.v=""; g.hTR=g.h8B=g.vTR=g.v8B=false; g.win=null; g.hManual=false; g.vManual=false; });
             document.getElementById('h-team').value = ""; document.getElementById('v-team').value = "";
             draw();
         }
@@ -426,7 +435,10 @@
         recognition.onresult = (e) => {
             const val = e.results[0][0].transcript;
             document.getElementById(targetId).value = val;
-            if(idx !== null) state[idx][side] = val;
+            if(idx !== null) {
+                state[idx][side] = val;
+                state[idx][side + 'Manual'] = true;
+            }
             draw();
         };
         recognition.start();
@@ -435,15 +447,17 @@
     function buildMessage() {
         const hT = (document.getElementById('h-team').value || "Home").toUpperCase();
         const vT = (document.getElementById('v-team').value || "Visit").toUpperCase();
-        let msg = `🎱 LEBANON 8-BALL\n🏠 ${hT} (${document.getElementById('h-score').innerText})\n🚗 ${vT} (${document.getElementById('v-score').innerText})\n\n`;
+        let msg = `🎱 LEBANON 8-BALL\nHT ${hT} (${document.getElementById('h-score').innerText})\nVT ${vT} (${document.getElementById('v-score').innerText})\n\n`;
         state.forEach(g => {
             if (g.h || g.v || g.win) {
-                const hM = (g.hTR ? '⭐' : '') + (g.h8B ? '🔥' : '');
-                const vM = (g.vTR ? '⭐' : '') + (g.v8B ? '🔥' : '');
-                msg += `Gm${g.id} ${g.h || "P"}${g.win === 'h' ? ' ✅' : ''}${hM} vs ${g.v || "P"}${g.win === 'v' ? ' ✅' : ''}${vM}\n`;
+                const hName = (g.h || "P") + (g.hManual ? ' (NP)' : '');
+                const vName = (g.v || "P") + (g.vManual ? ' (NP)' : '');
+                const hM = (g.hTR ? ' (TR)' : '') + (g.h8B ? ' (8BB)' : '');
+                const vM = (g.vTR ? ' (TR)' : '') + (g.v8B ? ' (8BB)' : '');
+                msg += `Gm${g.id} ${hName}${g.win === 'h' ? ' (W)' : ''}${hM} vs ${vName}${g.win === 'v' ? ' (W)' : ''}${vM}\n--\n--\n`;
             }
         });
-        return msg + `\nTr=⭐ 8bb=🔥`;
+        return msg + `\nTr= (TR) 8bb= (8BB)`;
     }
 
     function handleSubmit() {
