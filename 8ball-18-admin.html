@@ -366,7 +366,6 @@ function doGet(e) {
     const lines = payload.split(/\r?\n/);
     lines.forEach(line => {
         const trimmed = line.trim();
-        // Match line format: "Gm1 PlayerA (W) (TR) vs PlayerB" or "Gm2 PlayerC vs PlayerD (W) (8BB)"
         const gameRowRegex = /^(?:(Gm\d+)\s+)?(.*?)\s+vs\s+(.*)$/i;
         const matchResult = trimmed.match(gameRowRegex);
 
@@ -379,21 +378,25 @@ function doGet(e) {
             const homeWin = /\(W\)/i.test(homeRaw);
             const homeTR = /\(TR\)/i.test(homeRaw);
             const home8BB = /\(8BB\)/i.test(homeRaw);
+            const homeNP = /\(NP\)/i.test(homeRaw); // New Player flag
             const homePlayer = homeRaw.replace(/\((W|TR|8BB|NP)\)/gi, '').trim();
 
             // Extract flags for Visiting Player
             const visitWin = /\(W\)/i.test(visitRaw);
             const visitTR = /\(TR\)/i.test(visitRaw);
             const visit8BB = /\(8BB\)/i.test(visitRaw);
+            const visitNP = /\(NP\)/i.test(visitRaw); // New Player flag
             const visitPlayer = visitRaw.replace(/\((W|TR|8BB|NP)\)/gi, '').trim();
 
             individualGames.push({
                 gameNum,
                 homePlayer,
+                homeNP,
                 homeWin,
                 homeTR,
                 home8BB,
                 visitPlayer,
+                visitNP,
                 visitWin,
                 visitTR,
                 visit8BB
@@ -406,8 +409,8 @@ function doGet(e) {
             gameNum: "Overall",
             homePlayer: homeTeam,
             visitPlayer: visitTeam,
-            homeWin: false, homeTR: false, home8BB: false,
-            visitWin: false, visitTR: false, visit8BB: false
+            homeNP: false, homeWin: false, homeTR: false, home8BB: false,
+            visitNP: false, visitWin: false, visitTR: false, visit8BB: false
         });
     }
 
