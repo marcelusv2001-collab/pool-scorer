@@ -129,10 +129,10 @@
 <div id="tab-submission" class="tab-content active">
     <div class="card">
         <h2>📥 Import Raw Match Payload</h2>
-        <p style="font-size: 0.85rem; color: #94a3b8;">Paste your complete match message payload below. Team names and scores are parsed automatically from the text.</p>
+        <p style="font-size: 0.85rem; color: #94a3b8;">Paste your complete match message payload below. Team names, scores, individual matches, and types are parsed automatically.</p>
         
         <label>Raw Match Text Payload</label>
-        <textarea id="input-payload" rows="6" placeholder="8-BALL CASH LEAGUE&#10;[HT] TEAM ALPHA (12)&#10;[VT] TEAM BETA (6)&#10;&#10;Gm1 PlayerA (W) vs PlayerB..."></textarea>
+        <textarea id="input-payload" rows="6" placeholder="8-BALL CASH LEAGUE&#10;[HT] TEAM ALPHA (12)&#10;[VT] TEAM BETA (6)&#10;&#10;Gm1 PlayerA (W) vs PlayerB (TR)&#10;Gm2 PlayerC vs PlayerD (8BB)"></textarea>
         
         <div style="margin-top: 15px;">
             <label style="font-size: 0.8rem; color: var(--gold);">Optional: Home Captain Signature (Base64 / DataURL)</label>
@@ -152,7 +152,7 @@
             <thead>
                 <tr>
                     <th>Parsed Matchup</th>
-                    <th>Score</th>
+                    <th>Score / Games</th>
                     <th>Status</th>
                     <th>Actions</th>
                 </tr>
@@ -185,7 +185,7 @@
 
     <div class="card">
         <h2>📤 Batch TSV Payload Generator</h2>
-        <p style="font-size: 0.85rem; color: #94a3b8;">Approved matches are packaged with parsed team data, match payloads, and signature data URLs.</p>
+        <p style="font-size: 0.85rem; color: #94a3b8;">Approved match lines are packaged cleanly into individual row items with discrete columns.</p>
         <label>Generated TSV Data Stream</label>
         <pre id="tsv-output-box"># Staged data will appear here after batch approval...</pre>
         <div style="display: flex; gap: 10px; margin-top: 15px;">
@@ -233,18 +233,18 @@
         <div class="help-section">
             <h3>1. How to Process Matches</h3>
             <ul>
-                <li><strong>Paste Payload:</strong> Paste your app's raw match score message in Tab 1. The app automatically scans for tags like <code>[HT] Team Name (Score)</code> and <code>[VT] Team Name (Score)</code>.</li>
+                <li><strong>Paste Payload:</strong> Paste your app's raw match score message in Tab 1. The app automatically scans team names, scores, and individual frame rows (Home Player, Visiting Player, Type).</li>
                 <li><strong>Add Signatures:</strong> Paste the Base64/DataURL image string for the captain signatures into the signature fields.</li>
-                <li><strong>Review & Approve:</strong> Click <strong>Review / Edit</strong> on any staged match to verify the extracted details, view preview thumbnails of the signatures, and click <strong>Save & Approve</strong>.</li>
+                <li><strong>Review & Approve:</strong> Click <strong>Review / Edit</strong> on any staged match to verify extracted details, view preview thumbnails, and click <strong>Save & Approve</strong>.</li>
                 <li><strong>Lock Batch:</strong> Once all matches are approved, click <strong>Lock Batch for Export</strong> to generate your clean TSV data stream.</li>
             </ul>
         </div>
 
         <div class="help-section">
             <h3>2. Connecting Google Sheets (Google Apps Script)</h3>
-            <p>To let this web app write directly to your Google Sheet, follow these quick steps:</p>
+            <p>To let this web app write cleanly to your Google Sheet rows:</p>
             <ol>
-                <li>Open your target Google Sheet. Set Row 1 headers as: <code>HomeTeam</code> | <code>VisitingTeam</code> | <code>Timestamp</code> | <code>MatchPayload</code> | <code>HomeSignature</code> | <code>VisitingSignature</code></li>
+                <li>Open your target Google Sheet. Set Row 1 headers as: <code>HomeTeam</code> | <code>VisitingTeam</code> | <code>Timestamp</code> | <code>HomePlayer</code> | <code>VisitingPlayer</code> | <code>MatchType</code> | <code>GameNumber</code> | <code>HomeSignature</code> | <code>VisitingSignature</code></li>
                 <li>In top menu, click <strong>Extensions</strong> &gt; <strong>Apps Script</strong>.</li>
                 <li>Paste the script code provided below, and save the project.</li>
                 <li>Click <strong>Deploy</strong> (top right) &gt; <strong>New deployment</strong>. Choose type: <strong>Web app</strong>. Set <em>Execute as: Me</em> and <em>Who has access: Anyone</em>.</li>
@@ -349,6 +349,7 @@ function doGet(e) {
         let homeTeam = "Unknown Home";
         let visitTeam = "Unknown Visit";
         let scoreText = "N/A";
+        let individualGames = [];
 
         const htMatch = payload.match(/\[HT\]\s+(.*?)(?:\s*\((\d+)\))?$/m);
         const vtMatch = payload.match(/\[VT\]\s+(.*?)(?:\s*\((\d+)\))?$/m);
@@ -362,7 +363,34 @@ function doGet(e) {
             scoreText = `${hScoreMatch[1]} - ${vScoreMatch[1]}`;
         }
 
-        return { homeTeam, visitTeam, scoreText };
+        // Parse individual game lines, e.g. "Gm1 PlayerA (W) vs PlayerB (TR)" or variations
+        const lines = payload.split(/\r?\n/);
+        lines.forEach(line => {
+            const trimmed = line.trim();
+            // Looks for lines starting with Gm or match row layouts
+            const gameRowRegex = /^(?:(Gm\d+)\s+)?(.*?)\s+vs\s+(.*?)(?:\s*\(([^)]+)\))?$/i;
+            const matchResult = trimmed.match(gameRowRegex);
+            if (matchResult) {
+                individualGames.push({
+                    gameNum: matchResult[1] || "Gm",
+                    homePlayer: matchResult[2].replace(/\s*\(W\)\s*/i, '').trim(),
+                    visitPlayer: matchResult[3].replace(/\s*\([^)]*\)/g, '').trim(),
+                    matchType: matchResult[4] || "8BB"
+                });
+            }
+        });
+
+        // Fallback if no specific game lines are detected
+        if (individualGames.length === 0) {
+            individualGames.push({
+                gameNum: "Overall",
+                homePlayer: homeTeam,
+                visitPlayer: visitTeam,
+                matchType: "Team Match"
+            });
+        }
+
+        return { homeTeam, visitTeam, scoreText, individualGames };
     }
 
     function stageMatch() {
@@ -383,6 +411,7 @@ function doGet(e) {
             homeTeam: parsed.homeTeam,
             visitTeam: parsed.visitTeam,
             scoreText: parsed.scoreText,
+            individualGames: parsed.individualGames,
             homeSig,
             visitSig,
             approved: false
@@ -406,7 +435,7 @@ function doGet(e) {
 
         tbody.innerHTML = stagedMatches.map((m, idx) => `
             <tr>
-                <td><strong>${m.homeTeam}</strong> vs <strong>${m.visitTeam}</strong></td>
+                <td><strong>${m.homeTeam}</strong> vs <strong>${m.visitTeam}</strong><br><small style="color:#94a3b8;">(${m.individualGames.length} frame rows parsed)</small></td>
                 <td>${m.scoreText}</td>
                 <td><span class="badge ${m.approved ? 'badge-approved' : 'badge-pending'}">${m.approved ? 'Approved' : 'Pending Review'}</span></td>
                 <td>
@@ -443,6 +472,7 @@ function doGet(e) {
         stagedMatches[idx].homeTeam = parsed.homeTeam;
         stagedMatches[idx].visitTeam = parsed.visitTeam;
         stagedMatches[idx].scoreText = parsed.scoreText;
+        stagedMatches[idx].individualGames = parsed.individualGames;
         stagedMatches[idx].approved = true;
 
         closeReviewModal();
@@ -462,10 +492,13 @@ function doGet(e) {
             if (!confirm(`You have ${unapproved.length} unapproved match(es). Lock and generate batch anyway?`)) return;
         }
 
-        let tsvRows = ["HomeTeam\tVisitingTeam\tTimestamp\tMatchPayload\tHomeSignature\tVisitingSignature"];
+        let tsvRows = ["HomeTeam\tVisitingTeam\tTimestamp\tHomePlayer\tVisitingPlayer\tMatchType\tGameNumber\tHomeSignature\tVisitingSignature"];
+        
         stagedMatches.forEach(m => {
-            const cleanPayload = m.payload.replace(/\r?\n/g, ' | ');
-            tsvRows.push(`${m.homeTeam}\t${m.visitTeam}\t${new Date().toISOString()}\t${cleanPayload}\t${m.homeSig}\t${m.visitSig}`);
+            const timestamp = new Date().toISOString();
+            m.individualGames.forEach(game => {
+                tsvRows.push(`${m.homeTeam}\t${m.visitTeam}\t${timestamp}\t${game.homePlayer}\t${game.visitPlayer}\t${game.matchType}\t${game.gameNum}\t${m.homeSig}\t${m.visitSig}`);
+            });
         });
 
         finalizedTSV = tsvRows.join('\n');
