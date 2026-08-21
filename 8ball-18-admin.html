@@ -515,8 +515,8 @@ function doGet(e) {
         if (!confirm(`You have ${unapproved.length} unapproved match(es). Lock and generate batch anyway?`)) return;
     }
 
-    // Seamless headers matching main app output + metadata & signatures
-    let tsvRows = ["Timestamp\tHeader Title\tHome Team\tHome Score\tVisit Team\tVisit Score\tGame Number\tHome Player\tHome Non-Player\tHome Win\tHome TR\tHome 8BB\tVisit Player\tVisit Non-Player\tVisit Win\tVisit TR\tVisit 8BB\tHome Signature\tVisit Signature"];
+    // Start with an empty array so column headers are NOT sent
+    let tsvRows = [];
     
     stagedMatches.forEach(m => {
         const timestamp = new Date().toISOString();
@@ -556,7 +556,6 @@ function doGet(e) {
 
     switchTab({ currentTarget: document.querySelectorAll('.tab-btn')[1] }, 'tab-sheets');
 }
-
     function copyTSVToClipboard() {
         if (!finalizedTSV) { alert('No TSV payload available yet.'); return; }
         navigator.clipboard.writeText(finalizedTSV).then(() => {
