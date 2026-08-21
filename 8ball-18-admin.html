@@ -487,28 +487,52 @@ function doGet(e) {
     }
 
     function lockAndGenerateBatch() {
-        const unapproved = stagedMatches.filter(m => !m.approved);
-        if (unapproved.length > 0) {
-            if (!confirm(`You have ${unapproved.length} unapproved match(es). Lock and generate batch anyway?`)) return;
-        }
-
-        let tsvRows = ["HomeTeam\tVisitingTeam\tTimestamp\tHomePlayer\tVisitingPlayer\tMatchType\tGameNumber\tHomeSignature\tVisitingSignature"];
-        
-        stagedMatches.forEach(m => {
-            const timestamp = new Date().toISOString();
-            m.individualGames.forEach(game => {
-                tsvRows.push(`${m.homeTeam}\t${m.visitTeam}\t${timestamp}\t${game.homePlayer}\t${game.visitPlayer}\t${game.matchType}\t${game.gameNum}\t${m.homeSig}\t${m.visitSig}`);
-            });
-        });
-
-        finalizedTSV = tsvRows.join('\n');
-        document.getElementById('tsv-output-box').innerText = finalizedTSV;
-
-        document.getElementById('send-sheet-btn').disabled = false;
-        document.getElementById('send-sheet-btn').style.opacity = '1';
-
-        switchTab({ currentTarget: document.querySelectorAll('.tab-btn')[1] }, 'tab-sheets');
+    const unapproved = stagedMatches.filter(m => !m.approved);
+    if (unapproved.length > 0) {
+        if (!confirm(`You have ${unapproved.length} unapproved match(es). Lock and generate batch anyway?`)) return;
     }
+
+    // Seamless headers matching main app output + metadata & signatures
+    let tsvRows = ["Timestamp\tHeader Title\tHome Team\tHome Score\tVisit Team\tVisit Score\tGame Number\tHome Player\tHome Non-Player\tHome Win\tHome TR\tHome 8BB\tVisit Player\tVisit Non-Player\tVisit Win\tVisit TR\tVisit 8BB\tHome Signature\tVisit Signature"];
+    
+    stagedMatches.forEach(m => {
+        const timestamp = new Date().toISOString();
+        const headerTitle = "8-BALL CASH LEAGUE";
+        const [hScore, vScore] = m.scoreText.includes('-') ? m.scoreText.split('-').map(s => s.trim()) : ["0", "0"];
+
+        m.individualGames.forEach(game => {
+            tsvRows.push([
+                timestamp,
+                headerTitle,
+                m.homeTeam,
+                hScore,
+                m.visitTeam,
+                vScore,
+                game.gameNum || "Gm",
+                game.homePlayer || "",
+                game.homeNP ? "Yes" : "No",
+                game.homeWin ? "Win" : "",
+                game.homeTR ? "TR" : "",
+                game.home8BB ? "8BB" : "",
+                game.visitPlayer || "",
+                game.visitNP ? "Yes" : "No",
+                game.visitWin ? "Win" : "",
+                game.visitTR ? "TR" : "",
+                game.visit8BB ? "8BB" : "",
+                m.homeSig || "",
+                m.visitSig || ""
+            ].join('\t'));
+        });
+    });
+
+    finalizedTSV = tsvRows.join('\n');
+    document.getElementById('tsv-output-box').innerText = finalizedTSV;
+
+    document.getElementById('send-sheet-btn').disabled = false;
+    document.getElementById('send-sheet-btn').style.opacity = '1';
+
+    switchTab({ currentTarget: document.querySelectorAll('.tab-btn')[1] }, 'tab-sheets');
+}
 
     function copyTSVToClipboard() {
         if (!finalizedTSV) { alert('No TSV payload available yet.'); return; }
