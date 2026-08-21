@@ -542,24 +542,25 @@ function doGet(e) {
     }
 
     async function sendDataToSheet() {
-        const url = document.getElementById('sheet-webhook-url').value.trim();
-        if (!url) { alert('Please configure your Google Sheet webhook endpoint in Tab 2.'); return; }
-        if (!finalizedTSV) { alert('No locked TSV batch available to send.'); return; }
+    const url = document.getElementById('sheet-webhook-url').value.trim();
+    if (!url) { alert('Please configure your Google Sheet webhook endpoint in Tab 2.'); return; }
+    if (!finalizedTSV) { alert('No locked TSV batch available to send.'); return; }
 
-        document.getElementById('send-sheet-btn').innerText = 'SENDING...';
-        try {
-            await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: finalizedTSV
-            });
-            alert('Batch successfully sent to connected sheet!');
-            document.getElementById('send-sheet-btn').innerText = 'Sent Successfully!';
-        } catch (err) {
-            alert('Error sending batch to sheet: ' + err.message);
-            document.getElementById('send-sheet-btn').innerText = 'Send Batch to Connected Sheet';
-        }
+    document.getElementById('send-sheet-btn').innerText = 'SENDING...';
+    try {
+        await fetch(url, {
+            method: 'POST',
+            mode: 'no-cors', // Prevents Google Apps Script redirect CORS blocking
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: finalizedTSV
+        });
+        alert('Batch successfully sent to connected sheet!');
+        document.getElementById('send-sheet-btn').innerText = 'Sent Successfully!';
+    } catch (err) {
+        alert('Error sending batch to sheet: ' + err.message);
+        document.getElementById('send-sheet-btn').innerText = 'Send Batch to Connected Sheet';
     }
+}
 </script>
 
 </body>
